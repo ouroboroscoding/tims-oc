@@ -1,0 +1,139 @@
+/**
+ * Element classes
+ */
+div.actions {
+	text-align: right;
+
+	button {
+		margin-left: 10px;
+	}
+}
+
+div.bigIcon {
+	font-size: 3rem;
+}
+
+@media (max-width: 600px) {
+	div.bigIcon {
+		font-size: 2.5rem;
+	}
+}
+
+div.errors {
+	background-color: #ff0000;
+	border: 2px solid #8e1717;
+	border-radius: 0 10px;
+	color: #ffffff;
+	margin-bottom: 20px;
+	max-width: 100%;
+	padding: 10px;
+	width: 600px;
+
+	p {
+		font-weight: bold;
+	}
+}
+
+div.singlePage {
+	height: 100%;
+	padding: 10px;
+}
+
+i.fas {
+	cursor: pointer;
+}
+
+p.error {
+	color: #ff0000;
+	font-weight: bold;
+}
+
+/**
+ * No Element Classes
+ */
+.center {
+	text-align: center;
+}
+
+.container {
+	width: 100%;
+	display: block;
+	box-sizing: border-box;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+@media (min-width: 600px) {
+	.container.sm {
+		max-width: 600px;
+	}
+}
+
+@media (min-width: 960px) {
+	.container.md {
+		max-width: 960px;
+	}
+}
+
+.field {
+	margin: 10px 0;
+
+	.MuiInputBase-root, .MuiFormControl-root {
+		width: 100%;
+	}
+}
+
+.flexColumns {
+	display: flex;
+	flex-direction: row;
+}
+
+.flexRows {
+	display: flex;
+	flex-direction: column;
+}
+
+.flexColumns, .flexRows {
+
+	.flexGrow {
+		flex-basis: 0;
+		flex-grow: 1;
+		flex-shrink: 1;
+		overflow: auto;
+	}
+
+	.flexStatic {
+		flex-basis: auto;
+		flex-grow: 0;
+		flex-shrink: 0;
+	}
+}
+
+div.gradient {
+	background: linear-gradient(to bottom, transparent, 60%, black);
+	height: 100%;
+
+	div.footer {
+		padding: 10px;
+
+		p {
+			color: white;
+		}
+
+		p.profession, p.name {
+			font-size: 1.5rem;
+			font-weight: bold;
+		}
+
+		p.employer, p.professions {
+			font-size: 1.25rem;
+		}
+	}
+}
+
+.image {
+	background-attachment: scroll;
+	background-position: center center;
+	background-repeat: no-repeat;
+	background-size: cover;
+}

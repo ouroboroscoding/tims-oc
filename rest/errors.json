@@ -1,0 +1,31 @@
+{
+	"_": "Rest errors",
+	"100": "REST_REQUEST_DATA",
+	"101": "REST_CONTENT_TYPE",
+	"102": "REST_AUTHORIZATION",
+	"200": "SERVICE_ACTION",
+	"201": "SERVICE_STATUS",
+	"202": "SERVICE_CONTENT_TYPE",
+	"203": "SERVICE_UNREACHABLE",
+	"204": "SERVICE_NOT_REGISTERED",
+	"205": "SERVICE_NO_SUCH_NOUN",
+	"206": "SERVICE_INTERNAL_KEY",
+	"207": "SERVICE_CRASHED",
+
+	"_": "Common Errors",
+	"1000": "No rights",
+	"1001": "Invalid data",
+	"1002": "Invalid image",
+
+	"_": "DB Errors",
+	"2000": "Failed to create record",
+	"2001": "Failed to update record",
+	"2002": "Failed to delete record",
+	"2003": "Failed to find record",
+	"2004": "Duplicate record",
+
+	"_": "Client Errors",
+	"2100": "Invalid email/pass",
+	"2101": "Invalid verification",
+	"2102": "Password strength"
+}

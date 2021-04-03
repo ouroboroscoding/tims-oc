@@ -1,0 +1,3 @@
+[submodule "ui/src/shared"]
+	path = ui/src/shared
+	url = git@github.com:ouroboroscoding/ui-shared

@@ -1,0 +1,50 @@
+h1.MuiTypography-h1 {
+	font-size: 3rem;
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+
+h2.MuiTypography-h2 {
+	font-size: 2.25rem;
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+
+h3.MuiTypography-h3 {
+	font-size: 1.75rem;
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+
+.MuiButton-contained.white {
+	box-shadow: 0px 3px 1px -2px rgba(255,255,255,0.2),0px 2px 2px 0px rgba(255,255,255,0.14),0px 1px 5px 0px rgba(255,255,255,0.12);
+	background-color: #ffffff;
+	color: #000000;
+}
+
+.MuiSlider-markLabel {
+	top: 26px !important;
+}
+
+.MuiSlider-root {
+	padding: 13px 0 !important;
+}
+
+.MuiTypography-root.p {
+	margin-bottom: 10px;
+}
+
+@media (max-width: 600px) {
+
+	h1.MuiTypography-h1 {
+		font-size: 2.5rem;
+	}
+
+	h2.MuiTypography-h2 {
+		font-size: 2rem;
+	}
+
+	h3.MuiTypography-h3 {
+		font-size: 1.5rem;
+	}
+}

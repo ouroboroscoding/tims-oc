@@ -1,0 +1,99 @@
+/* site */
+html, body, #root {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+		'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+		'Helvetica Neue', sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+a {
+	color: #000000;
+	text-decoration: none;
+}
+
+#header {
+	background: #000000;
+	color: #ffffff;
+	font-size: 1.5rem;
+	font-weight: bold;
+	padding: 5px 10px;
+	z-index: $z-header;
+
+	.title {
+		font-size: inherit;
+		font-weight: inherit;
+		margin-bottom: 0 !important;
+	}
+
+	a {
+		color: #ffffff;
+		text-decoration: none;
+	}
+
+	button {
+		color: #ffffff;
+	}
+
+	.icons {
+		margin-top: 5px;
+
+		i {
+			margin-left: 15px;
+		}
+	}
+}
+
+#signin {
+	background: #000000;
+	border-radius: 0 0 0 10px;
+	color: #ffffff;
+	max-width: 350px;
+	padding: 0 10px;
+	position: fixed;
+	right: 0;
+	top: 46px;
+	width: 75%;
+	z-index: $z-login;
+
+	.error {
+		color: #bb86fc;
+		font-weight: bold;
+		margin: 10px 0;
+	}
+
+	.MuiInputBase-root, .MuiInputLabel-outlined {
+		color: #ffffff;
+	}
+
+	.MuiOutlinedInput-notchedOutline {
+		border-color: #ffffff;
+	}
+}
+
+#signup {}
+
+#continue {
+	.which {
+		border: 1px solid #000000;
+		border-radius: 5px;
+		margin: 0 5px;
+		min-height: 300px;
+		padding: 10px;
+		text-align: center;
+	}
+}
+
+@media (max-width: 600px) {
+	#continue {
+		.which {
+			margin: 5px 0;
+			min-height: 0;
+		}
+	}
+}
