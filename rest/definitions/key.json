@@ -1,0 +1,18 @@
+{
+	"__mysql__": {
+		"auto_primary": false,
+		"create": ["_created", "_updated", "user", "type"],
+		"db": "tims-ouroboros",
+		"host": "primary",
+		"indexes": {
+			"user_type": {"unique": ["user","type"]}
+		},
+		"table": "key"
+	},
+	"__name__": "Key",
+	"_id": {"__type__":"string", "__regex__":"^[0-9a-f]{32}$", "__sql__":{"type":"char(32)"}},
+	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
+	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
+	"user": {"__type__":"uuid"},
+	"type": {"__type__":"string", "__options__":["verify","forgot"]}
+}
