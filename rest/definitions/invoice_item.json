@@ -1,20 +1,19 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": ["_created", "_updated", "user", "name", "type", "ident"],
+		"create": ["_created", "_updated", ],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
-			"user": null
+			"": null
 		},
-		"table": "permission"
+		"table": "client"
 	},
-	"__name__": "Permission",
+	"__name__": "Client",
 	"_id": {"__type__":"uuid", "__optional__":true},
 	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"user": {"__type__":"uuid"},
-	"name": {"__type__":"string", "__maximum__":63},
-	"type": {"__type__":"uint", "__minimum__": 1, "__maximum__":15},
-	"ident": {"__type__":"string", "__maximum__":65536, "__optional__":true}
+	"invoice": {"__type__":"uuid"},
+	"project": {"__type__":"uuid"},
+	"minutes": {"__type__":"uint"}
 }

@@ -1,20 +1,23 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": ["_created", "_updated", "user", "name", "type", "ident"],
+		"create": ["_created", "_updated", "client", "identifier",
+					"start", "end", "rate"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
-			"user": null
+			"client": null,
+			"identifier": {"unique": null}
 		},
-		"table": "permission"
+		"table": "invoice"
 	},
-	"__name__": "Permission",
+	"__name__": "Invoice",
 	"_id": {"__type__":"uuid", "__optional__":true},
 	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"user": {"__type__":"uuid"},
-	"name": {"__type__":"string", "__maximum__":63},
-	"type": {"__type__":"uint", "__minimum__": 1, "__maximum__":15},
-	"ident": {"__type__":"string", "__maximum__":65536, "__optional__":true}
+	"client": {"__type__":"uuid"},
+	"identifier": {"__type__":"uint"},
+	"start": {"__type__":"timestamp"},
+	"end": {"__type__":"timestamp"},
+	"rate": {"__type__":"price"}
 }

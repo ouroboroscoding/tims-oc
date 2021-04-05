@@ -11,7 +11,8 @@ import os, platform, time
 from RestOC import Conf, Record_MySQL
 
 # Services
-from records import Client, Key, Permission, Project, Task, User
+from records import Client, Invoice, InvoiceItem, Key, Permission, Project, \
+					Task, User
 
 # Only run if called directly
 if __name__ == "__main__":
@@ -30,6 +31,8 @@ if __name__ == "__main__":
 
 	# Install
 	Client.tableCreate()
+	Invoice.tableCreate()
+	InvoiceItem.tableCreate()
 	Key.tableCreate()
 	Permission.tableCreate()
 	Project.tableCreate()
@@ -44,3 +47,12 @@ if __name__ == "__main__":
 		"verified": True
 	})
 	oUser.create()
+
+	# Add global permissions
+	for s in ['client', 'invoice', 'project', 'user']:
+		oPermission = Permission({
+			"user": oUser['_id'],
+			"name": s,
+			"type": 15
+		})
+		oPermission.create()
