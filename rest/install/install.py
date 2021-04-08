@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
 	# Install admin
 	oUser = User({
-		"email": "ouroboroscode@gmail.com",
+		"email": "chris@ouroboroscoding.com",
 		"passwd": User.passwordHash('Admin123'),
 		"locale": "en-CA",
 		"verified": True

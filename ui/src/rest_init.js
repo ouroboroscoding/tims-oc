@@ -3,7 +3,7 @@
  *
  * Initialises Rest module and adds callbacks
  *
- * @author Chris Nasr <ouroboroscode@gmail.com>
+ * @author Chris Nasr <chris@ouroboroscoding.com>
  * @copyright OuroborosCoding
  * @created 2021-04-02
  */

@@ -3,7 +3,7 @@
  *
  * Displays the verification page
  *
- * @author Chris Nasr <ouroboroscode@gmail.com>
+ * @author Chris Nasr <chris@ouroboroscoding.com>
  * @copyright OuroborosCoding
  * @created 2021-03-07
  */

@@ -3,7 +3,7 @@
  *
  * Primary entry into React app
  *
- * @author Chris Nasr <ouroboroscode@gmail.com>
+ * @author Chris Nasr <chris@ouroboroscoding.com>
  * @copyright OuroborosCoding
  * @created 2021-04-02
  */

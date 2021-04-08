@@ -8,7 +8,7 @@ __author__		= "Chris Nasr"
 __copyright__	= "OuroborosCoding"
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
-__email__		= "ouroboroscode@gmail.com"
+__email__		= "chris@ouroboroscoding.com"
 __created__		= "2021-04-02"
 
 # Pip imports

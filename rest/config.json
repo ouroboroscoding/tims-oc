@@ -1,6 +1,6 @@
 {
 	"developer": {
-		"emails": ["ouroboroscode@gmail.com"]
+		"emails": ["chris@ouroboroscoding.com"]
 	},
 
 	"domain": {
@@ -10,7 +10,7 @@
 
 	"email": {
 		"errors": "webmaster@tims.local",
-		"from": "ouroboroscode@gmail.com",
+		"from": "chris@ouroboroscoding.com",
 		"smtp": {
 			"host": "localhost",
 			"port": 587,
