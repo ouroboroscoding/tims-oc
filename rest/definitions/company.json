@@ -2,31 +2,26 @@
 	"__mysql__": {
 		"auto_primary": "UUID()",
 		"create": [
-			"_created", "_updated", "_archived", "name", "attention_of",
-			"address1", "address2", "city", "division", "country", "postal_code",
-			"rate", "task_minimum", "task_overflow"
+			"_created", "_updated", "name", "payable_to",
+			"address1", "address2", "city", "division", "country", "postal_code"
 		],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
 			"name": {"unique": null}
 		},
-		"table": "client"
+		"table": "company"
 	},
-	"__name__": "Client",
+	"__name__": "Company",
 	"_id": {"__type__":"uuid", "__optional__":true},
 	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"_archived": {"__type__":"bool", "__optional__":true, "__sql__":{"opts": "default 0"}},
 	"name": {"__type__":"string", "__maximum__":63},
-	"attention_of": {"__type__":"string", "__maximum__":63, "__optional__":true},
+	"payable_to": {"__type__":"string", "__maximum__":63, "__optional__":true},
 	"address1": {"__type__":"string", "__maximum__":127},
 	"address2": {"__type__":"string", "__maximum__":31, "__optional__":true},
 	"city": {"__type__":"string", "__maximum__":31},
 	"division": {"__type__":"string", "__maximum__":2},
 	"country": {"__type__":"string", "__maximum__":2},
-	"postal_code": {"__type__":"string", "__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$", "__sql__":{"type":"varchar(10)"}},
-	"rate": {"__type__":"price"},
-	"task_minimum": {"__type__":"uint", "__minimum__":1, "__maximum__":60},
-	"task_overflow": {"__type__":"uint", "__maximum__":59}
+	"postal_code": {"__type__":"string", "__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$", "__sql__":{"type":"varchar(10)"}}
 }

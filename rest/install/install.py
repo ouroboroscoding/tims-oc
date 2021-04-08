@@ -10,9 +10,11 @@ import os, platform, time
 # Framework imports
 from RestOC import Conf, Record_MySQL
 
+# Records
+from records import Company, Permission, User
+
 # Services
-from records import Client, Invoice, InvoiceItem, Key, Permission, Project, \
-					Task, User
+from services.primary import Primary
 
 # Only run if called directly
 if __name__ == "__main__":
@@ -30,29 +32,33 @@ if __name__ == "__main__":
 	Record_MySQL.dbCreate(Conf.get(("mysql", "primary", "db"), "tims-ouroboros"), 'primary')
 
 	# Install
-	Client.tableCreate()
-	Invoice.tableCreate()
-	InvoiceItem.tableCreate()
-	Key.tableCreate()
-	Permission.tableCreate()
-	Project.tableCreate()
-	Task.tableCreate()
-	User.tableCreate()
+	Primary.install()
 
-	# Install admin
+	# Install admin user
 	oUser = User({
-		"email": "chris@ouroboroscoding.com",
+		"email": 'admin@localehost',
 		"passwd": User.passwordHash('Admin123'),
-		"locale": "en-CA",
+		"locale": 'en-US',
 		"verified": True
 	})
 	oUser.create()
 
 	# Add global permissions
-	for s in ['client', 'invoice', 'project', 'user']:
+	for sName in ['client', 'company', 'invoice', 'project', 'task', 'user']:
 		oPermission = Permission({
 			"user": oUser['_id'],
-			"name": s,
+			"name": sName,
 			"type": 15
 		})
 		oPermission.create()
+
+	# Add the only company
+	oCompany = Company({
+		"name": "Your Company",
+		"address1": "123 Main Street",
+		"city": "Coolsville",
+		"division": "QC",
+		"country": "CA",
+		"postalCode": "H4G2R3"
+	})
+	oCompany.create()

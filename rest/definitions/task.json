@@ -5,7 +5,8 @@
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
-			"project": null
+			"project": null,
+			"user": null
 		},
 		"table": "task"
 	},
@@ -14,6 +15,7 @@
 	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
 	"project": {"__type__":"uuid"},
+	"user": {"__type__":"uuid"},
 	"start": {"__type__":"timestamp"},
 	"end": {"__type__":"timestamp", "__optional__":true},
 	"description": {"__type__":"string", "__maximum__":255}

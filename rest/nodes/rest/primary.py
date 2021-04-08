@@ -33,23 +33,33 @@ SMTP.init(**Conf.get(('email', 'smtp')))
 # Create the HTTP server and map requests to service
 REST.Server({
 
-	# Client
+	# Clients
 	"/client": {"methods": REST.ALL, "session": True},
 	"/clients": {"methods": REST.READ, "session": True},
 
-	# Invoice
+	# Companies
+	"/company": {"methods": REST.READ | REST.UPDATE, "session": True},
+
+	# Invoices
 	"/invoice": {"methods": REST.CREATE | REST.READ, "session": True}
 	"/invoices": {"methods": REST.READ, "session": True}
 
-	# Project
+	# Projects
 	"/project": {"methods": REST.ALL, "session": True},
 	"/projects": {"methods": REST.READ, "session": True},
 
-	# Task
-	"/task": {"methods": REST.CREATE | REST.DELETE, "session": True},
+	# Tasks
+	"/task/start": {"methods": REST.CREATE, "session": True},
+	"/task/end": {"methods": REST.UPDATE, "session": True},
+	"/task": {"methods": TASK.UPDATE | REST.DELETE, "session": True},
 	"/tasks": {"methods": REST.READ, "session": True},
 
-	# User
+	# Users
+	"/user": {"methods": REST.ALL, "session": True},
+	"/users": {"methods": REST.READ, "session": True}
+
+	# Session/User Access
+	"/account": {"methods": REST.UPDATE, "session": True},
 	"/session": {"methods": REST.READ, "session": True},
 	"/signin": {"methods": REST.POST},
 	"/signout": {"methods": REST.POST, "session": True},

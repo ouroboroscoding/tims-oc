@@ -1,7 +1,7 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": ["_created", "_updated", "user", "name", "type", "ident"],
+		"create": ["_created", "_updated", "user", "name", "rights", "ident"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
@@ -15,6 +15,6 @@
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
 	"user": {"__type__":"uuid"},
 	"name": {"__type__":"string", "__maximum__":63},
-	"type": {"__type__":"uint", "__minimum__": 1, "__maximum__":15},
+	"rights": {"__type__":"uint", "__minimum__": 1, "__maximum__":15},
 	"ident": {"__type__":"string", "__maximum__":65536, "__optional__":true}
 }

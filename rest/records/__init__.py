@@ -49,6 +49,35 @@ class Client(Record_MySQL.Record):
 		# Return the config
 		return cls._conf
 
+# Company class
+class Company(Record_MySQL.Record):
+	"""Company
+
+	Represents a client (company) that can be billed
+	"""
+
+	_conf = None
+	"""Configuration"""
+
+	@classmethod
+	def config(cls):
+		"""Config
+
+		Returns the configuration data associated with the record type
+
+		Returns:
+			dict
+		"""
+
+		# If we haven loaded the config yet
+		if not cls._conf:
+			cls._conf = Record_MySQL.Record.generateConfig(
+				Tree.fromFile('definitions/company.json')
+			)
+
+		# Return the config
+		return cls._conf
+
 # Key class
 class Key(Record_MySQL.Record):
 	"""Key

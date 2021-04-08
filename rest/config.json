@@ -1,16 +1,10 @@
 {
 	"developer": {
-		"emails": ["chris@ouroboroscoding.com"]
-	},
-
-	"domain": {
-		"primary": "rest.tims.local",
-		"protocol": "https"
+		"emails": ["admin@localhost"]
 	},
 
 	"email": {
-		"errors": "webmaster@tims.local",
-		"from": "chris@ouroboroscoding.com",
+		"from": "admin@localhost",
 		"smtp": {
 			"host": "localhost",
 			"port": 587,
@@ -42,7 +36,7 @@
 	},
 
 	"rest": {
-		"allowed": "tims.local",
+		"allowed": "localhost",
 		"default": {
 			"domain": "localhost",
 			"host": "0.0.0.0",
@@ -51,8 +45,7 @@
 			"workers": 1
 		},
 		"services": {
-			"consultant": {"port": 0},
-			"client": {"port": 1}
+			"primary": {"port": 0}
 		}
 	},
 
