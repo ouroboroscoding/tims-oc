@@ -25,10 +25,10 @@ from records import Client, Company, Invoice, InvoiceItem, Key, Permission, \
 # Shared imports
 from shared import Rights
 
-class Main(Services.Service):
-	"""Main Service class
+class Primary(Services.Service):
+	"""Primary Service class
 
-	Service for admin tasks
+	Service for main tasks
 	"""
 
 	_install = [
@@ -72,9 +72,9 @@ class Main(Services.Service):
 
 	def client_create(self, data, sesh):
 		"""Client create
-		
+
 		Handles creating a new client
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -103,9 +103,9 @@ class Main(Services.Service):
 
 	def client_delete(self, data, sesh):
 		"""Client delete
-		
+
 		Deletes (archives) an existing client
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -134,9 +134,9 @@ class Main(Services.Service):
 
 	def client_read(self, data, sesh):
 		"""Client read
-		
+
 		Fetches and returns data on an existing client
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -162,9 +162,9 @@ class Main(Services.Service):
 
 	def client_update(self, data, sesh):
 		"""Client update
-		
+
 		Updates an existing client
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -218,9 +218,9 @@ class Main(Services.Service):
 
 	def clients_read(self, data, sesh):
 		"""Clients read
-		
+
 		Fetches and returns data on all clients
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -236,21 +236,23 @@ class Main(Services.Service):
 		# If the user has full access
 		if sesh['perms']['client']['ident'] == None:
 			mIDs = None
+			dFilter = None
 
 		# Else, if they have only some IDs
 		else:
 			mIDs = sesh['perms']['client']['ident'].split(',')
+			dFilter = {"_archived": False}
 
 		# Fetch and return the clients
 		return Services.Response(
-			Client.get(mIDs, raw=True, orderby=name)
+			Client.get(mIDs, filter=dFilter, raw=True, orderby=name)
 		)
 
 	def company_read(self, data, sesh):
 		"""Company read
-		
+
 		Fetches and returns data on an existing company
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -276,9 +278,9 @@ class Main(Services.Service):
 
 	def company_update(self, data, sesh):
 		"""Company update
-		
+
 		Updates an existing company
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -321,9 +323,9 @@ class Main(Services.Service):
 
 	def invoice_create(self, data, sesh):
 		"""Invoice create
-		
+
 		Handles creating a new invoice
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -335,9 +337,9 @@ class Main(Services.Service):
 
 	def invoice_delete(self, data, sesh):
 		"""Invoice delete
-		
+
 		Deletes an existing invoice
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -349,9 +351,9 @@ class Main(Services.Service):
 
 	def invoice_read(self, data, sesh):
 		"""Invoice read
-		
+
 		Fetches and returns data on an existing invoice
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -363,9 +365,9 @@ class Main(Services.Service):
 
 	def invoice_update(self, data, sesh):
 		"""Invoice update
-		
+
 		Updates an existing invoice
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -377,9 +379,9 @@ class Main(Services.Service):
 
 	def invoices_read(self, data, sesh):
 		"""Invoices read
-		
+
 		Fetches and returns data on all invoices
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -391,9 +393,9 @@ class Main(Services.Service):
 
 	def project_create(self, data, sesh):
 		"""Project create
-		
+
 		Handles creating a new project
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -426,9 +428,9 @@ class Main(Services.Service):
 
 	def project_delete(self, data, sesh):
 		"""Project delete
-		
+
 		Deletes (archives) an existing project
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -457,9 +459,9 @@ class Main(Services.Service):
 
 	def project_read(self, data, sesh):
 		"""Project read
-		
+
 		Fetches and returns data on an existing project
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -485,9 +487,9 @@ class Main(Services.Service):
 
 	def project_update(self, data, sesh):
 		"""Project update
-		
+
 		Updates an existing project
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -530,9 +532,9 @@ class Main(Services.Service):
 
 	def projects_read(self, data, sesh):
 		"""Projects read
-		
+
 		Fetches and returns data on all projects
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -552,6 +554,10 @@ class Main(Services.Service):
 		# Else, if they have only some IDs
 		else:
 			mIDs = sesh['perms']['project']['ident'].split(',')
+			dFilter = {
+				"clients": mIDs,
+				"_archived": False
+			}
 
 		# Fetch all the client IDs and names and make a hash of them
 		dClients = {
@@ -565,15 +571,11 @@ class Main(Services.Service):
 
 		# Else, just fetch those in the given clients
 		else:
-			lProjects = Project.filter({"client": mIDs}, raw=True, orderby='name')
+			lProjects = Project.filter(dFilter, raw=True, orderby='name')
 
-		# Go through each project and replace the client field with a dict of
-		# ID and name
+		# Go through each project and add the client name
 		for d in lProjects:
-			d['client'] = {
-				"_id": d['client'],
-				"name": (d['client'] in dClients and dClients[d['client']] or '[client not found]')
-			}
+			d['clientName'] = d['client'] in dClients and dClients[d['client']] or '[client not found]'
 
 		# Return the records
 		return Services.Response(lProjects)
@@ -668,9 +670,9 @@ class Main(Services.Service):
 
 	def taskStart_create(self, data, sesh):
 		"""Task Start
-		
+
 		Handles starting a new task, which just stores the start timestamp
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -683,15 +685,20 @@ class Main(Services.Service):
 		if 'project' not in data:
 			return Services.Error(1001, [['project', 'missing']])
 
+		# Find the project
+		dProject = Project.get(data['project'], raw=['client'])
+		if not dProject:
+			return Services.Error(2003)
+
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'task', ERights.CREATE, data['project'])
+		Rights.verifyOrRaise(sesh, 'task', ERights.CREATE, dProject['client'])
 
 		# Create an instance to verify the fields
 		try:
 			oTask = Task({
 				"project": data['project'],
 				"user": sesh['user']['_id'],
-				"start": int(time())
+				"start": int(time()),
 				"description": ('description' in data and data['description'] or '')
 			})
 		except ValueError as e:
@@ -751,9 +758,9 @@ class Main(Services.Service):
 
 	def task_delete(self, data, sesh):
 		"""Task delete
-		
+
 		Deletes an existing task
-		
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -781,9 +788,9 @@ class Main(Services.Service):
 
 	def tasks_read(self, data, sesh):
 		"""Tasks read
-		
-		Fetches and returns data on all tasks
-		
+
+		Fetches and returns data on tasks for a specific client in a range
+
 		Arguments:
 			data (dict): The data passed to the request
 			sesh (Sesh._Session): The session associated with the request
@@ -791,7 +798,19 @@ class Main(Services.Service):
 		Returns:
 			Services.Response
 		"""
-		pass
+
+		# Make sure we have all necessary data
+		try: DictHelper.eval(data, ['client', 'start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Check rights
+		Rights.verifyOrRaise(sesh, 'task', Rights.DELETE, data['client'])
+
+		# Get all tasks that end in the given timeframe
+		lTasks = Task.getByClient(data['client'], data['start'], data['end'])
+
+		# Return the records
+		return Services.Response(lProjects)
 
 	def verify_update(self, data):
 		"""Verify

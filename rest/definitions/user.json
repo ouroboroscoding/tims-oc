@@ -1,7 +1,7 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": ["_created", "_updated", "email", "passwd", "locale", "verified"],
+		"create": ["_created", "_updated", "email", "passwd", "name", "locale", "verified"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
@@ -15,6 +15,7 @@
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
 	"email": {"__type__":"string", "__maximum__":127},
 	"passwd": {"__type__":"string", "__regex__":"^[0-9a-fA-F]{72}$", "__sql__":{"type":"char(72)"}},
+	"name": {"__type__":"string", "__maximum__": 63},
 	"locale": {"__type__": "string", "__regex__":"^[a-z]{2}-[A-Z]{2}$", "__sql__":{"type":"char(5)"}},
 	"verified": {"__type__": "bool"}
 }

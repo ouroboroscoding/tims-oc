@@ -41,8 +41,8 @@ REST.Server({
 	"/company": {"methods": REST.READ | REST.UPDATE, "session": True},
 
 	# Invoices
-	"/invoice": {"methods": REST.CREATE | REST.READ, "session": True}
-	"/invoices": {"methods": REST.READ, "session": True}
+	"/invoice": {"methods": REST.CREATE | REST.READ, "session": True},
+	"/invoices": {"methods": REST.READ, "session": True},
 
 	# Projects
 	"/project": {"methods": REST.ALL, "session": True},
@@ -51,15 +51,16 @@ REST.Server({
 	# Tasks
 	"/task/start": {"methods": REST.CREATE, "session": True},
 	"/task/end": {"methods": REST.UPDATE, "session": True},
-	"/task": {"methods": TASK.UPDATE | REST.DELETE, "session": True},
+	"/task": {"methods": REST.UPDATE | REST.DELETE, "session": True},
 	"/tasks": {"methods": REST.READ, "session": True},
 
 	# Users
 	"/user": {"methods": REST.ALL, "session": True},
-	"/users": {"methods": REST.READ, "session": True}
+	"/users": {"methods": REST.READ, "session": True},
 
 	# Session/User Access
 	"/account": {"methods": REST.UPDATE, "session": True},
+	"/account/tasks": {"methods": REST.READ, "session": True},
 	"/session": {"methods": REST.READ, "session": True},
 	"/signin": {"methods": REST.POST},
 	"/signout": {"methods": REST.POST, "session": True},
@@ -69,5 +70,5 @@ REST.Server({
 	host=oRestConf['primary']['host'],
 	port=oRestConf['primary']['port'],
 	workers=oRestConf['primary']['workers'],
-	timeout='timeout' in oRestConf['main'] and oRestConf['main']['timeout'] or 30
+	timeout='timeout' in oRestConf['primary'] and oRestConf['primary']['timeout'] or 30
 )
