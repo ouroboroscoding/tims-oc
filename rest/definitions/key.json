@@ -14,5 +14,5 @@
 	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
 	"user": {"__type__":"uuid"},
-	"type": {"__type__":"string", "__options__":["verify","forgot"]}
+	"type": {"__type__":"string", "__options__":["forgot","setup","verify"]}
 }

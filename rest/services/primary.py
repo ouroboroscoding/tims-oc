@@ -37,6 +37,37 @@ class Primary(Services.Service):
 	]
 	"""Record types called in install"""
 
+	def _createKey(user, type):
+		"""Create Key
+
+		Creates a key used for verification of the user
+
+		Arguments:
+			user (str): The ID of the user
+			type (str): The type of key to make
+
+		Returns:
+			str
+		"""
+
+		# Create an instance
+		oKey = Key({
+			"_id": StrHelper.random(32, '_0x'),
+			"user": user,
+			"type": type
+		})
+
+		# Try again if we get a duplicate
+		while True:
+			try:
+				oKey.save()
+				break
+			except DuplicateException:
+				oKey['_id'] = StrHelper.random(32, '_0x')
+
+		# Return the key
+		return oKey['_id']
+
 	def initialise(self):
 		"""Initialise
 
@@ -69,6 +100,100 @@ class Primary(Services.Service):
 
 		# Return OK
 		return True
+
+	def accountUser_update(self, data, sesh):
+		"""Account User Update
+
+		Allows the signed in user to update their account details
+
+		"""
+
+		# Find the record
+		oUser = User.get(sesh['user']['_id'])
+		if not oUser:
+			return Services.Error(2003)
+
+		# Remove fields that can't be changed
+		for f in ['_id', '_created', '_updated', '_archived']:
+			if f in data:
+				del data[f]
+
+		# If the email is changed
+		if 'email' in data and data['email'] != oUser['email']:
+			bSendVerify = True
+			data['verified'] = False
+		else:
+			bSendVerify = False
+
+		# Update each field, keeping track of errors
+		lErrors = []
+		for f in data:
+			try: oUser[f] = data[f]
+			except ValueError as e: lErrors.extend(e.args[0])
+
+		# If there's any errors
+		if lErrors:
+			return Services.Error(1001, lErrors)
+
+		# Save the record and store the result
+		bRes = oUser.save()
+
+		# If send the verify email
+		if bSendVerify:
+
+			# Create key
+			sKey = self._createKey(sesh['user']['_id'], 'verify')
+
+			# Create the setup template data
+			dTpl = {
+				"url": sURL \
+						.replace('{locale}', data['locale']) \
+						.replace('{key}', sKey)
+			}
+
+			# Generate the templates
+			dTpls = EMail.template('verify', dTpl, oUser['locale'])
+			if not bRes:
+				print('Failed to send email: %s' % EMail.last_error)
+
+		# Return the result
+		return Services.Response(bRes)
+
+	def accountVerify_update(self, data):
+		"""Verify
+
+		Takes the key and the email and makrs the user as verified
+
+		Arguments:
+			data (dict): Data sent with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have the key
+		if 'key' not in data:
+			return Services.Error(1001, [['key', 'missing']])
+
+		# Look up the key
+		oKey = Key.get(data['key'])
+		if not oKey:
+			return Services.Error(2003, 'key')
+
+		# Find the user
+		oUser = User.get(oKey['user'])
+		if not oUser:
+			return Services.Error(2003, 'user')
+
+		# Update the user to verified
+		oUser['verified'] = True
+		oUser.save()
+
+		# Delete the key
+		oKey.delete()
+
+		# Return OK
+		return Services.Response(True)
 
 	def client_create(self, data, sesh):
 		"""Client create
@@ -812,32 +937,204 @@ class Primary(Services.Service):
 		# Return the records
 		return Services.Response(lProjects)
 
-	def verify_update(self, data):
-		"""Verify
+	def user_create(self, data, sesh):
+		"""User create
 
-		Takes the key and the email and makrs the user as verified
+		Handles creating a new user
 
 		Arguments:
-			data (dict): Data sent with the request
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
 
 		Returns:
 			Services.Response
 		"""
 
-		# Verify minimum fields
-		try: DictHelper.eval(data, ['email', 'key'])
-		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+		# Check rights
+		Rights.verifyOrRaise(sesh, 'user', ERights.CREATE)
 
-		# Find the user by email
-		oUser = User.filter({"email": data['email']}, limit=1)
+		# Check we have a verification url
+		if 'setup_url' not in data:
+			return Services.Error(1001, [['setup_url', 'missing']])
 
-		# If there's no such user, or the code doesn't match
-		if not oUser or oUser['verified'] != data['key']:
-			return Services.Error(2101)
+		# Make sure the URL has the {key} and {locale} fields
+		if '{key}' not in data['setup_url']:
+			return Services.Error(1001, [['setup_url', 'missing {key}']])
+		if '{locale}' not in data['setup_url']:
+			return Services.Error(1001, [['setup_url', 'missing {locale}']])
 
-		# Update the user to verified
-		oUser['verified'] = True
-		oUser.save()
+		# Pop off the URL
+		sURL = data.pop('url')
 
-		# Return OK
-		return Services.Response(True)
+		# If the locale is missing
+		if 'locale' not in data:
+			data['locale'] = 'en-US'
+
+		# Add the blank password
+		data['passwd'] = '000000000000000000000000000000000000000000000000000000000000000000000000'
+
+		# Set not verified
+		data['verified'] = False
+
+		# Create an instance to verify the fields
+		try:
+			oUser = User(data)
+		except ValueError as e:
+			return Services.Error(1001, e.args[0])
+
+		# Create the record and check for a duplicate email
+		try:
+			sID = oUser.create()
+		except DuplicateException:
+			return Services.Error(2004)
+
+		# Create key
+		sKey = self._createKey(sID, 'setup')
+
+		# Create the setup template data
+		dTpl = {
+			"url": sURL \
+					.replace('{locale}', data['locale']) \
+					.replace('{key}', sKey)
+		}
+
+		# Generate the templates
+		dTpls = EMail.template('setup', dTpl, data['locale'])
+		if not bRes:
+			print('Failed to send email: %s' % EMail.last_error)
+
+		# Return the new ID
+		return Services.Response(sID)
+
+	def user_delete(self, data, sesh):
+		"""User delete
+
+		Deletes (archives) an existing user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Check rights
+		Rights.verifyOrRaise(sesh, 'user', ERights.DELETE)
+
+		# Make sure the ID is passed
+		if '_id' not in data:
+			return Services.Errro(1001, [['_id', 'missing']])
+
+		# Find the user
+		oUser = User.get(data['_id'])
+		if not oUser:
+			return Services.Error(2003)
+
+		# Mark the user as archived
+		oUser['_archived'] = True
+
+		# Return the new ID
+		return Services.Response(sID)
+
+	def user_read(self, data, sesh):
+		"""User read
+
+		Fetches and returns data on an existing user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure the ID is passed
+		if '_id' not in data:
+			return Services.Errro(1001, [['_id', 'missing']])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh, 'user', ERights.READ, data['_id'])
+
+		# Fetch the record
+		dUser = User.get(data['_id'], raw=True)
+		if not dUser:
+			return Services.Error(2003)
+
+		# Remove the password
+		dUser.pop('passwd')
+
+		# Return the record data
+		return Services.Response(dUser)
+
+	def user_update(self, data, sesh):
+		"""User update
+
+		Updates an existing user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure the ID is passed
+		if '_id' not in data:
+			return Services.Errro(1001, [['_id', 'missing']])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh, 'user', ERights.UPDATE)
+
+		# Find the record
+		oUser = User.get(data['_id'])
+		if not oUser:
+			return Services.Error(2003)
+
+		# Remove fields that can't be changed
+		for f in ['_id', '_created', '_updated']:
+			if f in data:
+				del data[f]
+
+		# If the email is changed
+		if 'email' in data and data['email'] != oUser['email']:
+			bSendVerify = True
+			data['verified'] = False
+		else:
+			bSendVerify = False
+
+		# Update each field, keeping track of errors
+		lErrors = []
+		for f in data:
+			try: oUser[f] = data[f]
+			except ValueError as e: lErrors.extend(e.args[0])
+
+		# If there's any errors
+		if lErrors:
+			return Services.Error(1001, lErrors)
+
+		# Save the user info
+		bRes = oUser.save()
+
+		# If send the verify email
+		if bSendVerify:
+
+			# Create key
+			sKey = self._createKey(oUser['_id'], 'verify')
+
+			# Create the setup template data
+			dTpl = {
+				"url": sURL \
+						.replace('{locale}', data['locale']) \
+						.replace('{key}', sKey)
+			}
+
+			# Generate the templates
+			dTpls = EMail.template('verify', dTpl, oUser['locale'])
+			if not bRes:
+				print('Failed to send email: %s' % EMail.last_error)
+
+		# Return the result
+		return Services.Response(bRes)

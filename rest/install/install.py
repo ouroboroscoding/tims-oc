@@ -36,8 +36,9 @@ if __name__ == "__main__":
 
 	# Install admin user
 	oUser = User({
-		"email": 'admin@localehost',
+		"email": 'admin@localhost',
 		"passwd": User.passwordHash('Admin123'),
+		"name": "Administrator",
 		"locale": 'en-US',
 		"verified": True
 	})
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 		oPermission = Permission({
 			"user": oUser['_id'],
 			"name": sName,
-			"type": 15
+			"rights": 15
 		})
 		oPermission.create()
 
@@ -59,6 +60,6 @@ if __name__ == "__main__":
 		"city": "Coolsville",
 		"division": "QC",
 		"country": "CA",
-		"postalCode": "H4G2R3"
+		"postal_code": "H4G2R3"
 	})
 	oCompany.create()

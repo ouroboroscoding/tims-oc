@@ -1,11 +1,11 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": ["_created", "_updated", ],
+		"create": ["_created", "_updated", "invoice", "project", "minutes"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
-			"": null
+			"invoice": null
 		},
 		"table": "client"
 	},

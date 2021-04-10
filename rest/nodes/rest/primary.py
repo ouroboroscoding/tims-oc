@@ -58,13 +58,16 @@ REST.Server({
 	"/user": {"methods": REST.ALL, "session": True},
 	"/users": {"methods": REST.READ, "session": True},
 
-	# Session/User Access
-	"/account": {"methods": REST.UPDATE, "session": True},
-	"/account/tasks": {"methods": REST.READ, "session": True},
+	# Session
 	"/session": {"methods": REST.READ, "session": True},
 	"/signin": {"methods": REST.POST},
 	"/signout": {"methods": REST.POST, "session": True},
-	"/verify": {"methods": REST.PUT}
+
+	# User Access
+	"/account/setup": {"methods": REST.UPDATE},
+	"/account/tasks": {"methods": REST.READ, "session": True},
+	"/account/user": {"methods": REST.UPDATE, "session": True},
+	"/account/verify": {"methods": REST.UPDATE}
 
 }, 'primary', "https?://(.*\\.)?%s" % Conf.get(("rest","allowed")).replace('.', '\\.')).run(
 	host=oRestConf['primary']['host'],

@@ -17,7 +17,7 @@
 	"_id": {"__type__":"uuid", "__optional__":true},
 	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"_archived": {"__type__":"bool", "__optional__":true, "__sql__":{"opts": "default 0"}},
+	"_archived": {"__type__":"bool", "__optional__":true, "__sql__":{"opts": "not null default 0"}},
 	"name": {"__type__":"string", "__maximum__":63},
 	"attention_of": {"__type__":"string", "__maximum__":63, "__optional__":true},
 	"address1": {"__type__":"string", "__maximum__":127},
