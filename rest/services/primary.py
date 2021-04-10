@@ -62,7 +62,10 @@ class Primary(Services.Service):
 			try:
 				oKey.save()
 				break
-			except DuplicateException:
+			except DuplicateException as e:
+				print('----------------')
+				print(e.args)
+				print('----------------')
 				oKey['_id'] = StrHelper.random(32, '_0x')
 
 		# Return the key
@@ -101,11 +104,208 @@ class Primary(Services.Service):
 		# Return OK
 		return True
 
+	def accountForgot_create(self, data):
+		"""Account: Forgot create
+
+		Verifies a user exists by email and generates a key sent to that
+		email to allow them to reset their password
+
+		Arguments:
+			data (dict): The data passed to the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Verify the minimum fields
+		try: DictHelper.eval(data, ['email', 'url'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Make sure the URL has the {key} and {locale} fields
+		if '{key}' not in data['url']:
+			return Services.Error(1001, [['url', 'missing {key}']])
+		if '{locale}' not in data['url']:
+			return Services.Error(1001, [['url', 'missing {locale}']])
+
+		# Pop off the URL
+		sURL = data.pop('url')
+
+		# Convert the email to lowercase
+		data['email'] = data['email'].lower()
+
+		# Look for the user by email
+		dUser = User.filter({"email": data['email']}, raw=['_id'])
+
+		# Even if it doesn't exist, return true so no one can fish for email
+		#	addresses in the system
+		if not dUser:
+			return Services.Response(True)
+
+		# Generate a key
+		sKey = self._createKey(dUser['_id'], 'forgot')
+
+		# Create the forgot template data
+		dTpl = {
+			"url": sURL \
+					.replace('{locale}', data['locale']) \
+					.replace('{key}', sKey)
+		}
+
+		# Generate the templates
+		dTpls = EMail.template('forgot', dTpl, oUser['locale'])
+		if not bRes:
+			print('Failed to send email: %s' % EMail.last_error)
+			return Services.Response(False)
+
+		# Return OK
+		return Services.Response(True)
+
+	def accountForgot_update(self, data):
+		"""Account: Forgot update
+
+		Verifies a user by key and allows them to set a new password
+
+		Arguments:
+			data (dict): The data passed to the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Verify the minimum fields
+		try: DictHelper.eval(data, ['passwd', 'key'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Look up the key
+		oKey = Key.get(data['key'])
+		if not oKey:
+			return Services.Error(2003, 'key')
+
+		# Find the user
+		oUser = User.get(oKey['user'])
+		if not oUser:
+			return Services.Error(2003, 'user')
+
+		# Make sure the new password is strong enough
+		if not User.passwordStrength(data['passwd']):
+			return Services.Error(2102)
+
+		# Set the new password and save
+		oUser['passwd'] = User.passwordHash(data['passwd'])
+		oUser.save()
+
+		# Delete the key
+		oKey.delete()
+
+		# Return OK
+		return Services.Response(True)
+
+	def accountSetup_update(self, data, sesh):
+		"""Account: Setup update
+
+		Finishes setting up the account for the user by setting their password
+		and verified fields
+
+		Arguments:
+			data (dict): The data passed to the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Verify the minimum fields
+		try: DictHelper.eval(data, ['passwd', 'key'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Look up the key
+		oKey = Key.get(data['key'])
+		if not oKey:
+			return Services.Error(2003, 'key')
+
+		# Find the user
+		oUser = User.get(oKey['user'])
+		if not oUser:
+			return Services.Error(2003, 'user')
+
+		# Make sure the new password is strong enough
+		if not User.passwordStrength(data['passwd']):
+			return Services.Error(2102)
+
+		# Set the new password and save
+		oUser['passwd'] = User.passwordHash(data['passwd'])
+		oUser['verified'] = True
+		oUser.save()
+
+		# Delete the key
+		oKey.delete()
+
+		# Get the permissions associated with the user
+		lPermissions = Permission.filter({
+			"user": oUser['_id']
+		}, raw=['name', 'rights', 'ident'])
+
+		# Create a new session, store user and permission data, and save it
+		oSesh = Sesh.create()
+		oSesh['user'] = oUser.record(['_id', 'email', 'name', 'locale', 'verified'])
+		oSesh['perms'] = {
+			d['name']:{
+				"rights": d['rights'],
+				"ident": (d['ident'] and d['ident'].split(',') or None)
+			}
+			for d in lPermissions
+		}
+		oSesh.save()
+
+		# Return the session ID and primary user data
+		return Services.Response({
+			"session": oSesh.id(),
+			"user": oSesh['user'],
+			"perms": oSesh['perms']
+		})
+
+	def accountTasks_read(self, data, sesh):
+		"""Account: Tasks read
+
+		Returns all the tasks associated with the user in the given date/time
+		range
+
+		Arguments:
+
+		Returns:
+		"""
+
+		# Verify the minimum fields
+		try: DictHelper.eval(data, ['start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Make sure they're ints, or can be converted
+		lErrors = []
+		for k in ['start', 'end']:
+			try: data[k] = int(data[k])
+			except ValueError: lErrors.append([k, 'not an unsigned integer'])
+		if lErrors:
+			return Services.Error(1001, lErrors)
+
+		# Fetch and return all the tasks by the logged in user
+		return Services.Response(
+			Task.byUser(
+				sesh['user']['_id'],
+				data['start'],
+				data['end']
+			)
+		)
+
 	def accountUser_update(self, data, sesh):
-		"""Account User Update
+		"""Account: User update
 
 		Allows the signed in user to update their account details
 
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
 		"""
 
 		# Find the record
@@ -144,7 +344,7 @@ class Primary(Services.Service):
 			# Create key
 			sKey = self._createKey(sesh['user']['_id'], 'verify')
 
-			# Create the setup template data
+			# Create the verify template data
 			dTpl = {
 				"url": sURL \
 						.replace('{locale}', data['locale']) \
@@ -160,7 +360,7 @@ class Primary(Services.Service):
 		return Services.Response(bRes)
 
 	def accountVerify_update(self, data):
-		"""Verify
+		"""Account: Verify update
 
 		Takes the key and the email and makrs the user as verified
 
@@ -734,14 +934,14 @@ class Primary(Services.Service):
 			Result
 		"""
 
-		# Verify fields
+		# Verify the minimum fields
 		try: DictHelper.eval(data, ['email', 'passwd'])
 		except ValueError as e: return Services.Response(error=(1001, [[f, 'missing'] for f in e.args]))
 
 		# Make sure the email is lowercase
 		data['email'] = data['email'].lower()
 
-		# Look for the user by alias
+		# Look for the user by email
 		oUser = User.filter({"email": data['email']}, limit=1)
 		if not oUser:
 			return Services.Response(error=2100)
@@ -757,7 +957,7 @@ class Primary(Services.Service):
 
 		# Create a new session, store user and permission data, and save it
 		oSesh = Sesh.create()
-		oSesh['user'] = oUser.record(['_id', 'email', 'locale', 'verified'])
+		oSesh['user'] = oUser.record(['_id', 'email', 'name', 'locale', 'verified'])
 		oSesh['perms'] = {
 			d['name']:{
 				"rights": d['rights'],
@@ -954,17 +1154,21 @@ class Primary(Services.Service):
 		Rights.verifyOrRaise(sesh, 'user', ERights.CREATE)
 
 		# Check we have a verification url
-		if 'setup_url' not in data:
-			return Services.Error(1001, [['setup_url', 'missing']])
+		if 'url' not in data:
+			return Services.Error(1001, [['url', 'missing']])
 
 		# Make sure the URL has the {key} and {locale} fields
-		if '{key}' not in data['setup_url']:
-			return Services.Error(1001, [['setup_url', 'missing {key}']])
-		if '{locale}' not in data['setup_url']:
-			return Services.Error(1001, [['setup_url', 'missing {locale}']])
+		if '{key}' not in data['url']:
+			return Services.Error(1001, [['url', 'missing {key}']])
+		if '{locale}' not in data['url']:
+			return Services.Error(1001, [['url', 'missing {locale}']])
 
 		# Pop off the URL
 		sURL = data.pop('url')
+
+		# Convert the email to lowercase
+		if 'email' in data:
+			data['email'] = data['email'].lower()
 
 		# If the locale is missing
 		if 'locale' not in data:
@@ -1102,6 +1306,7 @@ class Primary(Services.Service):
 		if 'email' in data and data['email'] != oUser['email']:
 			bSendVerify = True
 			data['verified'] = False
+			data['email'] = data['email'].lower()
 		else:
 			bSendVerify = False
 
@@ -1124,7 +1329,7 @@ class Primary(Services.Service):
 			# Create key
 			sKey = self._createKey(oUser['_id'], 'verify')
 
-			# Create the setup template data
+			# Create the verify template data
 			dTpl = {
 				"url": sURL \
 						.replace('{locale}', data['locale']) \
