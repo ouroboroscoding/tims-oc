@@ -200,6 +200,65 @@ class Primary(Services.Service):
 		# Return OK
 		return Services.Response(True)
 
+	def accountPasswd_update(self, data, sesh):
+		"""Account: Password update
+
+		Handles changing the password for a user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have at least the new password
+		if 'new_passwd' not in data:
+			return Services.Error(1001, [[f, 'missing']])
+
+		# If the id is passed
+		if '_id' in data and data['_id'] is not None:
+
+			# If it doesn't match the logged in user
+			if data['_id'] != sesh['user_id']:
+
+				# Make sure the user has the proper permission to do this
+				Rights.verifyOrRaise(sesh, 'user', Rights.UPDATE)
+
+		# Else, use the user from the session
+		else:
+
+			# If the old password is missing
+			if 'passwd' not in data:
+				return Services.Error(1001, [['passwd', 'missing']])
+
+			# Store the session as the user ID
+			data['_id'] = sesh['user']['_id']
+
+		# Find the user
+		oUser = User.get(data['_id'])
+		if not oUser:
+			return Services.Error(2003)
+
+		# If we have an old password
+		if 'passwd' in data:
+
+			# Validate it
+			if not oUser.passwordValidate(data['passwd']):
+				return Services.Error(1001, [['passwd', 'invalid']])
+
+		# Make sure the new password is strong enough
+		if not User.passwordStrength(data['new_passwd']):
+			return Services.Error(2102)
+
+		# Set the new password and save
+		oUser['passwd'] = User.passwordHash(data['new_passwd'])
+		oUser.save()
+
+		# Return OK
+		return Services.Response(True)
+
 	def accountSetup_update(self, data, sesh):
 		"""Account: Setup update
 
@@ -1254,12 +1313,18 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Make sure the ID is passed
-		if '_id' not in data:
-			return Services.Errro(1001, [['_id', 'missing']])
+		# If the ID is passed
+		if '_id' in data:
 
-		# Check rights
-		Rights.verifyOrRaise(sesh, 'user', ERights.READ, data['_id'])
+			# And the user is not the logged in user
+			if data['_id'] != sesh['user']['_id']:
+
+				# Verify the rights
+				Rights.verifyOrRaise(sesh, 'user', ERights.READ, data['_id'])
+
+		# Else, just lookup the logged in user
+		else:
+			data['_id'] = sesh['user']['_id']
 
 		# Fetch the record
 		dUser = User.get(data['_id'], raw=True)

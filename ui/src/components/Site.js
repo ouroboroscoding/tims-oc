@@ -23,12 +23,9 @@ import { useEvent } from 'shared/hooks/event';
 import { useResize } from 'shared/hooks/resize';
 
 // Site component modules
-import Header from './Header';
-//import { LoaderHide, LoaderShow } from './Loader';
+import Header from './header';
 
 // Page component modules
-import Admin from 'components/pages/admin';
-import Root from 'components/pages/root';
 import Verify from 'components/pages/Verify';
 
 // Rest init
@@ -88,27 +85,19 @@ export default function Site(props) {
 			/>
 			<div id="content" className="flexGrow">
 				<Switch>
-					{user && user.admin &&
-						<Route path="/admin">
-							<Admin
-								mobile={mobile}
-								user={user}
-							/>
-						</Route>
-					}
 					<Route path="/verify">
 						<Verify
 							user={user}
 						/>
 					</Route>
-					{user !== null &&
+					{/*user !== null &&
 						<Route path="/">
 							<Root
 								mobile={mobile}
 								user={user}
 							/>
 						</Route>
-					}
+					*/}
 				</Switch>
 			</div>
 		</React.Fragment>

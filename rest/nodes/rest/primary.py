@@ -56,6 +56,7 @@ REST.Server({
 
 	# Users
 	"/user": {"methods": REST.ALL, "session": True},
+	"/user/passwd": {"methods": REST.UPDATE, "session": True},
 	"/users": {"methods": REST.READ, "session": True},
 
 	# Session

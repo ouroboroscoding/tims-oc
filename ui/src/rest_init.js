@@ -9,7 +9,7 @@
  */
 
 // Site component modules
-//import { LoaderHide, LoaderShow } from './Loader';
+import { LoaderHide, LoaderShow } from 'components/header/Loader';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -21,11 +21,11 @@ import Events from 'shared/generic/events';
 Rest.init(process.env.REACT_APP_REST_DOMAIN, {
 
 	after: (method, url, data, opts) => {
-//		LoaderHide();
+		LoaderHide();
 	},
 
 	before: (method, url, data, opts) => {
-//		LoaderShow();
+		LoaderShow();
 	},
 
 	cookie: window.location.host,
