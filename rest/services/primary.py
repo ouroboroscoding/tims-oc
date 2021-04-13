@@ -15,6 +15,7 @@ __created__		= "2021-04-06"
 from time import time
 
 # Pip imports
+from redis import StrictRedis
 from RestOC import Conf, DictHelper, Errors, Services, Sesh, StrHelper
 from RestOC.Record_MySQL import DuplicateException
 
@@ -23,7 +24,7 @@ from records import Client, Company, Invoice, InvoiceItem, Key, Permission, \
 					Project, Task, User
 
 # Shared imports
-from shared import Rights
+from shared import EMail, Rights
 
 class Primary(Services.Service):
 	"""Primary Service class
@@ -37,7 +38,7 @@ class Primary(Services.Service):
 	]
 	"""Record types called in install"""
 
-	def _createKey(user, type):
+	def _createKey(self, user, type):
 		"""Create Key
 
 		Creates a key used for verification of the user
@@ -79,6 +80,16 @@ class Primary(Services.Service):
 		Returns:
 			User
 		"""
+
+		# Create a connection to Redis
+		self._redis = StrictRedis(**Conf.get(('redis', 'primary'), {
+			"host": "localhost",
+			"port": 6379,
+			"db": 0
+		}))
+
+		# Pass the Redis connection to records that need it
+		Permission.redis(self._redis)
 
 		# Return self for chaining
 		return self
@@ -224,7 +235,7 @@ class Primary(Services.Service):
 			if data['_id'] != sesh['user_id']:
 
 				# Make sure the user has the proper permission to do this
-				Rights.verifyOrRaise(sesh, 'user', Rights.UPDATE)
+				Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.UPDATE)
 
 		# Else, use the user from the session
 		else:
@@ -234,7 +245,7 @@ class Primary(Services.Service):
 				return Services.Error(1001, [['passwd', 'missing']])
 
 			# Store the session as the user ID
-			data['_id'] = sesh['user']['_id']
+			data['_id'] = sesh['user_id']
 
 		# Find the user
 		oUser = User.get(data['_id'])
@@ -298,29 +309,13 @@ class Primary(Services.Service):
 		# Delete the key
 		oKey.delete()
 
-		# Get the permissions associated with the user
-		lPermissions = Permission.filter({
-			"user": oUser['_id']
-		}, raw=['name', 'rights', 'ident'])
-
-		# Create a new session, store user and permission data, and save it
+		# Create a new session, store the user ID, and save it
 		oSesh = Sesh.create()
-		oSesh['user'] = oUser.record(['_id', 'email', 'name', 'locale', 'verified'])
-		oSesh['perms'] = {
-			d['name']:{
-				"rights": d['rights'],
-				"ident": (d['ident'] and d['ident'].split(',') or None)
-			}
-			for d in lPermissions
-		}
+		oSesh['user_id'] = oUser['_id']
 		oSesh.save()
 
-		# Return the session ID and primary user data
-		return Services.Response({
-			"session": oSesh.id(),
-			"user": oSesh['user'],
-			"perms": oSesh['perms']
-		})
+		# Return the session ID
+		return Services.Response(oSesh.id())
 
 	def accountTasks_read(self, data, sesh):
 		"""Account: Tasks read
@@ -348,75 +343,11 @@ class Primary(Services.Service):
 		# Fetch and return all the tasks by the logged in user
 		return Services.Response(
 			Task.byUser(
-				sesh['user']['_id'],
+				sesh['user_id'],
 				data['start'],
 				data['end']
 			)
 		)
-
-	def accountUser_update(self, data, sesh):
-		"""Account: User update
-
-		Allows the signed in user to update their account details
-
-		Arguments:
-			data (dict): The data passed to the request
-			sesh (Sesh._Session): The session associated with the request
-
-		Returns:
-			Services.Response
-		"""
-
-		# Find the record
-		oUser = User.get(sesh['user']['_id'])
-		if not oUser:
-			return Services.Error(2003)
-
-		# Remove fields that can't be changed
-		for f in ['_id', '_created', '_updated', '_archived']:
-			if f in data:
-				del data[f]
-
-		# If the email is changed
-		if 'email' in data and data['email'] != oUser['email']:
-			bSendVerify = True
-			data['verified'] = False
-		else:
-			bSendVerify = False
-
-		# Update each field, keeping track of errors
-		lErrors = []
-		for f in data:
-			try: oUser[f] = data[f]
-			except ValueError as e: lErrors.extend(e.args[0])
-
-		# If there's any errors
-		if lErrors:
-			return Services.Error(1001, lErrors)
-
-		# Save the record and store the result
-		bRes = oUser.save()
-
-		# If send the verify email
-		if bSendVerify:
-
-			# Create key
-			sKey = self._createKey(sesh['user']['_id'], 'verify')
-
-			# Create the verify template data
-			dTpl = {
-				"url": sURL \
-						.replace('{locale}', data['locale']) \
-						.replace('{key}', sKey)
-			}
-
-			# Generate the templates
-			dTpls = EMail.template('verify', dTpl, oUser['locale'])
-			if not bRes:
-				print('Failed to send email: %s' % EMail.last_error)
-
-		# Return the result
-		return Services.Response(bRes)
 
 	def accountVerify_update(self, data):
 		"""Account: Verify update
@@ -468,7 +399,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'client', ERights.CREATE)
+		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.CREATE)
 
 		# Create an instance to verify the fields
 		try:
@@ -499,7 +430,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'client', ERights.DELETE)
+		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.DELETE)
 
 		# Make sure the ID is passed
 		if '_id' not in data:
@@ -534,7 +465,7 @@ class Primary(Services.Service):
 			return Services.Errro(1001, [['_id', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'client', ERights.READ, data['_id'])
+		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.READ, data['_id'])
 
 		# Fetch the record
 		dClient = Client.get(data['_id'], raw=True)
@@ -562,7 +493,7 @@ class Primary(Services.Service):
 			return Services.Errro(1001, [['_id', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'client', ERights.UPDATE, data['_id'])
+		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.UPDATE, data['_id'])
 
 		# Find the record
 		oClient = Client.get(data['_id'])
@@ -583,7 +514,7 @@ class Primary(Services.Service):
 
 		# Check the user has full rights if necessary
 		if bCheckClientAdmin:
-			Rights.verifyOrRaise(sesh, 'client', ERights.UPDATE)
+			Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.UPDATE)
 
 		# Update each field, keeping track of errors
 		lErrors = []
@@ -618,13 +549,13 @@ class Primary(Services.Service):
 			return Services.Error(Rights.INVALID)
 
 		# If the user has full access
-		if sesh['perms']['client']['ident'] == None:
+		if sesh['perms']['client']['idents'] == None:
 			mIDs = None
 			dFilter = None
 
 		# Else, if they have only some IDs
 		else:
-			mIDs = sesh['perms']['client']['ident'].split(',')
+			mIDs = sesh['perms']['client']['idents'].split(',')
 			dFilter = {"_archived": False}
 
 		# Fetch and return the clients
@@ -650,7 +581,7 @@ class Primary(Services.Service):
 			return Services.Errro(1001, [['_id', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'company', ERights.READ)
+		Rights.verifyOrRaise(sesh['user_id'], 'company', Rights.READ)
 
 		# Fetch the record
 		dCompany = Company.get(data['_id'], raw=True)
@@ -678,7 +609,7 @@ class Primary(Services.Service):
 			return Services.Errro(1001, [['_id', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'company', ERights.UPDATE)
+		Rights.verifyOrRaise(sesh['user_id'], 'company', Rights.UPDATE)
 
 		# Find the record
 		oCompany = Company.get(data['_id'])
@@ -793,7 +724,7 @@ class Primary(Services.Service):
 			return Services.Error(1001, [['client', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'project', ERights.CREATE, data['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.CREATE, data['client'])
 
 		# Create an instance to verify the fields
 		try:
@@ -833,7 +764,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'project', ERights.DELETE, oProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.DELETE, oProject['client'])
 
 		# Mark the project as archived
 		oProject['_archived'] = True
@@ -864,7 +795,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'project', ERights.READ, dProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.READ, dProject['client'])
 
 		# Return the record data
 		return Services.Response(dProject)
@@ -892,7 +823,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'project', ERights.UPDATE, dProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.UPDATE, dProject['client'])
 
 		# Remove fields that can't be changed
 		for f in ['_id', '_created', '_updated', '_archived', 'client']:
@@ -932,12 +863,12 @@ class Primary(Services.Service):
 			return Services.Error(Rights.INVALID)
 
 		# If the user has full access
-		if sesh['perms']['project']['ident'] == None:
+		if sesh['perms']['project']['idents'] == None:
 			mIDs = None
 
 		# Else, if they have only some IDs
 		else:
-			mIDs = sesh['perms']['project']['ident'].split(',')
+			mIDs = sesh['perms']['project']['idents'].split(',')
 			dFilter = {
 				"clients": mIDs,
 				"_archived": False
@@ -963,23 +894,6 @@ class Primary(Services.Service):
 
 		# Return the records
 		return Services.Response(lProjects)
-
-	def session_read(self, data, sesh):
-		"""Session
-
-		Returns the ID of the user logged into the current session
-
-		Arguments:
-			data (dict): Data sent with the request
-			sesh (Sesh._Session): The session associated with the request
-
-		Returns:
-			Services.Response
-		"""
-		return Services.Response({
-			"user": oSesh['user'],
-			"perms": oSesh['perms']
-		})
 
 	def signin_create(self, data):
 		"""Signin
@@ -1009,29 +923,13 @@ class Primary(Services.Service):
 		if not oUser.passwordValidate(data['passwd']):
 			return Services.Response(error=2100)
 
-		# Get the permissions associated with the user
-		lPermissions = Permission.filter({
-			"user": oUser['_id']
-		}, raw=['name', 'rights', 'ident'])
-
-		# Create a new session, store user and permission data, and save it
+		# Create a new session, store the user id, and save it
 		oSesh = Sesh.create()
-		oSesh['user'] = oUser.record(['_id', 'email', 'name', 'locale', 'verified'])
-		oSesh['perms'] = {
-			d['name']:{
-				"rights": d['rights'],
-				"ident": (d['ident'] and d['ident'].split(',') or None)
-			}
-			for d in lPermissions
-		}
+		oSesh['user_id'] = oUser['_id']
 		oSesh.save()
 
-		# Return the session ID and primary user data
-		return Services.Response({
-			"session": oSesh.id(),
-			"user": oSesh['user'],
-			"perms": oSesh['perms']
-		})
+		# Return the session ID
+		return Services.Response(oSesh.id())
 
 	def signout_create(self, data, sesh):
 		"""Signout
@@ -1075,13 +973,13 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'task', ERights.CREATE, dProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'task', Rights.CREATE, dProject['client'])
 
 		# Create an instance to verify the fields
 		try:
 			oTask = Task({
 				"project": data['project'],
-				"user": sesh['user']['_id'],
+				"user": sesh['user_id'],
 				"start": int(time()),
 				"description": ('description' in data and data['description'] or '')
 			})
@@ -1123,7 +1021,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# If the user doesn't match the person who started the task
-		if sesh['user']['_id'] != oTask['user']:
+		if sesh['user_id'] != oTask['user']:
 			return Services.Error(Rights.INVALID)
 
 		# If the description was passed
@@ -1163,7 +1061,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'task', Rights.DELETE, oTask['project'])
+		Rights.verifyOrRaise(sesh['user_id'], 'task', Rights.DELETE, oTask['project'])
 
 		# Delete the task and return the result
 		return Services.Response(
@@ -1188,7 +1086,7 @@ class Primary(Services.Service):
 		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'task', Rights.DELETE, data['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'task', Rights.DELETE, data['client'])
 
 		# Get all tasks that end in the given timeframe
 		lTasks = Task.getByClient(data['client'], data['start'], data['end'])
@@ -1210,7 +1108,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'user', ERights.CREATE)
+		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.CREATE)
 
 		# Check we have a verification url
 		if 'url' not in data:
@@ -1283,7 +1181,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh, 'user', ERights.DELETE)
+		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.DELETE)
 
 		# Make sure the ID is passed
 		if '_id' not in data:
@@ -1317,14 +1215,14 @@ class Primary(Services.Service):
 		if '_id' in data:
 
 			# And the user is not the logged in user
-			if data['_id'] != sesh['user']['_id']:
+			if data['_id'] != sesh['user_id']:
 
 				# Verify the rights
-				Rights.verifyOrRaise(sesh, 'user', ERights.READ, data['_id'])
+				Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.READ, data['_id'])
 
 		# Else, just lookup the logged in user
 		else:
-			data['_id'] = sesh['user']['_id']
+			data['_id'] = sesh['user_id']
 
 		# Fetch the record
 		dUser = User.get(data['_id'], raw=True)
@@ -1333,6 +1231,17 @@ class Primary(Services.Service):
 
 		# Remove the password
 		dUser.pop('passwd')
+
+		# Add permissions
+		dUser['permissions'] = {
+			d['name']:{
+				"rights": d['rights'],
+				"idents": (d['idents'] and d['idents'].split(',') or None)
+			}
+			for d in Permission.filter({
+				"user": dUser['_id']
+			}, raw=['name', 'rights', 'idents'])
+		}
 
 		# Return the record data
 		return Services.Response(dUser)
@@ -1351,29 +1260,47 @@ class Primary(Services.Service):
 		"""
 
 		# Make sure the ID is passed
-		if '_id' not in data:
-			return Services.Errro(1001, [['_id', 'missing']])
+		if '_id' in data:
 
-		# Check rights
-		Rights.verifyOrRaise(sesh, 'user', ERights.UPDATE)
+			# If it doesn't match the session
+			if data['_id'] != sesh['user_id']:
+
+				# Check rights
+				Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.UPDATE)
+
+		# Else, assume session user
+		else:
+			data['_id'] = sesh['user_id']
 
 		# Find the record
 		oUser = User.get(data['_id'])
 		if not oUser:
 			return Services.Error(2003)
 
+		# Don't send the verification email unless the email has changed
+		bSendVerify = False
+
+		# If the email is changed
+		if 'email' in data and data['email'] != oUser['email']:
+
+			# Make sure the url was passed
+			if 'url' not in data:
+				return Services.Error(1001, [['url', 'missing']])
+
+			# Flag that we need to send the verification email
+			bSendVerify = True
+
+			# Mark the user as no longer verified
+			data['verified'] = False
+
+		# Pop off the url if we have it or not
+		try: sURL = data.pop('url')
+		except KeyError: sURL = None
+
 		# Remove fields that can't be changed
 		for f in ['_id', '_created', '_updated']:
 			if f in data:
 				del data[f]
-
-		# If the email is changed
-		if 'email' in data and data['email'] != oUser['email']:
-			bSendVerify = True
-			data['verified'] = False
-			data['email'] = data['email'].lower()
-		else:
-			bSendVerify = False
 
 		# Update each field, keeping track of errors
 		lErrors = []
@@ -1397,12 +1324,21 @@ class Primary(Services.Service):
 			# Create the verify template data
 			dTpl = {
 				"url": sURL \
-						.replace('{locale}', data['locale']) \
+						.replace('{locale}', oUser['locale']) \
 						.replace('{key}', sKey)
 			}
 
 			# Generate the templates
-			dTpls = EMail.template('verify', dTpl, oUser['locale'])
+			dTpls = EMail.template('email_change', dTpl, oUser['locale'])
+
+			# Send the email
+			bRes = EMail.send({
+				"to": oUser['email'],
+				"from": Conf.get(('email', 'from')),
+				"subject": dTpls['subject'],
+				"text": dTpls['text'],
+				"html": dTpls['html']
+			})
 			if not bRes:
 				print('Failed to send email: %s' % EMail.last_error)
 

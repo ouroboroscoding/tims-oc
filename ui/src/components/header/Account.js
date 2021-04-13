@@ -91,6 +91,10 @@ export default function Account(props) {
 			<DialogTitle id="confirmation-dialog-title">Account Details</DialogTitle>
 			<DialogContent dividers>
 				<Form
+					beforeSubmit={values => {
+						values.url = 'https://' + window.location.host + '/verify/{locale}/{key}';
+						return values;
+					}}
 					noun="user"
 					service="primary"
 					success={updateSuccess}
@@ -98,6 +102,7 @@ export default function Account(props) {
 					type="update"
 					value={props.user}
 				/>
+				<br />
 				<Divider />
 				<br />
 				<Form

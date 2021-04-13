@@ -1,7 +1,7 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": ["_created", "_updated", "user", "name", "rights", "ident"],
+		"create": ["_created", "_updated", "user", "name", "rights", "idents"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
@@ -16,5 +16,5 @@
 	"user": {"__type__":"uuid"},
 	"name": {"__type__":"string", "__maximum__":63},
 	"rights": {"__type__":"uint", "__minimum__": 1, "__maximum__":15},
-	"ident": {"__type__":"string", "__maximum__":65536, "__optional__":true}
+	"idents": {"__type__":"string", "__maximum__":65536, "__optional__":true}
 }

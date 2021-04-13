@@ -63,7 +63,9 @@ Rest.init(process.env.REACT_APP_REST_DOMAIN, {
 				case 207:
 
 					// Notify the user
-					console.error('Request to ' + res.error.msg + ' failed. Please contact support');
+					let sMsg = 'Request to ' + res.error.msg + ' failed. Please contact support';
+					Events.trigger('error', sMsg);
+					console.error(sMsg);
 					res._handled = true;
 					break;
 

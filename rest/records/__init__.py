@@ -177,6 +177,66 @@ class Permission(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
+	def byUser(cls, _id):
+		"""By User
+
+		Fetches the permissions as a name => rights/idents dict by user._id
+
+		Arguments:
+			_id (str): The ID of the User
+
+		Returns:
+			dict
+		"""
+
+		# Fetch a single key
+		sPermission = cls._redis.get('perms:%s' % _id)
+
+		# If we have a record
+		if sPermission:
+
+			# Decode it
+			dPermissions = JSON.decode(sPermission);
+
+		# Else
+		else:
+
+			# Fetch from the DB
+			lPermissions = cls.filter({"user": _id}, raw=['name', 'rights', 'idents'])
+			if lPermissions:
+				dPermissions = {
+					d['name']: {
+						"rights": d['rights'],
+						"idents": d['idents'] is not None and d['idents'].split(',') or None
+					}
+					for d in lPermissions
+				}
+			else:
+				dPermissions = {}
+
+			# And cache
+			cls._redis.set('perms:%s' % _id, JSON.encode(dPermissions))
+
+		# Return the permissions
+		return dPermissions
+
+	@classmethod
+	def cacheClear(cls, _id):
+		"""Cache Clear
+
+		Removes permissions for a user from the cache
+
+		Arguments:
+			_id (str): The ID of the user whose permissions we want to clear
+
+		Returns:
+			None
+		"""
+
+		# Delete the key in Redis
+		cls._redis.delete('perms:%s' % _id)
+
+	@classmethod
 	def config(cls):
 		"""Config
 
@@ -194,6 +254,20 @@ class Permission(Record_MySQL.Record):
 
 		# Return the config
 		return cls._conf
+
+	@classmethod
+	def redis(cls, redis):
+		"""Redis
+
+		Stores the Redis connection to be used to fetch and store Users
+
+		Arguments:
+			redis (StrictRedis): A Redis instance
+
+		Returns:
+			None
+		"""
+		cls._redis = redis
 
 # Project class
 class Project(Record_MySQL.Record):

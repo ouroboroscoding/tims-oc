@@ -8,8 +8,8 @@ __author__		= "Chris Nasr"
 __copyright__	= "OuroborosCoding"
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
-__email__		= "chris@ouroboroscoding.com"
-__created__		= "2021-04-02"
+__email__		= "ouroboroscode@gmail.com"
+__created__		= "2021-03-16"
 
 # Pip imports
 from RestOC import SMTP, Templates
@@ -75,3 +75,24 @@ def send(conf):
 
 	# Return OK
 	return True
+
+def template(tpl, data, locale):
+	"""Template
+
+	Generates the content and subject and returns it
+
+	Arguments:
+		tpl (str): The name of the template
+		data (dict): The data used to generate the template
+		locale (str): The locale to use to generate the template
+
+	Returns:
+		dict
+	"""
+
+	# Generate each of the types and return them
+	return {
+		"subject": Templates.generate('email/subject/%s' % tpl, data, locale),
+		"text": Templates.generate('email/text/%s' % tpl, data, locale),
+		"html": Templates.generate('email/html/%s' % tpl, data, locale)
+	}

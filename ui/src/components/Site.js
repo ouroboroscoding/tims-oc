@@ -11,6 +11,7 @@
 // NPM modules
 import React, { useEffect, useState } from 'react';
 import { useHistory, Switch, Route } from 'react-router-dom';
+import { SnackbarProvider } from 'notistack';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -22,8 +23,12 @@ import Events from 'shared/generic/events';
 import { useEvent } from 'shared/hooks/event';
 import { useResize } from 'shared/hooks/resize';
 
-// Site component modules
+// Site components
+import Alerts from './Alerts';
 import Header from './header';
+
+// Dialog components
+import SignIn from 'components/dialogs/SignIn';
 
 // Page component modules
 import Verify from 'components/pages/Verify';
@@ -56,8 +61,8 @@ export default function Site(props) {
 	// load effect
 	useEffect(() => {
 		if(Rest.session()) {
-			Rest.read('tims', 'session', {}).done(res => {
-				Events.trigger('signedIn', res.data.user);
+			Rest.read('primary', 'user').done(res => {
+				Events.trigger('signedIn', res.data);
 			});
 		} else {
 			userSet(false);
@@ -78,11 +83,15 @@ export default function Site(props) {
 
 	// Render
 	return (
-		<React.Fragment>
+		<SnackbarProvider maxSnack={3}>
+			<Alerts />
 			<Header
 				mobile={mobile}
 				user={user || false}
 			/>
+			{user === false &&
+				<SignIn />
+			}
 			<div id="content" className="flexGrow">
 				<Switch>
 					<Route path="/verify">
@@ -100,6 +109,6 @@ export default function Site(props) {
 					*/}
 				</Switch>
 			</div>
-		</React.Fragment>
+		</SnackbarProvider>
 	);
 }

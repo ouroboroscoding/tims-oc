@@ -60,7 +60,6 @@ REST.Server({
 	"/users": {"methods": REST.READ, "session": True},
 
 	# Session
-	"/session": {"methods": REST.READ, "session": True},
 	"/signin": {"methods": REST.POST},
 	"/signout": {"methods": REST.POST, "session": True},
 
@@ -68,7 +67,6 @@ REST.Server({
 	"/account/forgot": {"methods": REST.CREATE | REST.UPDATE},
 	"/account/setup": {"methods": REST.UPDATE},
 	"/account/tasks": {"methods": REST.READ, "session": True},
-	"/account/user": {"methods": REST.UPDATE, "session": True},
 	"/account/verify": {"methods": REST.UPDATE}
 
 }, 'primary', "https?://(.*\\.)?%s" % Conf.get(("rest","allowed")).replace('.', '\\.')).run(
