@@ -74,4 +74,4 @@ Rest.init(process.env.REACT_APP_REST_DOMAIN, {
 });
 
 // Hide the loader
-//LoaderHide();
+LoaderHide();

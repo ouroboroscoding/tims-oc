@@ -58,7 +58,7 @@ export default function Menu(props) {
 			task: !Rights.has('task', 'read'),
 			user: Rights.has('user', 'read')
 		} : _NO_RIGHTS);
-	}, [props.user])
+	}, [props.user]);
 
 	// Render
 	return (

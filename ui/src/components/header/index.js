@@ -75,15 +75,17 @@ export default function Header(props) {
 
 	// Render
 	return (
-		<Box id="header">
-			<Box className="bar">
-				<IconButton edge="start" color="inherit" aria-label="menu" onClick={menuToggle}>
-					<i className="fas fa-bars" />
-				</IconButton>
-				<Box><Typography className="title">
+		<Box id="header" className="flexStatic">
+			<Box className="bar flexColumns">
+				{props.user &&
+					<IconButton className="flexStatic" edge="start" color="inherit" aria-label="menu" onClick={menuToggle}>
+						<i className="fas fa-bars" />
+					</IconButton>
+				}
+				<Typography className="title flexStatic">
 					<Link to="/" onClick={menuToggle}>{props.mobile ? process.env.REACT_APP_SITENAME_SHORT : process.env.REACT_APP_SITENAME}</Link>
-				</Typography></Box>
-				<Box id="loaderWrapper">
+				</Typography>
+				<Box id="loader" className="flexGrow">
 					<Loader />
 				</Box>
 				{props.user &&

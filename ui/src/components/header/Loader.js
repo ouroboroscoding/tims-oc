@@ -30,7 +30,7 @@ export default function Loader(props) {
 	useEvent('Loader', show => visibleSet(show));
 
 	// Render
-	return <img id="loader" src="/images/ajax.gif" alt="ajax" style={{display: visible ? 'inline' : 'none'}} />
+	return <img src="/images/loading.gif" alt="ajax" style={{display: visible ? 'inline' : 'none'}} />
 }
 
 export function LoaderHide() {

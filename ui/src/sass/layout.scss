@@ -28,7 +28,6 @@ a {
 	.title {
 		font-size: inherit;
 		font-weight: inherit;
-		margin-bottom: 0 !important;
 	}
 
 	a {
@@ -38,6 +37,15 @@ a {
 
 	button {
 		color: #ffffff;
+		padding: 0 12px;
+	}
+
+	#loader {
+		text-align: center;
+
+		img {
+			padding-top: 12px;
+		}
 	}
 
 	.icons {
