@@ -47,8 +47,10 @@ export default function Verify(props) {
 		// Split the location pathname
 		let lLocation = location.pathname.split('/');
 
+		console.log(lLocation);
+
 		// If we didn't get enough info
-		if(lLocation.length < 4) {
+		if(lLocation.length < 3) {
 			history.push('/');
 			return;
 		}
@@ -60,17 +62,17 @@ export default function Verify(props) {
 		});
 
 		// Send it to the service
-		Rest.update('main', 'verify', {
+		Rest.update('primary', 'account/verify', {
 			email: lLocation[2],
 			key: lLocation[3]
 		}, {session: false}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2101) {
+				if(res.error.code === 2003) {
 					msgSet({
 						type: 'error',
-						content: 'Failed to verify, the e-mail or key is invalid. Please make sure you copied the URL correctly.'
+						content: 'Can not verify, key is invalid. Please make sure you copied the URL correctly. Contact support if you continue to have issues.'
 					});
 				} else {
 					msgSet({

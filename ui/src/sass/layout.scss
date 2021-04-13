@@ -57,6 +57,21 @@ a {
 	}
 }
 
+#menu {
+
+	.MuiDrawer-paper {
+		width: 250px;
+
+		i {
+			min-width: 30px;
+		}
+
+		.submenu {
+			padding-left: 30px;
+		}
+	}
+}
+
 #signin {
 
 	.MuiFormControl-root {

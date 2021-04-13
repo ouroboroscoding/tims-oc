@@ -63,6 +63,7 @@ export default function Account(props) {
 			Events.trigger('error', 'Passwords don\'t match');
 			return false;
 		}
+		delete values._id;
 		return values;
 	}
 

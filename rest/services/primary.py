@@ -61,7 +61,7 @@ class Primary(Services.Service):
 		# Try again if we get a duplicate
 		while True:
 			try:
-				oKey.save()
+				oKey.create()
 				break
 			except DuplicateException as e:
 				print('----------------')
@@ -1259,7 +1259,7 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Make sure the ID is passed
+		# If the ID is passed
 		if '_id' in data:
 
 			# If it doesn't match the session
@@ -1321,6 +1321,8 @@ class Primary(Services.Service):
 			# Create key
 			sKey = self._createKey(oUser['_id'], 'verify')
 
+			print(sKey)
+
 			# Create the verify template data
 			dTpl = {
 				"url": sURL \
@@ -1344,3 +1346,58 @@ class Primary(Services.Service):
 
 		# Return the result
 		return Services.Response(bRes)
+
+	def userPasswd_update(self, data, sesh):
+		"""User Password update
+
+		Changes the password associated with a user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# If the ID is passed
+		if '_id' in data:
+
+			# If it doesn't match the session
+			if data['_id'] != sesh['user_id']:
+
+				# Check rights
+				Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.UPDATE)
+
+		# Else, assume session user
+		else:
+
+			# If the old password is missing
+			if 'passwd' not in data:
+				return Services.Error(1001, [['passwd', 'missing']])
+
+			# Store the session as the user ID
+			data['_id'] = sesh['user_id']
+
+		# Find the record
+		oUser = User.get(data['_id'])
+		if not oUser:
+			return Services.Error(2003)
+
+		# If we have an old password
+		if 'passwd' in data:
+
+			# Validate it
+			if not oUser.passwordValidate(data['passwd']):
+				return Services.Error(1001, [['passwd', 'invalid']])
+
+		# Make sure the new password is strong enough
+		if not User.passwordStrength(data['new_passwd']):
+			return Services.Error(2102)
+
+		# Set the new password and save
+		oUser['passwd'] = User.passwordHash(data['new_passwd'])
+		oUser.save()
+
+		# Return OK
+		return Services.Response(True)

@@ -72,8 +72,16 @@ export default function Menu(props) {
 				{rights.client &&
 					<Link to="/client" onClick={props.onClose}>
 						<ListItem button>
-							<ListItemIcon>{/*<LinkIcon />*/}</ListItemIcon>
-							<ListItemText primary="Client" />
+							<ListItemIcon><i className="fas fa-user-tie" /></ListItemIcon>
+							<ListItemText primary="Clients" />
+						</ListItem>
+					</Link>
+				}
+				{rights.user &&
+					<Link to="/users" onClick={props.onClose}>
+						<ListItem button>
+							<ListItemIcon><i className="fas fa-users" /></ListItemIcon>
+							<ListItemText primary="Users" />
 						</ListItem>
 					</Link>
 				}

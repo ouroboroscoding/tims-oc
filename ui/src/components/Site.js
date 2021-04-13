@@ -31,6 +31,7 @@ import Header from './header';
 import SignIn from 'components/dialogs/SignIn';
 
 // Page component modules
+import Users from 'components/pages/Users';
 import Verify from 'components/pages/Verify';
 
 // Rest init
