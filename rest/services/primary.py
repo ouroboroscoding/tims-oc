@@ -1401,3 +1401,27 @@ class Primary(Services.Service):
 
 		# Return OK
 		return Services.Response(True)
+
+	def users_read(self, data, sesh):
+		"""Users read
+
+		Returns all the users in the system
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.READ)
+
+		# Fetch all the users and return them
+		return Services.Response(
+			User.get(
+				raw=['_id', '_archived', 'email', 'name', 'locale', 'verified'],
+				orderby='email'
+			)
+		)

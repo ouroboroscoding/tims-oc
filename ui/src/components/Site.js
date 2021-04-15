@@ -13,6 +13,9 @@ import React, { useEffect, useState } from 'react';
 import { useHistory, Switch, Route } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 
+// Material UI
+import { createMuiTheme, ThemeProvider }  from '@material-ui/core/styles'
+
 // Shared communication modules
 import Rest from 'shared/communication/rest';
 
@@ -39,6 +42,13 @@ import 'rest_init';
 
 // CSS
 import 'sass/site.scss';
+
+// Create the theme
+const Theme = createMuiTheme({
+	typography: {
+		fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif'
+	}
+});
 
 /**
  * Site
@@ -86,30 +96,32 @@ export default function Site(props) {
 	return (
 		<SnackbarProvider maxSnack={3}>
 			<Alerts />
-			<Header
-				mobile={mobile}
-				user={user || false}
-			/>
-			{user === false &&
-				<SignIn />
-			}
-			<div id="content" className="flexGrow">
-				<Switch>
-					<Route path="/verify">
-						<Verify
-							user={user}
-						/>
-					</Route>
-					{/*user !== null &&
-						<Route path="/">
-							<Root
-								mobile={mobile}
+			<ThemeProvider theme={Theme}>
+				<Header
+					mobile={mobile}
+					user={user || false}
+				/>
+				{user === false &&
+					<SignIn />
+				}
+				<div id="content" className="flexGrow">
+					<Switch>
+						<Route path="/verify">
+							<Verify
 								user={user}
 							/>
 						</Route>
-					*/}
-				</Switch>
-			</div>
+						{user !== null &&
+							<Route path="/users">
+								<Users
+									mobile={mobile}
+									user={user}
+								/>
+							</Route>
+						}
+					</Switch>
+				</div>
+			</ThemeProvider>
 		</SnackbarProvider>
 	);
 }

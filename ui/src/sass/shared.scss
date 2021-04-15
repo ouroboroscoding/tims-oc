@@ -34,6 +34,23 @@ div.errors {
 	}
 }
 
+div.pageHeader {
+
+	p {
+		font-size: 2.5rem;
+		font-weight: bold;
+	}
+}
+
+@media (max-width: 600px) {
+	div.pageHeader {
+
+		p {
+			font-size: 2rem;
+		}
+	}
+}
+
 div.singlePage {
 	height: 100%;
 	padding: 10px;
@@ -107,33 +124,4 @@ p.error {
 		flex-grow: 0;
 		flex-shrink: 0;
 	}
-}
-
-div.gradient {
-	background: linear-gradient(to bottom, transparent, 60%, black);
-	height: 100%;
-
-	div.footer {
-		padding: 10px;
-
-		p {
-			color: white;
-		}
-
-		p.profession, p.name {
-			font-size: 1.5rem;
-			font-weight: bold;
-		}
-
-		p.employer, p.professions {
-			font-size: 1.25rem;
-		}
-	}
-}
-
-.image {
-	background-attachment: scroll;
-	background-position: center center;
-	background-repeat: no-repeat;
-	background-size: cover;
 }
