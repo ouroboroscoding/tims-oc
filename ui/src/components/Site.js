@@ -30,11 +30,9 @@ import { useResize } from 'shared/hooks/resize';
 import Alerts from './Alerts';
 import Header from './header';
 
-// Dialog components
-import SignIn from 'components/dialogs/SignIn';
-
 // Page component modules
-import Users from 'components/pages/Users';
+import RequireUser from 'components/pages/RequireUser';
+import Setup from 'components/pages/Setup';
 import Verify from 'components/pages/Verify';
 
 // Rest init
@@ -101,24 +99,20 @@ export default function Site(props) {
 					mobile={mobile}
 					user={user || false}
 				/>
-				{user === false &&
-					<SignIn />
-				}
 				<div id="content" className="flexGrow">
 					<Switch>
+						<Route path="/setup">
+							<Setup mobile={mobile} />
+						</Route>
 						<Route path="/verify">
-							<Verify
+							<Verify mobile={mobile} />
+						</Route>
+						<Route path="/">
+							<RequireUser
+								mobile={mobile}
 								user={user}
 							/>
 						</Route>
-						{user !== null &&
-							<Route path="/users">
-								<Users
-									mobile={mobile}
-									user={user}
-								/>
-							</Route>
-						}
 					</Switch>
 				</div>
 			</ThemeProvider>

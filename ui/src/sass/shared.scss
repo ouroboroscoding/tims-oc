@@ -9,16 +9,6 @@ div.actions {
 	}
 }
 
-div.bigIcon {
-	font-size: 3rem;
-}
-
-@media (max-width: 600px) {
-	div.bigIcon {
-		font-size: 2.5rem;
-	}
-}
-
 div.errors {
 	background-color: #ff0000;
 	border: 2px solid #8e1717;
@@ -34,11 +24,50 @@ div.errors {
 	}
 }
 
+div.singlePage {
+	height: 100%;
+	padding: 10px;
+}
+
+i.fas, i.far {
+	cursor: pointer;
+}
+
+p.error {
+	color: #ff0000;
+	font-weight: bold;
+}
+
+/** Headers */
 div.pageHeader {
 
 	p {
 		font-size: 2.5rem;
 		font-weight: bold;
+	}
+
+	button {
+		margin-top: -10px;
+
+		i.far, i.fas {
+			font-size: 3rem;
+		}
+	}
+}
+
+div.sectionHeader {
+
+	p {
+		font-size: 2rem;
+		font-weight: bold;
+	}
+
+	button {
+		margin-top: -10px;
+
+		i.far, i.fas {
+			font-size: 2.5rem;
+		}
 	}
 }
 
@@ -48,21 +77,28 @@ div.pageHeader {
 		p {
 			font-size: 2rem;
 		}
+
+		button {
+
+			i.far, i.fas {
+				font-size: 2.5rem;
+			}
+		}
 	}
-}
 
-div.singlePage {
-	height: 100%;
-	padding: 10px;
-}
+	div.sectionHeader {
 
-i.fas {
-	cursor: pointer;
-}
+		p {
+			font-size: 1.5rem;
+		}
 
-p.error {
-	color: #ff0000;
-	font-weight: bold;
+		button {
+
+			i.far, i.fas {
+				font-size: 2rem;
+			}
+		}
+	}
 }
 
 /**
@@ -100,6 +136,9 @@ p.error {
 	}
 }
 
+/**
+ * Flex
+ */
 .flexColumns {
 	display: flex;
 	flex-direction: row;

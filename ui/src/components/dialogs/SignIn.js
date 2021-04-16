@@ -41,7 +41,7 @@ export default function Signin(props) {
 
 	// State
 	let [errors, errorsSet] = useState({})
-	let [forgot, forgotSet] = useState(false);
+//	let [forgot, forgotSet] = useState(false);
 
 	// Refs
 	let emailRef = useRef();

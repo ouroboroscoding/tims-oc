@@ -57,6 +57,7 @@ REST.Server({
 	# Users
 	"/user": {"methods": REST.ALL, "session": True},
 	"/user/passwd": {"methods": REST.UPDATE, "session": True},
+	"/user/permissions": {"methods": REST.READ, "session": True},
 	"/users": {"methods": REST.READ, "session": True},
 
 	# Session
@@ -65,7 +66,7 @@ REST.Server({
 
 	# User Access
 	"/account/forgot": {"methods": REST.CREATE | REST.UPDATE},
-	"/account/setup": {"methods": REST.UPDATE},
+	"/account/setup": {"methods": REST.READ | REST.UPDATE},
 	"/account/tasks": {"methods": REST.READ, "session": True},
 	"/account/verify": {"methods": REST.UPDATE}
 

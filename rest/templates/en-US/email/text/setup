@@ -1,0 +1,7 @@
+Hello {{ user_name }},
+
+You have been invited to join {{ company_name }}'s Time & Invoice Management System.
+
+In order to setup your account please copy the URL below into your browser.
+
+{{ url }}

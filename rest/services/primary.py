@@ -58,19 +58,34 @@ class Primary(Services.Service):
 			"type": type
 		})
 
-		# Try again if we get a duplicate
+		oKey['_id'] = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+
+		# Loop until we resolve the issue
 		while True:
 			try:
-				oKey.create()
-				break
-			except DuplicateException as e:
-				print('----------------')
-				print(e.args)
-				print('----------------')
-				oKey['_id'] = StrHelper.random(32, '_0x')
 
-		# Return the key
-		return oKey['_id']
+				# Create the key record
+				oKey.create()
+
+				# Return the key
+				return oKey['_id']
+
+			# If we got a duplicate key error
+			except DuplicateException as e:
+
+				# If the primary key is the duplicate
+				if 'PRIMARY' in e.args[1]:
+
+					# Generate a new key and try again
+					oKey['_id'] = StrHelper.random(32, '_0x')
+					continue
+
+				# Else, the type has already been used for the user
+				else:
+
+					# Find the existing key
+					dKey = Key.filter({"user": user, "type": type}, raw=['_id'], limit=1)
+					return dKey['_id']
 
 	def initialise(self):
 		"""Initialise
@@ -270,7 +285,36 @@ class Primary(Services.Service):
 		# Return OK
 		return Services.Response(True)
 
-	def accountSetup_update(self, data, sesh):
+	def accountSetup_read(self, data):
+		"""Account Setup read
+
+		Validates the key exists and returns the user's name
+
+		Arguments:
+			data (dict): The data passed to the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# If the key is missing
+		if 'key' not in data:
+			return Services.Error(1001, [['key', 'missing']])
+
+		# Look up the key
+		dKey = Key.get(data['key'], raw=True)
+		if not dKey:
+			return Services.Error(2003, 'key')
+
+		# Get the user's name and locale
+		dUser = User.get(dKey['user'], raw=['name', 'locale'])
+		if not dUser:
+			return Services.Error(2003, 'user')
+
+		# Return the user
+		return Services.Response(dUser)
+
+	def accountSetup_update(self, data):
 		"""Account: Setup update
 
 		Finishes setting up the account for the user by setting their password
@@ -300,6 +344,11 @@ class Primary(Services.Service):
 		# Make sure the new password is strong enough
 		if not User.passwordStrength(data['passwd']):
 			return Services.Error(2102)
+
+		# If the name was passed
+		if 'name' in data:
+			try: oUser['name'] = data['name']
+			except ValueError as e: return Services.Error(1001, e.args[0])
 
 		# Set the new password and save
 		oUser['passwd'] = User.passwordHash(data['passwd'])
@@ -1117,8 +1166,6 @@ class Primary(Services.Service):
 		# Make sure the URL has the {key} and {locale} fields
 		if '{key}' not in data['url']:
 			return Services.Error(1001, [['url', 'missing {key}']])
-		if '{locale}' not in data['url']:
-			return Services.Error(1001, [['url', 'missing {locale}']])
 
 		# Pop off the URL
 		sURL = data.pop('url')
@@ -1152,15 +1199,27 @@ class Primary(Services.Service):
 		# Create key
 		sKey = self._createKey(sID, 'setup')
 
+		# Fetch the company name
+		dCompany = Company.get(raw=['name'], limit=1)
+
 		# Create the setup template data
 		dTpl = {
-			"url": sURL \
-					.replace('{locale}', data['locale']) \
-					.replace('{key}', sKey)
+			"company_name": dCompany['name'],
+			"url": sURL.replace('{key}', sKey),
+			"user_name": data['name'],
 		}
 
 		# Generate the templates
 		dTpls = EMail.template('setup', dTpl, data['locale'])
+
+		# Send the email
+		bRes = EMail.send({
+			"to": oUser['email'],
+			"from": Conf.get(('email', 'from')),
+			"subject": dTpls['subject'],
+			"text": dTpls['text'],
+			"html": dTpls['html']
+		})
 		if not bRes:
 			print('Failed to send email: %s' % EMail.last_error)
 
@@ -1401,6 +1460,31 @@ class Primary(Services.Service):
 
 		# Return OK
 		return Services.Response(True)
+
+	def userPermissions_read(self, data, sesh):
+		"""User Permissions read
+
+		Fetches the permissions associated with the given user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.READ)
+
+		# If we got no ID
+		if '_id' not in data:
+			return Services.Error(1001, [['_id', 'missing']])
+
+		# Fetch and return the permissions
+		return Services.Response(
+			Permission.filter({"user": data['_id']}, raw=True, orderby='name')
+		)
 
 	def users_read(self, data, sesh):
 		"""Users read

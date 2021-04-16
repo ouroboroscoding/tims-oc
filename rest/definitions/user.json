@@ -12,6 +12,7 @@
 	},
 
 	"__react__": {
+		"create": ["email", "name", "locale"],
 		"results": ["email", "name", "verified", "_archived"],
 		"update": ["email", "name", "verified", "locale", "_archived"]
 	},

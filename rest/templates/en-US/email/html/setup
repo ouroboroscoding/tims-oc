@@ -1,0 +1,4 @@
+<p>Hello {{ user_name }},</p>
+<p>You have been invited to join {{ company_name }}'s Time & Invoice Management System.</p>
+<p>In order to setup your account please click the link below or copy it into your browser.</p>
+<p><a href="{{ url }}">{{ url }}</a></p>
