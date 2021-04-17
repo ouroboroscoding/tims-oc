@@ -58,8 +58,6 @@ class Primary(Services.Service):
 			"type": type
 		})
 
-		oKey['_id'] = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-
 		# Loop until we resolve the issue
 		while True:
 			try:
@@ -129,6 +127,52 @@ class Primary(Services.Service):
 
 		# Return OK
 		return True
+
+	def accountClients_read(self, data, sesh):
+		"""Account Clients read
+
+		Returns all the clients accesible for the user based on all permissions
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Get all permissions for the user
+		dPermissions = Permission.byUser(sesh['user_id'])
+
+		# If there's no permissions, return nothing
+		if not dPermissions:
+			return []
+
+		# Client IDs
+		lClientIDs = set()
+
+		# Go through each permission
+		for k in dPermissions:
+
+			# If it's a client, project, invoice, or task permission
+			if k in ['client', 'invoice', 'project', 'task']:
+
+				# If it has no idents (all clients)
+				if not dPermissions[k]['idents']:
+					break
+
+				# Add the client IDs to the list
+				lClientIDs.update(dPermissions[k]['idents'])
+
+		# Fetch the clients using the IDs we gathered
+		lClients = Client.get(
+			lClientIDs and lClientIDs or None,
+			filter={"_archived": True},
+			raw=['_id', 'name']
+		)
+
+		# Return the cients
+		return Services.Response(lClients)
 
 	def accountForgot_create(self, data):
 		"""Account: Forgot create
@@ -593,23 +637,12 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# If the user doesn't have the client permission
-		if 'perms' not in sesh or 'client' not in sesh['perms']:
-			return Services.Error(Rights.INVALID)
-
-		# If the user has full access
-		if sesh['perms']['client']['idents'] == None:
-			mIDs = None
-			dFilter = None
-
-		# Else, if they have only some IDs
-		else:
-			mIDs = sesh['perms']['client']['idents'].split(',')
-			dFilter = {"_archived": False}
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.READ)
 
 		# Fetch and return the clients
 		return Services.Response(
-			Client.get(mIDs, filter=dFilter, raw=True, orderby=name)
+			Client.get(raw=True, orderby='name')
 		)
 
 	def company_read(self, data, sesh):

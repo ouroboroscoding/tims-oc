@@ -25,12 +25,12 @@ import Rights from 'shared/communication/rights';
 
 // No Rights
 const _NO_RIGHTS = {
-	client: false,
+	clients: false,
 	company: false,
 	invoices: false,
-	project: false,
-	task: false,
-	user: false
+	projects: false,
+	tasks: false,
+	users: false
 }
 
 /**
@@ -51,12 +51,12 @@ export default function Menu(props) {
 	// User effect
 	useEffect(() => {
 		rightsSet(props.user ? {
-			client: Rights.has('company', 'read'),
+			clients: Rights.has('client', 'read') && Rights.idents('client').length === 0,
 			company: Rights.has('company', 'read'),
 			invoices: Rights.has('invoice', 'read'),
-			project: Rights.has('project', 'read'),
-			task: !Rights.has('task', 'read'),
-			user: Rights.has('user', 'read')
+			projects: Rights.has('project', 'read'),
+			tasks: !Rights.has('task', 'read'),
+			users: Rights.has('user', 'read')
 		} : _NO_RIGHTS);
 	}, [props.user]);
 
@@ -69,15 +69,15 @@ export default function Menu(props) {
 			onClose={props.onClose}
 		>
 			<List>
-				{rights.client &&
-					<Link to="/client" onClick={props.onClose}>
+				{rights.clients &&
+					<Link to="/clients" onClick={props.onClose}>
 						<ListItem button>
 							<ListItemIcon><i className="fas fa-user-tie" /></ListItemIcon>
 							<ListItemText primary="Clients" />
 						</ListItem>
 					</Link>
 				}
-				{rights.user &&
+				{rights.users &&
 					<Link to="/users" onClick={props.onClose}>
 						<ListItem button>
 							<ListItemIcon><i className="fas fa-users" /></ListItemIcon>

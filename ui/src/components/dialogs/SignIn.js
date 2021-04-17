@@ -86,7 +86,7 @@ export default function Signin(props) {
 			// If there's data
 			if(res.data) {
 
-				// Set the session with the service
+				// Set the session
 				Rest.session(res.data);
 
 				// Fetch the user

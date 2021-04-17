@@ -13,20 +13,113 @@
 		},
 		"table": "client"
 	},
+
+	"__react__": {
+		"create": ["name", "attention_of", "address1", "address2", "city",
+					"division", "country", "postal_code", "currency", "rate",
+					"task_minimum", "task_overflow"],
+		"results": ["name", "attention_of", "currency", "rate", "_archived"],
+		"update": ["name", "attention_of", "address1", "address2", "city",
+					"division", "country", "postal_code", "currency", "rate",
+					"task_minimum", "task_overflow", "_archived"]
+	},
+
 	"__name__": "Client",
-	"_id": {"__type__":"uuid", "__optional__":true},
-	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
-	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"_archived": {"__type__":"bool", "__optional__":true, "__sql__":{"opts": "not null default 0"}},
-	"name": {"__type__":"string", "__maximum__":63},
-	"attention_of": {"__type__":"string", "__maximum__":63, "__optional__":true},
-	"address1": {"__type__":"string", "__maximum__":127},
-	"address2": {"__type__":"string", "__maximum__":31, "__optional__":true},
-	"city": {"__type__":"string", "__maximum__":31},
-	"division": {"__type__":"string", "__maximum__":2},
-	"country": {"__type__":"string", "__maximum__":2},
-	"postal_code": {"__type__":"string", "__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$", "__sql__":{"type":"varchar(10)"}},
-	"rate": {"__type__":"price"},
-	"task_minimum": {"__type__":"uint", "__minimum__":1, "__maximum__":60},
-	"task_overflow": {"__type__":"uint", "__maximum__":59}
+
+	"_id": {
+		"__type__":"uuid",
+		"__optional__":true
+	},
+
+	"_created": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
+	},
+
+	"_updated": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}
+	},
+
+	"_archived": {
+		"__type__":"bool",
+		"__optional__":true,
+		"__sql__":{"opts": "not null default 0"},
+		"__react__":{"title":"Archived"}
+	},
+
+	"name": {
+		"__type__":"string",
+		"__maximum__":63
+	},
+
+	"attention_of": {
+		"__type__":"string",
+		"__maximum__":63,
+		"__optional__":true,
+		"__react__":{"title":"Attention Of"}
+	},
+
+	"address1": {
+		"__type__":"string",
+		"__maximum__":127,
+		"__react__":{"title":"Address"}
+	},
+
+	"address2": {
+		"__type__":"string",
+		"__maximum__":31,
+		"__optional__":true,
+		"__react__":{"title":"Office/Suite/Apt"}
+	},
+
+	"city": {
+		"__type__":"string",
+		"__maximum__":31
+	},
+
+	"division": {
+		"__type__":"string",
+		"__maximum__":2,
+		"__react__":{"title":"Province / State"}
+	},
+
+	"country": {
+		"__type__":"string",
+		"__maximum__":2
+	},
+
+	"postal_code": {
+		"__type__":"string",
+		"__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$",
+		"__sql__":{"type":"varchar(10)"},
+		"__react__":{"title":"Postal/Zip Code"}
+	},
+
+	"currency": {
+		"__type__": "string",
+		"__options__": ["CAD", "USD"],
+		"__react__": {"type":"select", "options":[["CAD", "Canadian Dollars"], ["USD", "U.S. Dollars"]]}
+	},
+
+	"rate": {
+		"__type__":"price",
+		"__react__":{"title":"Hourly Rate"}
+	},
+
+	"task_minimum": {
+		"__type__":"uint",
+		"__minimum__":1,
+		"__maximum__":60,
+		"__react__":{"title":"Task Minimum Minutes","default":15}
+	},
+
+	"task_overflow": {
+		"__type__":"uint",
+		"__maximum__":59,
+		"__optional__":true,
+		"__react__":{"title":"Task Overflow Minutes","default":0}
+	}
 }

@@ -9,21 +9,40 @@
  */
 
 // NPM modules
+import Node from 'format-oc/Node';
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 
 // Material UI
 import Box from '@material-ui/core/Box';
-//import Button from '@material-ui/core/Button';
+import Button from '@material-ui/core/Button';
 import Paper from '@material-ui/core/Paper';
+import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
+
+// Shared components
+import { Node as NodeComponent } from 'shared/components/Format';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
+import { clone } from 'shared/generic/tools';
+
+
+// Get the user definition
+import UserDef from 'definitions/user';
+
+// Make a copy of the passwd node
+let ConfirmDef = clone(UserDef['passwd']);
+ConfirmDef.__react__.title = 'Confirm Password';
+
+// Create the name and password nodes
+const ConfirmNode = new Node(ConfirmDef);
+const NameNode = new Node(clone(UserDef['name']));
+const PasswdNode = new Node(clone(UserDef['passwd']));
 
 /**
  * Setup
@@ -38,7 +57,13 @@ import Events from 'shared/generic/events';
 export default function Setup(props) {
 
 	// State
+	let [errors, errorsSet] = useState({});
 	let [user, userSet] = useState(false);
+
+	// Refs
+	let confirmRef = useRef();
+	let nameRef = useRef();
+	let passwdRef = useRef();
 
 	// Hooks
 	const history = useHistory();
@@ -81,12 +106,70 @@ export default function Setup(props) {
 
 			// If we got data
 			if(res.data) {
+
+				// Add the key to the data
+				res.data.key = lLocation[1];
+
+				// Store the data
 				userSet(res.data);
 			}
 		});
 
 	// eslint-disable-next-line
 	}, []); // React to user changes
+
+	// Submit the setup info
+	function submit() {
+
+		// Get the password and confirm password
+		let sPasswd = passwdRef.current.value;
+		let sConfirm = confirmRef.current.value;
+
+		// If they don't match
+		if(sPasswd !== sConfirm) {
+			confirmRef.current.error('Passwords do not match')
+			return;
+		}
+
+		// Send the info to the server
+		Rest.update('primary', 'account/setup', {
+			key: user.key,
+			name: nameRef.current.value.trim(),
+			passwd: passwdRef.current.value
+		}).done(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				if(res.error.code === 1001) {
+					if('name' in res.error.msg) {
+						nameRef.current.error(res.error.msg['name'])
+					}
+					if('passwd' in res.error.msg) {
+						passwdRef.current.error(res.error.msg['passwd'])
+					}
+				}
+				else if(res.error.code === 2003) {
+					Events.trigger('error', 'Setup key invalid');
+				}
+				else if(res.error.code === 2102) {
+					passwdRef.current.error('Password not strong enough');
+				}
+			}
+
+			// If we got data
+			if(res.data) {
+
+				// Set the session
+				Rest.session(res.data);
+
+				// Fetch the user
+				Rest.read('primary', 'user').done(res => {
+					Events.trigger('signedIn', res.data);
+					history.push('/');
+				});
+			}
+		});
+	}
 
 	// Render
 	return (
@@ -100,7 +183,47 @@ export default function Setup(props) {
 			{user &&
 				<Box className="container sm">
 					<Paper>
-						<pre>{JSON.stringify(user, null, 4)}</pre>
+						<Box className="pageHeader">
+							<Typography>Welcome!</Typography>
+						</Box>
+						<Typography>
+							One more step and you can access invoices and tasks
+							related to the projects you have been given access
+							to.
+						</Typography>
+						<Box className="form">
+							<Box className="field">
+								<NodeComponent
+									ref={nameRef}
+									name="name"
+									node={NameNode}
+									type="create"
+									value={user.name}
+									variant="standard"
+								/>
+							</Box>
+							<Box className="field">
+								<NodeComponent
+									ref={passwdRef}
+									name="passwd"
+									node={PasswdNode}
+									type="create"
+									variant="standard"
+								/>
+							</Box>
+							<Box className="field">
+								<NodeComponent
+									ref={confirmRef}
+									name="confirm"
+									node={ConfirmNode}
+									type="create"
+									variant="standard"
+								/>
+							</Box>
+							<Box className="actions">
+								<Button onClick={submit} variant="outlined">Submit</Button>
+							</Box>
+						</Box>
 					</Paper>
 				</Box>
 			}

@@ -65,6 +65,7 @@ REST.Server({
 	"/signout": {"methods": REST.POST, "session": True},
 
 	# User Access
+	"/account/clients": {"methods": REST.READ, "session": True},
 	"/account/forgot": {"methods": REST.CREATE | REST.UPDATE},
 	"/account/setup": {"methods": REST.READ | REST.UPDATE},
 	"/account/tasks": {"methods": REST.READ, "session": True},

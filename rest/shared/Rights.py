@@ -45,7 +45,7 @@ def verify(user, name, right, ident=None):
 	given permission.
 
 	Arguments:
-		user (str): The ID of the user
+		user (str|dict): The ID of the user, or the set of permissions to use
 		name (str): The name of the permission to check
 		right (uint): The right to check for
 		ident (str): Optional identifier to check against
@@ -54,8 +54,13 @@ def verify(user, name, right, ident=None):
 		bool
 	"""
 
-	# Fetch the permissions for the user
-	dPermissions = Permission.byUser(user)
+	# If we got a string, fetch the permissions for the user
+	if isinstance(user, str):
+		dPermissions = Permission.byUser(user)
+
+	# Else, use the permissions passed
+	else:
+		dPermissions = user
 
 	# If the permission doesn't exist at all
 	if name not in dPermissions:
@@ -88,7 +93,7 @@ def verifyOrRaise(user, name, right, ident=None):
 	and return to the client if the user is invalid
 
 	Arguments:
-		user (str): The ID of the user
+		user (str|dict): The ID of the user, or the set of permissions to use
 		name (str): The name of the permission to check
 		right (uint): The right to check for
 		ident (str): Optional identifier to check against

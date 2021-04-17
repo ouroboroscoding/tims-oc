@@ -176,6 +176,22 @@ export default function Users(props) {
 
 	}, []);
 
+	// Called when a new user is created
+	function userCreated(user) {
+
+		// Clone the current users
+		let lUsers = clone(users);
+
+		// Add the user to the top
+		lUsers.unshift(user);
+
+		// Set the new users
+		usersSet(lUsers);
+
+		// Hide the form
+		inviteSet(false);
+	}
+
 	// Fetch the current users
 	function usersFetch() {
 
@@ -232,6 +248,7 @@ export default function Users(props) {
 						}}
 						noun="user"
 						service="primary"
+						success={userCreated}
 						title="Invite User"
 						tree={UserTree}
 						type="create"

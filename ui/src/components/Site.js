@@ -107,12 +107,14 @@ export default function Site(props) {
 						<Route path="/verify">
 							<Verify mobile={mobile} />
 						</Route>
-						<Route path="/">
-							<RequireUser
-								mobile={mobile}
-								user={user}
-							/>
-						</Route>
+						{user !== null &&
+							<Route path="/">
+								<RequireUser
+									mobile={mobile}
+									user={user}
+								/>
+							</Route>
+						}
 					</Switch>
 				</div>
 			</ThemeProvider>
