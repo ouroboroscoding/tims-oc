@@ -29,13 +29,22 @@ div.singlePage {
 	padding: 10px;
 }
 
+p.error {
+	color: #ff0000;
+	font-weight: bold;
+}
+
+/* font-awesome icons */
 i.fas, i.far {
 	cursor: pointer;
 }
 
-p.error {
-	color: #ff0000;
-	font-weight: bold;
+i.fas.open, i.far.open {
+	color: #28c128;
+}
+
+i.fas:hover, i.far:hover {
+	color: #000000;
 }
 
 /** Headers */
@@ -163,4 +172,16 @@ div.sectionHeader {
 		flex-grow: 0;
 		flex-shrink: 0;
 	}
+}
+
+/**
+ * Material UI
+ */
+.MuiPaper-root {
+	margin-bottom: 20px;
+	padding: 10px;
+}
+
+.MuiTypography-root.p {
+	margin-bottom: 10px;
 }

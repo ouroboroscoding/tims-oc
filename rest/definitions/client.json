@@ -83,12 +83,13 @@
 	"division": {
 		"__type__":"string",
 		"__maximum__":2,
-		"__react__":{"title":"Province / State"}
+		"__react__":{"title":"Province / State", "type":"select", "options":[]}
 	},
 
 	"country": {
 		"__type__":"string",
-		"__maximum__":2
+		"__maximum__":2,
+		"__react__":{"type":"select", "options":[]}
 	},
 
 	"postal_code": {

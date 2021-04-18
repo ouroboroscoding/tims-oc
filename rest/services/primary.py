@@ -930,7 +930,7 @@ class Primary(Services.Service):
 	def projects_read(self, data, sesh):
 		"""Projects read
 
-		Fetches and returns data on all projects
+		Fetches and returns data on all projects in a given client
 
 		Arguments:
 			data (dict): The data passed to the request
@@ -940,42 +940,21 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# If the user doesn't have the project permission
-		if 'perms' not in sesh or 'project' not in sesh['perms']:
-			return Services.Error(Rights.INVALID)
+		# If the client ID isn't passed
+		if 'client' not in data:
+			return Services.Error(1001, [['client', 'missing']])
 
-		# If the user has full access
-		if sesh['perms']['project']['idents'] == None:
-			mIDs = None
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.READ, data['client'])
 
-		# Else, if they have only some IDs
-		else:
-			mIDs = sesh['perms']['project']['idents'].split(',')
-			dFilter = {
-				"clients": mIDs,
-				"_archived": False
-			}
-
-		# Fetch all the client IDs and names and make a hash of them
-		dClients = {
-			d['_id']:d['name']
-			for d in Client.get(mIDs, raw=['_id', 'name'])
-		}
-
-		# If we want all projects
-		if not mIDs:
-			lProjects = Project.get(raw=True, orderby='name')
-
-		# Else, just fetch those in the given clients
-		else:
-			lProjects = Project.filter(dFilter, raw=True, orderby='name')
-
-		# Go through each project and add the client name
-		for d in lProjects:
-			d['clientName'] = d['client'] in dClients and dClients[d['client']] or '[client not found]'
-
-		# Return the records
-		return Services.Response(lProjects)
+		# Fetch and return the projects
+		return Services.Response(
+			Project.filter(
+				{"client": data['client']},
+				raw=True,
+				orderby='name'
+			)
+		)
 
 	def signin_create(self, data):
 		"""Signin

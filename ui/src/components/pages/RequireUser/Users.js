@@ -229,7 +229,7 @@ export default function Users(props) {
 					<Box className="bigIcon flexStatic">
 						<Tooltip title="Invite User">
 							<IconButton onClick={ev => inviteSet(b => !b)}>
-								<i className="fas fa-plus-circle" />
+								<i className={'fas fa-plus-circle ' + (invite ? 'open' : 'close')} />
 							</IconButton>
 						</Tooltip>
 					</Box>

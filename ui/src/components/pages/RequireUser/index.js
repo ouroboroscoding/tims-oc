@@ -26,7 +26,7 @@ import Users from './Users';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
-import Rights from 'shared/communication/rights';
+//import Rights from 'shared/communication/rights';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
