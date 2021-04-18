@@ -68,6 +68,7 @@ REST.Server({
 	"/account/clients": {"methods": REST.READ, "session": True},
 	"/account/forgot": {"methods": REST.CREATE | REST.UPDATE},
 	"/account/setup": {"methods": REST.READ | REST.UPDATE},
+	"/account/task": {"methods": REST.READ, "session": True},
 	"/account/tasks": {"methods": REST.READ, "session": True},
 	"/account/verify": {"methods": REST.UPDATE}
 

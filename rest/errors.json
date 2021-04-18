@@ -27,5 +27,6 @@
 	"_": "Client Errors",
 	"2100": "Invalid email/pass",
 	"2101": "Invalid verification",
-	"2102": "Password strength"
+	"2102": "Password strength",
+	"2103": "Can't start multiple tasks"
 }

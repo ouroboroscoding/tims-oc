@@ -42,9 +42,9 @@ export default function Header(props) {
 	let [account, accountSet] = useState(false);
 	let [menu, menuSet] = useState(false);
 
-	// Show/Hide menu
-	function menuToggle() {
-		menuSet(val => !val);
+	// Hide menu
+	function menuHide() {
+		menuSet(false);
 	}
 
 	// Signout of app
@@ -78,21 +78,21 @@ export default function Header(props) {
 		<Box id="header" className="flexStatic">
 			<Box className="bar flexColumns">
 				{props.user &&
-					<IconButton className="flexStatic" edge="start" color="inherit" aria-label="menu" onClick={menuToggle}>
+					<IconButton className="flexStatic" edge="start" color="inherit" aria-label="menu" onClick={() => menuSet(b => !b)}>
 						<i className="fas fa-bars" />
 					</IconButton>
 				}
 				<Typography className="title flexStatic">
-					<Link to="/" onClick={menuToggle}>{props.mobile ? process.env.REACT_APP_SITENAME_SHORT : process.env.REACT_APP_SITENAME}</Link>
+					<Link to="/" onClick={menuHide}>{props.mobile ? process.env.REACT_APP_SITENAME_SHORT : process.env.REACT_APP_SITENAME}</Link>
 				</Typography>
 				<Box id="loader" className="flexGrow">
 					<Loader />
 				</Box>
 				{props.user &&
-					<React.Fragment>
+					<Box className="icons">
 						<Tooltip title="Account">
 							<IconButton onClick={ev => accountSet(b => !b)}>
-								<i className="fas fa-user-alt" />
+								<i className={'fas fa-user-alt ' + (account ? 'open' : 'close')} />
 							</IconButton>
 						</Tooltip>
 						<Tooltip title="Sign Out">
@@ -100,11 +100,11 @@ export default function Header(props) {
 								<i className="fas fa-sign-out-alt" />
 							</IconButton>
 						</Tooltip>
-					</React.Fragment>
+					</Box>
 				}
 			</Box>
 			<Menu
-				onClose={menuToggle}
+				onClose={menuHide}
 				open={menu}
 				user={props.user}
 			/>

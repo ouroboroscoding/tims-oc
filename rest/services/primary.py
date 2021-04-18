@@ -167,7 +167,7 @@ class Primary(Services.Service):
 		# Fetch the clients using the IDs we gathered
 		lClients = Client.get(
 			lClientIDs and lClientIDs or None,
-			filter={"_archived": True},
+			filter={"_archived": False},
 			raw=['_id', 'name']
 		)
 
@@ -410,6 +410,25 @@ class Primary(Services.Service):
 		# Return the session ID
 		return Services.Response(oSesh.id())
 
+	def accountTask_read(self, data, sesh):
+		"""Account: Task read
+
+		Returns an existing open task if one exists
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Look for any non-ended task with the signed in user and return it
+		#	(or None)
+		return Services.Response(
+			Task.open(sesh['user_id'])
+		)
+
 	def accountTasks_read(self, data, sesh):
 		"""Account: Tasks read
 
@@ -417,8 +436,11 @@ class Primary(Services.Service):
 		range
 
 		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
 
 		Returns:
+			Services.Response
 		"""
 
 		# Verify the minimum fields
@@ -1035,6 +1057,10 @@ class Primary(Services.Service):
 
 		# Check rights
 		Rights.verifyOrRaise(sesh['user_id'], 'task', Rights.CREATE, dProject['client'])
+
+		# If we have an existing open task
+		if Task.open(sesh['user_id']):
+			return Services.Error(2103)
 
 		# Create an instance to verify the fields
 		try:

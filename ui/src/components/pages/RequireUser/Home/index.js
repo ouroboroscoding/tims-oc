@@ -14,11 +14,23 @@ import React, { useEffect, useState } from 'react';
 
 // Material UI
 import Box from '@material-ui/core/Box';
-import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 
 // Local modules
-import TaskStart from './TaskStart';
+import Task from './Task';
+
+// Shared communication modules
+import Rest from 'shared/communication/rest';
+import Rights from 'shared/communication/rights';
+
+// Shared generic modules
+import Events from 'shared/generic/events';
+
+// Constants
+const _NO_RIGHTS = {
+	invoices: false,
+	task: false
+}
 
 /**
  * Home
@@ -32,10 +44,54 @@ import TaskStart from './TaskStart';
  */
 export default function Home(props) {
 
+	// State
+	let [clients, clientsSet] = useState(false);
+	let [rights, rightsSet] = useState(_NO_RIGHTS);
+
+	// User effect
+	useEffect(() => {
+		clientsFetch();
+		rightsSet({
+			invoices: Rights.has('invoice', 'read'),
+			task: Rights.has('task', 'create')
+		})
+	}, [props.user]);
+
+	// Fetch all clients the user has access to
+	function clientsFetch() {
+
+		// Make the request to the server
+		Rest.read('primary', 'account/clients').done(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				Events.trigger('error', Rest.errorMessage(res.error));
+			}
+
+			// If we got data
+			if(res.data) {
+				clientsSet(res.data);
+			}
+		});
+	}
+
 	// Render
 	return (
-		<Box id="home">
-
+		<Box id="home" className="singlePage">
+			<Box className="container sm">
+				{clients === false ?
+					<Typography>Loading...</Typography>
+				:
+					<React.Fragment>
+						{rights.task &&
+							<Task
+								clients={clients}
+								{...props}
+							/>
+						}
+					</React.Fragment>
+				}
+			</Box>
 		</Box>
 	);
 }

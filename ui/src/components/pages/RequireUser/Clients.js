@@ -99,16 +99,6 @@ function Projects(props) {
 		createSet(false);
 	}
 
-	// Called when a project has been removed
-	function projectRemoved(_id) {
-		let i = afindi(results, '_id', _id);
-		if(i > -1) {
-			let lResults = clone(results);
-			delete lResults[i];
-			resultsSet(lResults);
-		}
-	};
-
 	// Fetch the projects associated with the user
 	function projectsFetch() {
 
