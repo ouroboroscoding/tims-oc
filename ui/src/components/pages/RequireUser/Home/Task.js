@@ -1,7 +1,7 @@
 /**
  * Task Start
  *
- * Home component for starting a new task
+ * Home component for starting a new task or completing an open one
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
  * @copyright OuroborosCoding
@@ -30,16 +30,17 @@ import Events from 'shared/generic/events';
 import { afindo, clone, datetime } from 'shared/generic/tools';
 
 /**
- * TaskStart
+ * Task
  *
- * Displays dashboard for non-admin users
+ * Shows task start or task end depending on whether the user has an open /
+ * uncompleted task
  *
- * @name TaskStart
+ * @name Task
  * @access public
  * @param Object props Attributes sent to the component
  * @return React.Component
  */
-export default function TaskStart(props) {
+export default function Task(props) {
 
 	// State
 	let [client, clientSet] = useState(props.clients[0] ? props.clients[0]._id : false);
@@ -270,7 +271,7 @@ export default function TaskStart(props) {
 }
 
 // Valid props
-TaskStart.propTypes = {
+Task.propTypes = {
 	clients: PropTypes.array.isRequired,
 	mobile: PropTypes.bool.isRequired,
 	user: PropTypes.object.isRequired

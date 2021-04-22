@@ -2,7 +2,7 @@
 	"__mysql__": {
 		"auto_primary": "UUID()",
 		"create": ["_created", "_updated", "_archived", "email", "passwd",
-					"name", "locale", "verified"],
+					"type", "name", "locale", "verified"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
@@ -14,7 +14,7 @@
 	"__react__": {
 		"create": ["email", "name", "locale"],
 		"results": ["email", "name", "verified", "_archived"],
-		"update": ["email", "name", "verified", "locale", "_archived"]
+		"update": ["email", "name", "verified", "locale"]
 	},
 
 	"__name__": "User",
@@ -57,6 +57,11 @@
 			"title": "Password (8 characters, must include 1 upper, 1 lower, and 1 number)",
 			"type": "password"
 		}
+	},
+
+	"type": {
+		"__type__": "string",
+		"__options__": ["admin", "accounting", "client", "manager", "worker"]
 	},
 
 	"name": {

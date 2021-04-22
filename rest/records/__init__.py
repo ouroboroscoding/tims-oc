@@ -20,6 +20,35 @@ import re
 from FormatOC import Tree
 from RestOC import Conf, JSON, Record_MySQL, StrHelper
 
+# Access class
+class Access(Record_MySQL.Record):
+	"""Access
+
+	Represents a single permission associated with a user
+	"""
+
+	_conf = None
+	"""Configuration"""
+
+	@classmethod
+	def config(cls):
+		"""Config
+
+		Returns the configuration data associated with the record type
+
+		Returns:
+			dict
+		"""
+
+		# If we haven loaded the config yet
+		if not cls._conf:
+			cls._conf = Record_MySQL.Record.generateConfig(
+				Tree.fromFile('definitions/access.json')
+			)
+
+		# Return the config
+		return cls._conf
+
 # Client class
 class Client(Record_MySQL.Record):
 	"""Client
@@ -166,109 +195,6 @@ class Key(Record_MySQL.Record):
 		# Return the config
 		return cls._conf
 
-# Permission class
-class Permission(Record_MySQL.Record):
-	"""Permission
-
-	Represents a single permission associated with a user
-	"""
-
-	_conf = None
-	"""Configuration"""
-
-	@classmethod
-	def byUser(cls, _id):
-		"""By User
-
-		Fetches the permissions as a name => rights/idents dict by user._id
-
-		Arguments:
-			_id (str): The ID of the User
-
-		Returns:
-			dict
-		"""
-
-		# Fetch a single key
-		sPermission = cls._redis.get('perms:%s' % _id)
-
-		# If we have a record
-		if sPermission:
-
-			# Decode it
-			dPermissions = JSON.decode(sPermission);
-
-		# Else
-		else:
-
-			# Fetch from the DB
-			lPermissions = cls.filter({"user": _id}, raw=['name', 'rights', 'idents'])
-			if lPermissions:
-				dPermissions = {
-					d['name']: {
-						"rights": d['rights'],
-						"idents": d['idents'] is not None and d['idents'].split(',') or None
-					}
-					for d in lPermissions
-				}
-			else:
-				dPermissions = {}
-
-			# And cache
-			cls._redis.set('perms:%s' % _id, JSON.encode(dPermissions))
-
-		# Return the permissions
-		return dPermissions
-
-	@classmethod
-	def cacheClear(cls, _id):
-		"""Cache Clear
-
-		Removes permissions for a user from the cache
-
-		Arguments:
-			_id (str): The ID of the user whose permissions we want to clear
-
-		Returns:
-			None
-		"""
-
-		# Delete the key in Redis
-		cls._redis.delete('perms:%s' % _id)
-
-	@classmethod
-	def config(cls):
-		"""Config
-
-		Returns the configuration data associated with the record type
-
-		Returns:
-			dict
-		"""
-
-		# If we haven loaded the config yet
-		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/permission.json')
-			)
-
-		# Return the config
-		return cls._conf
-
-	@classmethod
-	def redis(cls, redis):
-		"""Redis
-
-		Stores the Redis connection to be used to fetch and store Users
-
-		Arguments:
-			redis (StrictRedis): A Redis instance
-
-		Returns:
-			None
-		"""
-		cls._redis = redis
-
 # Project class
 class Project(Record_MySQL.Record):
 	"""Project
@@ -309,16 +235,16 @@ class Task(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
-	def byClient(cls, client, start, end, custom={}):
+	def byClient(cls, start, end, clients=None, custom={}):
 		"""By Client
 
 		Returns all tasks in a timeframe that are assigned to projects with
 		a specific client
 
 		Arguments:
-			client (str): The ID of the client
 			start (uint): The minimum time the task can end in
 			end (uint): The maximum time the task can end in
+			clients (str): Optional ID or IDs of clients
 			custom (dict): Custom Host and DB info
 				'host' the name of the host to get/set data on
 				'append' optional postfix for dynamic DBs
@@ -327,11 +253,25 @@ class Task(Record_MySQL.Record):
 			list
 		"""
 
+		# Init the where
+		lWhere = ['`t`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)' % (
+			start, end
+		)]
+
+		# If we have clients
+		if clients:
+			lWhere.append('`p`.`client` %s' % isinstance(clients, list) and \
+							("IN ('%s')" % "','".join(clients)) or \
+							("= '%s'" % clients)
+			)
+
 		# Fetch the record structure
 		dStruct = cls.struct(custom)
 
 		# Generate SQL
 		sSQL = "SELECT\n" \
+				"	`t`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
 				"	`t`.`project` as `project`,\n" \
 				"	`p`.`name` as `projectName`,\n" \
 				"	`t`.`user` as `user`,\n" \
@@ -341,14 +281,12 @@ class Task(Record_MySQL.Record):
 				"	`t`.`description` as `description`\n" \
 				"FROM `%(db)s`.`%(table)s` as `t`\n" \
 				"JOIN `%(db)s`.`project` as `p` ON `t`.`project` = `p`.`_id`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
 				"JOIN `%(db)s`.`user` as `u` ON `t`.`user` = `u`.`_id`\n" \
-				"WHERE `t`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)\n" \
-				"AND `p`.`client` = '%(client)s'" % {
+				"WHERE %s" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
-			"client": client,
-			"start": start,
-			"end": end
+			"where": '\nAND'.join(lWhere),
 		}
 
 		# Execute and return the select
@@ -482,6 +420,77 @@ class User(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
+	def cacheClear(cls, _id):
+		"""Cache Clear
+
+		Removes a user from the cache
+
+		Arguments:
+			_id (str): The ID of the user we want to clear
+
+		Returns:
+			None
+		"""
+
+		# Delete the key in Redis
+		cls._redis.delete('user:%s' % _id)
+
+	@classmethod
+	def cacheGet(cls, _id):
+		"""Cache Get
+
+		Gets a user from the cache, if they can't be found, defaults to fetching
+		from the DB and filling the cache
+
+		Arguments:
+			_id (str): The ID of the user to fetch
+
+		Returns:
+			dict
+		"""
+
+		# Fetch a single key
+		sUser = cls._redis.get('user:%s' % _id)
+
+		# If we have a record
+		if sUser:
+
+			# Decode it
+			dUser = JSON.decode(sUser)
+
+		# Else
+		else:
+
+			# Fetch the user from the DB
+			dUser = cls.get(_id, raw=True)
+
+			# If there's no user
+			if not dUser:
+				return None
+
+			# Remove the password
+			del dUser['passwd']
+
+			# If the user is not an admin
+			if dUser['type'] is not 'admin':
+
+				# Look for access values
+				lAccess = Access.filter({
+					"user": _id
+				}, raw=['_id'])
+
+				# Store them in the user
+				dUser['access'] = lAccess and \
+									[d['_id'] for d in lAccess] or \
+									None
+
+			# Store the user in the cache
+			cls._redis.set('user:%s' % _id, JSON.encode(dUser))
+
+		# Return the user
+		return dUser
+
+	@classmethod
 	def config(cls):
 		"""Config
 
@@ -568,3 +577,17 @@ class User(Record_MySQL.Record):
 
 		# Return OK if the rehashed password matches
 		return sHash == sha1(sSalt.encode('utf-8') + passwd.encode('utf-8')).hexdigest()
+
+	@classmethod
+	def redis(cls, redis):
+		"""Redis
+
+		Stores the Redis connection to be used to fetch and store Users
+
+		Arguments:
+			redis (StrictRedis): A Redis instance
+
+		Returns:
+			None
+		"""
+		cls._redis = redis

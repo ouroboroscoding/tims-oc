@@ -66,8 +66,7 @@ export default function Verify(props) {
 
 		// Send it to the service
 		Rest.update('primary', 'account/verify', {
-			email: lLocation[2],
-			key: lLocation[3]
+			key: lLocation[2]
 		}, {session: false}).done(res => {
 
 			// If there's an error

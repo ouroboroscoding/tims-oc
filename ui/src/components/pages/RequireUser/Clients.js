@@ -25,7 +25,6 @@ import { Form, Results } from 'shared/components/Format';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
-import Rights from 'shared/communication/rights';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
@@ -63,22 +62,12 @@ function Projects(props) {
 	// State
 	let [create, createSet] = useState(false);
 	let [results, resultsSet] = useState(false);
-	let [rights, rightsSet] = useState({
-		create: false,
-		update: false
-	});
 
 	// Load effect
 	useEffect(() => {
 
 		// Fetch the projects
 		projectsFetch();
-
-		// Set rights
-		rightsSet({
-			create: Rights.has('project', 'create', props.value._id),
-			update: Rights.has('project', 'update', props.value._id)
-		});
 
 	// eslint-disable-next-line
 	}, [props.value._id]);
@@ -98,6 +87,16 @@ function Projects(props) {
 		// Hide the form
 		createSet(false);
 	}
+
+	// Called when a project has been archived
+	function projectArchived(project) {
+		let i = afindi(results, '_id', project._id);
+		if(i > -1) {
+			let lResults = clone(results);
+			lResults[i]._archived = 1;
+			resultsSet(lResults);
+		}
+	};
 
 	// Fetch the projects associated with the user
 	function projectsFetch() {
@@ -134,7 +133,7 @@ function Projects(props) {
 		<Box className="users_projects">
 			<Box className="sectionHeader flexColumns">
 				<Typography className="flexGrow">Projects</Typography>
-				{rights.create &&
+				{props.rights &&
 					<Box className="flexStatic">
 						<Tooltip title="Create Client">
 							<IconButton onClick={ev => createSet(b => !b)}>
@@ -175,15 +174,21 @@ function Projects(props) {
 							data={results}
 							noun="project"
 							orderBy="name"
+							remove={props.rights ? projectArchived : false}
 							service="primary"
 							tree={ProjectTree}
-							update={rights.update ? projectUpdated : false}
+							update={props.rights ? projectUpdated : false}
 						/>
 					}
 				</React.Fragment>
 			}
 		</Box>
 	);
+}
+
+// Valid props
+Projects.propTypes = {
+	rights: PropTypes.object.isRequired
 }
 
 /**
@@ -214,25 +219,28 @@ export default function Clients(props) {
 
 		// Set rights
 		rightsSet({
-			create: Rights.has('client', 'create'),
-			update: Rights.has('client', 'update')
+			create: ['admin', 'accounting'].includes(props.user.type),
+			update: ['admin', 'accounting'].includes(props.user.type),
+			delete: props.user === 'admin'
 		});
 
-	}, []);
+	}, [props.user]);
+
+	// Called when an existing client is archived
+	function clientArchived(client) {
+		let i = afindi(clients, '_id', client._id);
+		if(i > -1) {
+			let lClients = clone(clients);
+			lClients[i]._archived = 1;
+			clientsSet(lClients);
+		}
+	}
 
 	// Called when a new client is created
 	function clientCreated(client) {
-
-		// Clone the current clients
 		let lClients = clone(clients);
-
-		// Add the client to the top
 		lClients.unshift(client);
-
-		// Set the new clients
 		clientsSet(lClients);
-
-		// Hide the form
 		createSet(false);
 	}
 
@@ -306,13 +314,16 @@ export default function Clients(props) {
 						<Typography>No clients found</Typography>
 					:
 						<Results
-							actions={[
-								{tooltip: 'View Projects', icon: 'fas fa-project-diagram', component: Projects}
-							]}
+							actions={[{
+								tooltip: 'View Projects',
+								icon: 'fas fa-project-diagram',
+								component: Projects,
+								props: {rights: rights.update}
+							}]}
 							data={clients}
 							noun="client"
 							orderBy="name"
-							remove={false}
+							remove={rights.delete ? clientArchived : false}
 							service="primary"
 							tree={ClientTree}
 							update={rights.update ? clientUpdated : false}

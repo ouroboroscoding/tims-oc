@@ -20,15 +20,11 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 
-// Shared communication modules
-import Rights from 'shared/communication/rights';
-
 // No Rights
 const _NO_RIGHTS = {
 	clients: false,
 	company: false,
 	invoices: false,
-	projects: false,
 	tasks: false,
 	users: false
 }
@@ -51,12 +47,11 @@ export default function Menu(props) {
 	// User effect
 	useEffect(() => {
 		rightsSet(props.user ? {
-			clients: Rights.has('client', 'read') && Rights.idents('client').length === 0,
-			company: Rights.has('company', 'read'),
-			invoices: Rights.has('invoice', 'read'),
-			projects: Rights.has('project', 'read'),
-			tasks: !Rights.has('task', 'read'),
-			users: Rights.has('user', 'read')
+			clients: ['admin', 'accounting', 'manager'].includes(props.user.type),
+			company: props.user.type === 'admin',
+			invoices: ['admin', 'accounting', 'client'].includes(props.user.type),
+			tasks: true,
+			users: ['admin', 'manager'].includes(props.user.type)
 		} : _NO_RIGHTS);
 	}, [props.user]);
 

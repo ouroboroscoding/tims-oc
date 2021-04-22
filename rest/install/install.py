@@ -11,7 +11,7 @@ import os, platform, time
 from RestOC import Conf, Record_MySQL
 
 # Records
-from records import Company, Permission, User
+from records import Company, User
 
 # Services
 from services.primary import Primary
@@ -39,19 +39,11 @@ if __name__ == "__main__":
 		"email": 'admin@localhost',
 		"passwd": User.passwordHash('Admin123'),
 		"name": "Administrator",
+		"type": "admin",
 		"locale": 'en-US',
 		"verified": True
 	})
 	oUser.create()
-
-	# Add global permissions
-	for sName in ['client', 'company', 'invoice', 'project', 'task', 'user']:
-		oPermission = Permission({
-			"user": oUser['_id'],
-			"name": sName,
-			"rights": 15
-		})
-		oPermission.create()
 
 	# Add the only company
 	oCompany = Company({

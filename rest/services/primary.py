@@ -20,7 +20,7 @@ from RestOC import Conf, DictHelper, Errors, Services, Sesh, StrHelper
 from RestOC.Record_MySQL import DuplicateException
 
 # Record imports
-from records import Client, Company, Invoice, InvoiceItem, Key, Permission, \
+from records import Access, Client, Company, Invoice, InvoiceItem, Key, \
 					Project, Task, User
 
 # Shared imports
@@ -33,7 +33,7 @@ class Primary(Services.Service):
 	"""
 
 	_install = [
-		Client, Company, Invoice, InvoiceItem, Key, Permission, Project, Task, \
+		Access, Client, Company, Invoice, InvoiceItem, Key, Project, Task, \
 		User
 	]
 	"""Record types called in install"""
@@ -102,7 +102,7 @@ class Primary(Services.Service):
 		}))
 
 		# Pass the Redis connection to records that need it
-		Permission.redis(self._redis)
+		User.redis(self._redis)
 
 		# Return self for chaining
 		return self
@@ -141,32 +141,12 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Get all permissions for the user
-		dPermissions = Permission.byUser(sesh['user_id'])
+		# Get the user
+		dUser = User.cacheGet(sesh['user_id'])
 
-		# If there's no permissions, return nothing
-		if not dPermissions:
-			return []
-
-		# Client IDs
-		lClientIDs = set()
-
-		# Go through each permission
-		for k in dPermissions:
-
-			# If it's a client, project, invoice, or task permission
-			if k in ['client', 'invoice', 'project', 'task']:
-
-				# If it has no idents (all clients)
-				if not dPermissions[k]['idents']:
-					break
-
-				# Add the client IDs to the list
-				lClientIDs.update(dPermissions[k]['idents'])
-
-		# Fetch the clients using the IDs we gathered
+		# Fetch the clients using IDs the user has access to
 		lClients = Client.get(
-			lClientIDs and lClientIDs or None,
+			dUser['access'] and dUser['access'] or None,
 			filter={"_archived": False},
 			raw=['_id', 'name']
 		)
@@ -514,7 +494,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.CREATE)
+		Rights.verifyOrRaise(sesh['user_id'], 'accounting', Rights.CREATE)
 
 		# Create an instance to verify the fields
 		try:
@@ -545,7 +525,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.DELETE)
+		Rights.verifyOrRaise(sesh['user_id'], 'admin')
 
 		# Make sure the ID is passed
 		if '_id' not in data:
@@ -580,7 +560,7 @@ class Primary(Services.Service):
 			return Services.Errro(1001, [['_id', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.READ, data['_id'])
+		Rights.verifyOrRaise(sesh['user_id'], None, data['_id'])
 
 		# Fetch the record
 		dClient = Client.get(data['_id'], raw=True)
@@ -608,7 +588,7 @@ class Primary(Services.Service):
 			return Services.Errro(1001, [['_id', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.UPDATE, data['_id'])
+		Rights.verifyOrRaise(sesh['user_id'], 'accounting', data['_id'])
 
 		# Find the record
 		oClient = Client.get(data['_id'])
@@ -660,7 +640,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'client', Rights.READ)
+		Rights.verifyOrRaise(sesh['user_id'], 'accounting', Rights.READ)
 
 		# Fetch and return the clients
 		return Services.Response(
@@ -680,15 +660,8 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Make sure the ID is passed
-		if '_id' not in data:
-			return Services.Errro(1001, [['_id', 'missing']])
-
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'company', Rights.READ)
-
 		# Fetch the record
-		dCompany = Company.get(data['_id'], raw=True)
+		dCompany = Company.get(raw=True, limit=1)
 		if not dCompany:
 			return Services.Error(2003)
 
@@ -708,12 +681,12 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'admin')
+
 		# Make sure the ID is passed
 		if '_id' not in data:
 			return Services.Errro(1001, [['_id', 'missing']])
-
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'company', Rights.UPDATE)
 
 		# Find the record
 		oCompany = Company.get(data['_id'])
@@ -828,7 +801,7 @@ class Primary(Services.Service):
 			return Services.Error(1001, [['client', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.CREATE, data['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'manager', data['client'])
 
 		# Create an instance to verify the fields
 		try:
@@ -868,7 +841,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.DELETE, oProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'manager', oProject['client'])
 
 		# Mark the project as archived
 		oProject['_archived'] = True
@@ -899,7 +872,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.READ, dProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], None, dProject['client'])
 
 		# Return the record data
 		return Services.Response(dProject)
@@ -917,6 +890,9 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
+
 		# Make sure the ID is passed
 		if '_id' not in data:
 			return Services.Errro(1001, [['_id', 'missing']])
@@ -925,9 +901,6 @@ class Primary(Services.Service):
 		oProject = Project.get(data['_id'])
 		if not oProject:
 			return Services.Error(2003)
-
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.UPDATE, dProject['client'])
 
 		# Remove fields that can't be changed
 		for f in ['_id', '_created', '_updated', '_archived', 'client']:
@@ -967,7 +940,7 @@ class Primary(Services.Service):
 			return Services.Error(1001, [['client', 'missing']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'project', Rights.READ, data['client'])
+		Rights.verifyOrRaise(sesh['user_id'], None, data['client'])
 
 		# Fetch and return the projects
 		return Services.Response(
@@ -1056,7 +1029,7 @@ class Primary(Services.Service):
 			return Services.Error(2003)
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'task', Rights.CREATE, dProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], 'worker', dProject['client'])
 
 		# If we have an existing open task
 		if Task.open(sesh['user_id']):
@@ -1138,6 +1111,9 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
+
 		# If the ID is missing
 		if '_id' not in data:
 			return Services.Error(1001, ['_id', 'missing'])
@@ -1146,9 +1122,6 @@ class Primary(Services.Service):
 		oTask = Task.get(data['_id'])
 		if not oTask:
 			return Services.Error(2003)
-
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'task', Rights.DELETE, oTask['project'])
 
 		# Delete the task and return the result
 		return Services.Response(
@@ -1169,17 +1142,39 @@ class Primary(Services.Service):
 		"""
 
 		# Make sure we have all necessary data
-		try: DictHelper.eval(data, ['client', 'start', 'end'])
+		try: DictHelper.eval(data, ['start', 'end'])
 		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
 
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'task', Rights.DELETE, data['client'])
+		# Get the signed in user
+		dUser = User.cacheGet(sesh['user_id'])
+		if not dUser:
+			return Services.Error(2003, 'user')
+
+		# If a specific task is passed
+		if 'client' in data:
+
+			# Check rights
+			Rights.verifyOrRaise(dUser, 'client', data['client'])
+
+			# Set the filter
+			lClients = data['client']
+
+		# Else
+		else:
+
+			# If the user has full access
+			if dUser['access'] is None:
+				lClients = None
+
+			# Else, filter just those clients available to the user
+			else:
+				lClients = dUser['access']
 
 		# Get all tasks that end in the given timeframe
-		lTasks = Task.getByClient(data['client'], data['start'], data['end'])
+		lTasks = Task.getByClient(lClients, data['start'], data['end'])
 
 		# Return the records
-		return Services.Response(lProjects)
+		return Services.Response(lTasks)
 
 	def user_create(self, data, sesh):
 		"""User create
@@ -1195,7 +1190,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.CREATE)
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
 
 		# Check we have a verification url
 		if 'url' not in data:
@@ -1278,7 +1273,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.DELETE)
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
 
 		# Make sure the ID is passed
 		if '_id' not in data:
@@ -1314,31 +1309,17 @@ class Primary(Services.Service):
 			# And the user is not the logged in user
 			if data['_id'] != sesh['user_id']:
 
-				# Verify the rights
-				Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.READ, data['_id'])
+				# Check rights
+				Rights.verifyOrRaise(sesh['user_id'], 'manager')
 
 		# Else, just lookup the logged in user
 		else:
 			data['_id'] = sesh['user_id']
 
-		# Fetch the record
-		dUser = User.get(data['_id'], raw=True)
+		# Fetch from the cache
+		dUser = User.cacheGet(data['_id'])
 		if not dUser:
 			return Services.Error(2003)
-
-		# Remove the password
-		dUser.pop('passwd')
-
-		# Add permissions
-		dUser['permissions'] = {
-			d['name']:{
-				"rights": d['rights'],
-				"idents": (d['idents'] and d['idents'].split(',') or None)
-			}
-			for d in Permission.filter({
-				"user": dUser['_id']
-			}, raw=['name', 'rights', 'idents'])
-		}
 
 		# Return the record data
 		return Services.Response(dUser)
@@ -1363,7 +1344,7 @@ class Primary(Services.Service):
 			if data['_id'] != sesh['user_id']:
 
 				# Check rights
-				Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.UPDATE)
+				Rights.verifyOrRaise(sesh['user_id'], 'manager')
 
 		# Else, assume session user
 		else:
@@ -1418,8 +1399,6 @@ class Primary(Services.Service):
 			# Create key
 			sKey = self._createKey(oUser['_id'], 'verify')
 
-			print(sKey)
-
 			# Create the verify template data
 			dTpl = {
 				"url": sURL \
@@ -1440,6 +1419,12 @@ class Primary(Services.Service):
 			})
 			if not bRes:
 				print('Failed to send email: %s' % EMail.last_error)
+
+		# If the user was updated
+		if bRes:
+
+			# Clear the cache
+			User.cacheClear(oUser['_id'])
 
 		# Return the result
 		return Services.Response(bRes)
@@ -1464,7 +1449,7 @@ class Primary(Services.Service):
 			if data['_id'] != sesh['user_id']:
 
 				# Check rights
-				Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.UPDATE)
+				Rights.verifyOrRaise(sesh['user_id'], 'manager')
 
 		# Else, assume session user
 		else:
@@ -1499,10 +1484,105 @@ class Primary(Services.Service):
 		# Return OK
 		return Services.Response(True)
 
-	def userPermissions_read(self, data, sesh):
-		"""User Permissions read
+	def userAccess_create(self, data, sesh):
+		"""User Access create
 
-		Fetches the permissions associated with the given user
+		Adds a client access to an existing user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have all necessary data
+		try: DictHelper.eval(data, ['client', 'user'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager', data['client'])
+
+		# Make sure the client exists
+		if not Client.exists(data['client']):
+			return Services.Error(2003, 'client')
+
+		# Make sure the user exists
+		if not User.exists(data['user']):
+			return Services.Error(2003, 'user')
+
+		# Add the access
+		oAccess = Access({
+			"user": data['user'],
+			"client": data['client']
+		})
+		oAccess.create(conflict='ignore')
+
+		# Clear the user from the cache
+		User.cacheClear(data['user'])
+
+		# Return OK
+		return Services.Response(True)
+
+	def userAccess_delete(self, data, sesh):
+		"""User Access delete
+
+		Removes a client access from an existing user
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# If an ID was passed
+		if '_id' in data:
+
+			# Find the access
+			oAccess = Access.get(data['_id'])
+			if not oAccess:
+				return Services.Error(2003)
+
+			# Check rights
+			Rights.verifyOrRaise(sesh['user_id'], 'manager', oAccess['client'])
+
+			# Delete the access
+			oAccess.delete()
+
+			# Clear the user from the cache
+			User.cacheClear(oAccess['user'])
+
+		# Else, if we have a client and user
+		elif 'client' in data and 'user' in data:
+
+			# Check rights
+			Rights.verifyOrRaise(sesh['user_id'], 'manager', data['client'])
+
+			# Find the record
+			oAccess = Access.filter({
+				"user": data['user'],
+				"client": data['client']
+			})
+
+			# If it exists
+			if oAccess:
+
+				# Delete it
+				oAccess.delete()
+
+				# Clear the user from the cache
+				User.cacheClear(data['user'])
+
+		# Return OK
+		return Services.Response(True)
+
+	def userAccess_read(self, data, sesh):
+		"""User Access read
+
+		Fetches the client access for the given user
 
 		Arguments:
 			data (dict): The data passed to the request
@@ -1513,7 +1593,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.READ)
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
 
 		# If we got no ID
 		if '_id' not in data:
@@ -1521,7 +1601,7 @@ class Primary(Services.Service):
 
 		# Fetch and return the permissions
 		return Services.Response(
-			Permission.filter({"user": data['_id']}, raw=True, orderby='name')
+			Access.filter({"user": data['_id']}, raw=True)
 		)
 
 	def users_read(self, data, sesh):
@@ -1538,7 +1618,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'user', Rights.READ)
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
 
 		# Fetch all the users and return them
 		return Services.Response(

@@ -27,7 +27,6 @@ import Users from './Users';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
-//import Rights from 'shared/communication/rights';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
@@ -88,13 +87,21 @@ export default function RequireUser(props) {
 	return (
 		<Switch>
 			<Route exact path="/clients">
-				<Clients {...props} />
+				<Clients
+					{...props}
+				/>
 			</Route>
 			<Route exact path="/users">
-				<Users {...props} />
+				<Users
+					clients={clients}
+					{...props}
+				/>
 			</Route>
 			<Route exact path="/">
-				<Home {...props} />
+				<Home
+					clients={clients}
+					{...props}
+				/>
 			</Route>
 		</Switch>
 	);

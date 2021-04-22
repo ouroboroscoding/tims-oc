@@ -1,0 +1,34 @@
+{
+	"__mysql__": {
+		"auto_primary": "UUID()",
+		"create": ["_created", "user", "client"],
+		"db": "tims-ouroboros",
+		"host": "primary",
+		"indexes": {
+			"user": null,
+			"client": null
+		},
+		"table": "access"
+	},
+
+	"__name__": "Access",
+
+	"_id": {
+		"__type__":"uuid",
+		"__optional__":true
+	},
+
+	"_created": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
+	},
+
+	"user": {
+		"__type__":"uuid"
+	},
+
+	"client": {
+		"__type__":"uuid"
+	}
+}

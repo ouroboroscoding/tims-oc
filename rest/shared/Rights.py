@@ -1,7 +1,7 @@
 # coding=utf8
-""" Permission Rights
+""" User Rights
 
-Defines for Rights types
+Defines and methods for checking user rights
 """
 
 __author__		= "Chris Nasr"
@@ -15,7 +15,7 @@ __created__		= "2021-04-07"
 from RestOC import Services
 
 # Record imports
-from records import Permission
+from records import User
 
 READ	= 0x01
 """Allowed to read records"""
@@ -38,53 +38,58 @@ INVALID = 1000
 __cache = None
 """The Redis cache instance"""
 
-def verify(user, name, right, ident=None):
+def verify(user, type_=None, client=None):
 	"""_Check
 
-	Checks's if the currently signed in user has the requested right on the
-	given permission.
+	Checks's if the currently signed in user has the requested rights based on
+	type of user and client access
 
 	Arguments:
-		user (str|dict): The ID of the user, or the set of permissions to use
-		name (str): The name of the permission to check
-		right (uint): The right to check for
-		ident (str): Optional identifier to check against
+		user (str|dict): The ID of the user, or the user itself
+		type_ (str): The type of user to check for
+		client (str): Optional client ID to check against
 
 	Returns:
 		bool
 	"""
 
-	# If we got a string, fetch the permissions for the user
+	# If we got a string, fetch the user from the cache
 	if isinstance(user, str):
-		dPermissions = Permission.byUser(user)
+		dUser = User.cacheGet(user)
 
-	# Else, use the permissions passed
+	# Else, use the user passed
 	else:
-		dPermissions = user
+		dUser = user
 
-	# If the permission doesn't exist at all
-	if name not in dPermissions:
-		return False
+	import pprint
+	pprint.pprint(dUser)
 
-	# If the permission exists but doesn't contain the proper right
-	if not dPermissions[name]['rights'] & right:
+	# If the type is set
+	if type_ is not None:
+
+		# If the user is an admin
+		if dUser['type'] == 'admin':
+			return True
+
+		# If the user is not the correct type
+		if dUser['type'] != type_:
 			return False
 
-	# If the permission has idents
-	if dPermissions[name]['idents'] is not None:
+	# If the user has limited access
+	if dUser['access'] is not None:
 
-		# If no ident was passed
-		if not ident:
+		# If no client was passed
+		if not client:
 			return False
 
-		# If the ident isn't in the list
-		if str(ident) not in dPermissions[name]['idents']:
+		# If the client isn't in the list
+		if client not in dUser['access']:
 			return False
 
 	# Seems OK
 	return True
 
-def verifyOrRaise(user, name, right, ident=None):
+def verifyOrRaise(user, type_=None, client=None):
 	"""Verify Or Raise
 
 	Calls verify method and if it fails an exception of ResponseException is
@@ -93,10 +98,9 @@ def verifyOrRaise(user, name, right, ident=None):
 	and return to the client if the user is invalid
 
 	Arguments:
-		user (str|dict): The ID of the user, or the set of permissions to use
-		name (str): The name of the permission to check
-		right (uint): The right to check for
-		ident (str): Optional identifier to check against
+		user (str|dict): The ID of the user, or the user itself
+		type_ (str): The type of user to check for
+		client (str): Optional client ID to check against
 
 	Raises:
 		ResponseException
@@ -106,5 +110,5 @@ def verifyOrRaise(user, name, right, ident=None):
 	"""
 
 	# Call verify and if it returns false, raise an exception
-	if not verify(user, name, right, ident):
+	if not verify(user, type_, client):
 		raise Services.ResponseException(error=INVALID)

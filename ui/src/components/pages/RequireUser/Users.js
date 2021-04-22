@@ -25,59 +25,75 @@ import { Form, Results } from 'shared/components/Format';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
-import Rights from 'shared/communication/rights';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
 import { afindi, clone } from 'shared/generic/tools';
 
 // Load the user and permission definitions
-import PermDef from 'definitions/permission';
 import UserDef from 'definitions/user';
 
 // Create Trees using the definitions
-const PermTree = new Tree(clone(PermDef));
 const UserTree = new Tree(clone(UserDef));
 
 /**
- * Permissions
+ * Client
  *
- * Displays permissions associated with the user
+ * Displays a single client
  *
- * @name Permissions
+ * @name Client
  * @access private
  * @param Object props Attributes sent to the component
  * @return React.Component
  */
-function Permissions(props) {
+function Client(props) {
+
+	// Render
+	return (
+		<Box />
+	);
+}
+
+/**
+ * Clients
+ *
+ * Displays access to clients for the user
+ *
+ * @name Clients
+ * @access private
+ * @param Object props Attributes sent to the component
+ * @return React.Component
+ */
+function Clients(props) {
 
 	// State
-	let [results, resultsSet] = useState(false);
-	let [rights, rightsSet] = useState({
-		create: false,
-		update: false
-	});
+	let [clients, clientsSet] = useState([]);
+	let [results, resultsSet] = useState([]);
 
 	// Load effect
 	useEffect(() => {
-
-		// Fetch the permissions
-		permissionsFetch();
-
-		// Set rights
-		rightsSet({
-			create: Rights.has('user', 'create'),
-			update: Rights.has('user', 'update')
-		});
-
+		fetch();
 	// eslint-disable-next-line
 	}, [props.value._id]);
 
+	// Clients or results effect
+	useEffect(() => {
+		let lClients = [];
+		for(let o of props.clients) {
+			lClients.push({
+				on: (afindi(results, 'client', o._id) > -1),
+				...o
+			})
+		}
+		clientsSet(lClients);
+
+	}, [props.clients, results])
+
 	// Fetch the permissions associated with the user
-	function permissionsFetch() {
+	function fetch() {
 
 		// Make the request to the server
-		Rest.read('primary', 'user/permissions', {
+		Rest.read('primary', 'user/access', {
 			_id: props.value._id
 		}).done(res => {
 
@@ -93,22 +109,22 @@ function Permissions(props) {
 		});
 	}
 
-	// Called when a permission has been removed
-	function permissionRemoved(_id) {
-		let i = afindi(results, '_id', _id);
-		if(i > -1) {
+	// Called when a client has been added
+	function added(client) {
+		let i = afindi(results, 'client', client);
+		if(i === -1) {
 			let lResults = clone(results);
-			delete lResults[i];
+			lResults.push({user: props.value._id, client: client})
 			resultsSet(lResults);
 		}
 	};
 
-	// Called when a permission has been updated
-	function permissionUpdated(permission) {
-		let i = afindi(results, '_id', permission._id);
+	// Called when a client has been removed
+	function removed(client) {
+		let i = afindi(results, 'client', client);
 		if(i > -1) {
 			let lResults = clone(results);
-			lResults[i] = permission;
+			delete lResults[i];
 			resultsSet(lResults);
 		}
 	};
@@ -117,29 +133,34 @@ function Permissions(props) {
 	return (
 		<Box className="users_permissions">
 			<Box className="sectionHeader">
-				<Typography>Permissions</Typography>
+				<Typography>Clients</Typography>
 			</Box>
 			{results === false ?
 				<Typography>Loading...</Typography>
 			:
 				<React.Fragment>
 					{results.length === 0 ?
-						<Typography>No permissions</Typography>
+						<Typography>No client access</Typography>
 					:
-						<Results
-							data={results}
-							noun="permission"
-							orderBy="name"
-							remove={rights.update ? permissionRemoved : false}
-							service="primary"
-							tree={PermTree}
-							update={rights.update ? permissionUpdated : false}
-						/>
+						<React.Fragment>
+							{clients.map((o,i) =>
+								<Client
+									onChange={(client, value) => value ? added(client) : removed(client)}
+									{...o}
+								/>
+							)}
+						</React.Fragment>
 					}
 				</React.Fragment>
 			}
 		</Box>
 	);
+}
+
+// Valid props
+Clients.propTypes = {
+	clients: PropTypes.array.isRequired,
+	rights: PropTypes.object.isRequired
 }
 
 /**
@@ -158,8 +179,9 @@ export default function Users(props) {
 	let [invite, inviteSet] = useState(false);
 	let [rights, rightsSet] = useState({
 		create: false,
-		update: false
-	});
+		update: false,
+		delete: false
+	})
 	let [users, usersSet] = useState(false);
 
 	// Load effect
@@ -168,13 +190,14 @@ export default function Users(props) {
 		// Fetch the users
 		usersFetch();
 
-		// Set rights
+		// Set Rights
 		rightsSet({
-			create: Rights.has('user', 'create'),
-			update: Rights.has('user', 'update')
+			create: ['admin', 'manager'].includes(props.user.type),
+			update: ['admin', 'manager'].includes(props.user.type),
+			delete: props.user.type === 'admin'
 		});
 
-	}, []);
+	}, [props.user]);
 
 	// Called when a new user is created
 	function userCreated(user) {
@@ -208,6 +231,16 @@ export default function Users(props) {
 				usersSet(res.data);
 			}
 		});
+	}
+
+	// Called when a user has been archived
+	function userArchived(user) {
+		let i = afindi(users, '_id', user._id);
+		if(i > -1) {
+			let lUsers = clone(users);
+			lUsers[i]._archived = 1;
+			usersSet(lUsers);
+		}
 	}
 
 	// Called when a user has been updated
@@ -266,16 +299,19 @@ export default function Users(props) {
 						<Typography>No users found</Typography>
 					:
 						<Results
-							actions={[
-								{tooltip: 'Permissions', icon: 'fas fa-id-card', component: Permissions}
-							]}
+							actions={[{
+								tooltip: 'Clients',
+								icon: 'fas fa-id-card',
+								component: Clients,
+								props: {clients: props.clients, rights: rights}
+							}]}
 							data={users}
 							noun="user"
 							orderBy="email"
-							remove={false}
+							remove={props.user.type === 'admin' ? userArchived : false}
 							service="primary"
 							tree={UserTree}
-							update={rights.update ? userUpdated : false}
+							update={['admin', 'manager'].includes(props.user.type) ? userUpdated : false}
 						/>
 					}
 				</React.Fragment>
@@ -286,6 +322,7 @@ export default function Users(props) {
 
 // Valid props
 Users.propTypes = {
+	clients: PropTypes.array.isRequired,
 	mobile: PropTypes.bool.isRequired,
 	user: PropTypes.object.isRequired
 }

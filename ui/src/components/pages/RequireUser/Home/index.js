@@ -16,21 +16,14 @@ import React, { useEffect, useState } from 'react';
 import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
 
-// Local modules
+// Local components
 import Task from './Task';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
-import Rights from 'shared/communication/rights';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
-
-// Constants
-const _NO_RIGHTS = {
-	invoices: false,
-	task: false
-}
 
 /**
  * Home
@@ -46,15 +39,10 @@ export default function Home(props) {
 
 	// State
 	let [clients, clientsSet] = useState(false);
-	let [rights, rightsSet] = useState(_NO_RIGHTS);
 
 	// User effect
 	useEffect(() => {
 		clientsFetch();
-		rightsSet({
-			invoices: Rights.has('invoice', 'read'),
-			task: Rights.has('task', 'create')
-		})
 	}, [props.user]);
 
 	// Fetch all clients the user has access to
@@ -83,7 +71,7 @@ export default function Home(props) {
 					<Typography>Loading...</Typography>
 				:
 					<React.Fragment>
-						{rights.task &&
+						{props.user.type === 'worker' &&
 							<Task
 								clients={clients}
 								{...props}

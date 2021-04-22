@@ -4,7 +4,7 @@
 		"create": [
 			"_created", "_updated", "_archived", "name", "attention_of",
 			"address1", "address2", "city", "division", "country", "postal_code",
-			"rate", "task_minimum", "task_overflow"
+			"currency", "rate", "task_minimum", "task_overflow"
 		],
 		"db": "tims-ouroboros",
 		"host": "primary",
@@ -21,7 +21,7 @@
 		"results": ["name", "attention_of", "currency", "rate", "_archived"],
 		"update": ["name", "attention_of", "address1", "address2", "city",
 					"division", "country", "postal_code", "currency", "rate",
-					"task_minimum", "task_overflow", "_archived"]
+					"task_minimum", "task_overflow"]
 	},
 
 	"__name__": "Client",
