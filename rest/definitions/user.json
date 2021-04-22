@@ -12,9 +12,9 @@
 	},
 
 	"__react__": {
-		"create": ["email", "name", "locale"],
-		"results": ["email", "name", "verified", "_archived"],
-		"update": ["email", "name", "verified", "locale"]
+		"create": ["email", "type", "name", "locale"],
+		"results": ["email", "type", "name", "verified", "_archived"],
+		"update": ["email", "type", "name", "verified", "locale"]
 	},
 
 	"__name__": "User",

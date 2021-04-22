@@ -5,8 +5,7 @@
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
-			"user": null,
-			"client": null
+			"ui_user_client": ["user", "client"]
 		},
 		"table": "access"
 	},

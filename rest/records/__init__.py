@@ -477,11 +477,11 @@ class User(Record_MySQL.Record):
 				# Look for access values
 				lAccess = Access.filter({
 					"user": _id
-				}, raw=['_id'])
+				}, raw=['client'])
 
 				# Store them in the user
 				dUser['access'] = lAccess and \
-									[d['_id'] for d in lAccess] or \
+									[d['client'] for d in lAccess] or \
 									None
 
 			# Store the user in the cache

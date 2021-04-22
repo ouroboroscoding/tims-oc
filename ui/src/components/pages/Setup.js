@@ -134,7 +134,7 @@ export default function Setup(props) {
 			key: user.key,
 			name: nameRef.current.value.trim(),
 			passwd: passwdRef.current.value
-		}).done(res => {
+		}, {session: false}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {

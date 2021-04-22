@@ -17,6 +17,7 @@ import Tree from 'format-oc/Tree';
 import Box from '@material-ui/core/Box';
 import IconButton from '@material-ui/core/IconButton';
 import Paper from '@material-ui/core/Paper';
+import Switch from '@material-ui/core/Switch';
 import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
@@ -48,10 +49,36 @@ const UserTree = new Tree(clone(UserDef));
  */
 function Client(props) {
 
+	// When the switch is flipped
+	function changed(ev) {
+		if(ev.currentTarget.checked) {
+			props.onEnable(props._id);
+		} else {
+			props.onDisable(props._id);
+		}
+	}
+
 	// Render
 	return (
-		<Box />
+		<Box className="flexColumns">
+			<Box className="flexGrow">{props.name}</Box>
+			<Box className="flexStatic">
+				<Switch
+					checked={props.on}
+					color="primary"
+					onChange={changed}
+				/>
+			</Box>
+		</Box>
 	);
+}
+
+// Valid props
+Client.propTypes = {
+	_id: PropTypes.string.isRequired,
+	name: PropTypes.string.isRequired,
+	onDisable: PropTypes.func.isRequired,
+	onEnable: PropTypes.func.isRequired
 }
 
 /**
@@ -68,7 +95,7 @@ function Clients(props) {
 
 	// State
 	let [clients, clientsSet] = useState([]);
-	let [results, resultsSet] = useState([]);
+	let [results, resultsSet] = useState(false);
 
 	// Load effect
 	useEffect(() => {
@@ -109,24 +136,56 @@ function Clients(props) {
 		});
 	}
 
-	// Called when a client has been added
-	function added(client) {
-		let i = afindi(results, 'client', client);
-		if(i === -1) {
-			let lResults = clone(results);
-			lResults.push({user: props.value._id, client: client})
-			resultsSet(lResults);
-		}
-	};
+	// Called when a client should be added
+	function add(client) {
 
-	// Called when a client has been removed
-	function removed(client) {
-		let i = afindi(results, 'client', client);
-		if(i > -1) {
-			let lResults = clone(results);
-			delete lResults[i];
-			resultsSet(lResults);
-		}
+		// Call the server
+		Rest.create('primary', 'user/access', {
+			user: props.value._id,
+			client: client
+		}).done(res => {
+
+			// If we got an error
+			if(res.error && !res._handled) {
+				Events.trigger('error', Rest.errorMessage(res.error));
+			}
+
+			// If we got data
+			if(res.data) {
+				let i = afindi(results, 'client', client);
+				if(i === -1) {
+					let lResults = clone(results);
+					lResults.push({user: props.value._id, client: client})
+					resultsSet(lResults);
+				}
+			}
+		});
+	}
+
+	// Called when a client should be removed
+	function remove(client) {
+
+		// Call the server
+		Rest.delete('primary', 'user/access', {
+			user: props.value._id,
+			client: client
+		}).done(res => {
+
+			// If we got an error
+			if(res.error && !res._handled) {
+				Events.trigger('error', Rest.errorMessage(res.error));
+			}
+
+			// If we got data
+			if(res.data) {
+				let i = afindi(results, 'client', client);
+				if(i > -1) {
+					let lResults = clone(results);
+					lResults.splice(i,1);
+					resultsSet(lResults);
+				}
+			}
+		});
 	};
 
 	// Render
@@ -139,13 +198,14 @@ function Clients(props) {
 				<Typography>Loading...</Typography>
 			:
 				<React.Fragment>
-					{results.length === 0 ?
+					{clients.length === 0 ?
 						<Typography>No client access</Typography>
 					:
 						<React.Fragment>
 							{clients.map((o,i) =>
 								<Client
-									onChange={(client, value) => value ? added(client) : removed(client)}
+									onDisable={remove}
+									onEnable={add}
 									{...o}
 								/>
 							)}

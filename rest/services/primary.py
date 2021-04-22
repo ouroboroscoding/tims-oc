@@ -12,6 +12,7 @@ __email__		= "chris@fuelforthefire.ca"
 __created__		= "2021-04-06"
 
 # Python imports
+from pprint import pprint
 from time import time
 
 # Pip imports
@@ -144,12 +145,16 @@ class Primary(Services.Service):
 		# Get the user
 		dUser = User.cacheGet(sesh['user_id'])
 
+		pprint(dUser)
+
 		# Fetch the clients using IDs the user has access to
 		lClients = Client.get(
 			dUser['access'] and dUser['access'] or None,
 			filter={"_archived": False},
 			raw=['_id', 'name']
 		)
+
+		pprint(lClients)
 
 		# Return the cients
 		return Services.Response(lClients)
@@ -1565,7 +1570,7 @@ class Primary(Services.Service):
 			oAccess = Access.filter({
 				"user": data['user'],
 				"client": data['client']
-			})
+			}, limit=1)
 
 			# If it exists
 			if oAccess:
@@ -1623,7 +1628,7 @@ class Primary(Services.Service):
 		# Fetch all the users and return them
 		return Services.Response(
 			User.get(
-				raw=['_id', '_archived', 'email', 'name', 'locale', 'verified'],
+				raw=['_id', '_archived', 'email', 'type', 'name', 'locale', 'verified'],
 				orderby='email'
 			)
 		)
