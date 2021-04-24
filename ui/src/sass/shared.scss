@@ -185,3 +185,13 @@ div.sectionHeader {
 .MuiTypography-root.p {
 	margin-bottom: 10px;
 }
+
+td.total {
+	font-size: 1rem;
+	font-weight: bold;
+}
+
+td.actions, th.actions {
+	white-space: nowrap;
+	width: 1px;
+}

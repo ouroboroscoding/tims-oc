@@ -136,6 +136,46 @@ class Invoice(Record_MySQL.Record):
 		# Return the config
 		return cls._conf
 
+	@classmethod
+	def getNextIdentifier(cls, custom={}):
+		"""Get Next Identifier
+
+		Gets the next available invoice identifier which is used for client
+		identification as opposed to system identification
+
+		Arguments:
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			uint
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT MAX(`identifier`)\n" \
+				"FROM `%(db)s`.`%(table)s`" % {
+			"db": dStruct['db'],
+			"table": dStruct['table']
+		}
+
+		# Execute the select
+		iIdentifier = Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.CELL
+		)
+
+		# If we got nothing
+		if iIdentifier is None:
+			return 1
+
+		# Add 1 and return
+		return iIdentifier + 1
+
 # InvoiceItem class
 class InvoiceItem(Record_MySQL.Record):
 	"""InvoiceItem

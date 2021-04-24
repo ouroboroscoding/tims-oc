@@ -1,19 +1,20 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": ["_created", "_updated", "invoice", "project", "minutes"],
+		"create": ["_created", "_updated", "invoice", "project", "minutes", "amount"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
 			"invoice": null
 		},
-		"table": "client"
+		"table": "invoice_item"
 	},
-	"__name__": "Client",
+	"__name__": "InvoiceItem",
 	"_id": {"__type__":"uuid", "__optional__":true},
 	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
 	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
 	"invoice": {"__type__":"uuid"},
 	"project": {"__type__":"uuid"},
-	"minutes": {"__type__":"uint"}
+	"minutes": {"__type__":"uint"},
+	"amount": {"__type__":"price"}
 }

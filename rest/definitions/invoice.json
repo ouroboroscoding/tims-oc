@@ -18,6 +18,5 @@
 	"client": {"__type__":"uuid"},
 	"identifier": {"__type__":"uint"},
 	"start": {"__type__":"timestamp"},
-	"end": {"__type__":"timestamp"},
-	"rate": {"__type__":"price"}
+	"end": {"__type__":"timestamp"}
 }

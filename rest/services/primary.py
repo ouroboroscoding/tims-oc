@@ -12,6 +12,7 @@ __email__		= "chris@fuelforthefire.ca"
 __created__		= "2021-04-06"
 
 # Python imports
+from decimal import Decimal, ROUND_UP
 from pprint import pprint
 from time import time
 
@@ -436,14 +437,15 @@ class Primary(Services.Service):
 		if lErrors:
 			return Services.Error(1001, lErrors)
 
-		# Fetch and return all the tasks by the logged in user
-		return Services.Response(
-			Task.byUser(
-				sesh['user_id'],
-				data['start'],
-				data['end']
-			)
-		)
+		# Fetch the tasks by the signed in user
+		lTasks = Task.byUser(sesh['user_id'], data['start'], data['end'])
+
+		# Go through each task and calculate the elpased seconds
+		for d in lTasks:
+			d['elapsed'] = d['end'] - d['start']
+
+		# Return all the tasks
+		return Services.Response(lTasks)
 
 	def accountVerify_update(self, data):
 		"""Account: Verify update
@@ -726,7 +728,112 @@ class Primary(Services.Service):
 		Returns:
 			Services.Response
 		"""
-		pass
+
+		# Verify the minimum fields
+		try: DictHelper.eval(data, ['client', 'start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [[f, 'missing'] for f in e.args]))
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'accounting', data['client'])
+
+		# Fetch the client info
+		dClient = Client.get(data['client'], raw=['rate', 'task_minimum', 'task_overflow'])
+		if not dClient:
+			return Services.Response(dClient)
+
+		# Init the time and prices per project
+		dProjects = {}
+
+		# Fetch all the tasks for the client in the given timeframe
+		lTasks = Tasks.byClient(data['start'], data['end'], data['client'])
+
+		# Go through each task
+		for d in lTasks:
+
+			# Get the total seconds
+			iElapsed = d['end'] - d['start']
+
+			# Round to the nearest minute
+			iMinutes, iRemainder = divmod(iElapsed, 60)
+
+			# If the remaining seconds are anything over 15, round up
+			if iRemainder > 15:
+				iMinutes += 1
+
+			# If the task minimum is 1
+			if dClient['task_minimum'] == 1:
+
+				# Store the total minutes as is
+				iTotalMinutes = iMinutes
+
+			# Else
+			else:
+
+				# Figure out the total blocks
+				iBlocks, iRemainder = divmod(iMinutes, dClient['task_minimum'])
+
+				# If the remainder is greater than the overflow
+				if dClient['task_overflow'] == 0 or iRemainder > dClient['task_overflow']:
+					iBlocks += 1
+
+				# Multiply the blocks by the minimum
+				iTotalMinutes = dClient['task_minimum'] * iBlocks
+
+			# If we don't have the project yet
+			if d['project'] not in dProjects:
+				dProjects[d['project']] = {
+					"minutes": 0,
+					"price": Decimal('0.00')
+				}
+
+			# Increment the projects total minutes
+			dProject[d['project']]['minutes'] += iTotalMinutes
+
+		# Go through each project and calculate the amount
+		for sProject in dProjects:
+
+			# Divide the minutes by 60 to get hours
+			deHours = Decimal(dProjects[sProject]['minutes']) / Decimal(60)
+
+			# Get the price
+			dePrice = Decimal(dClient['rate']) * deHours
+
+			# Round up to closest cent
+			dProjects[sProject]['amount'] = dePrice.quantize(Decimal('1.00'), rounding=ROUND_UP)
+
+		# Create an instance of the invoice to check for problems
+		try:
+			oInvoice = Invoice({
+				"client": data['client'],
+				"identifier": Invoice.getNextIdentifier(),
+				"start": data['start'],
+				"end": data['end']
+			})
+		except ValueError as e:
+			return Services.Error(1001, e.args[0])
+
+		# Create the invoice and store the ID
+		sID = oInvoice.create()
+
+		# Go through each project
+		for sProject in dProjects:
+
+			# Create an instance of the invoice item to check for problems
+			try:
+				oItem = InvoiceItem({
+					"invoice": sID,
+					"project": sProject,
+					"minutes": dProjects[sProject]['minutes'],
+					"amount": dProjects[sProject]['amount']
+				})
+			except ValueError as e:
+				return Services.Error(1001, e.args[0])
+
+			# Create the item
+			oItem.create()
+
+		# Return the new invoice ID
+		return Services.Response(sID)
 
 	def invoice_delete(self, data, sesh):
 		"""Invoice delete
@@ -740,26 +847,31 @@ class Primary(Services.Service):
 		Returns:
 			Services.Response
 		"""
-		pass
+
+		# If the ID isn't passed
+		if '_id' not in data:
+			return Services.Error(1001, [['_id', 'missing']])
+
+		# Find the invoice
+		oInvoice = Invoice.get(data['_id'])
+		if not oInvoice:
+			return Services.Error(2003, 'invoice')
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'accounting', data['client'])
+
+		# Delete the items
+		InvoiceItem.deleteGet(data['_id'], 'invoice')
+
+		# Delete the invoice and return the result
+		return Services.Response(
+			oInvoice.delete()
+		)
 
 	def invoice_read(self, data, sesh):
 		"""Invoice read
 
 		Fetches and returns data on an existing invoice
-
-		Arguments:
-			data (dict): The data passed to the request
-			sesh (Sesh._Session): The session associated with the request
-
-		Returns:
-			Services.Response
-		"""
-		pass
-
-	def invoice_update(self, data, sesh):
-		"""Invoice update
-
-		Updates an existing invoice
 
 		Arguments:
 			data (dict): The data passed to the request

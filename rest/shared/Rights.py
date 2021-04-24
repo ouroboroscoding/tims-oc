@@ -61,9 +61,6 @@ def verify(user, type_=None, client=None):
 	else:
 		dUser = user
 
-	import pprint
-	pprint.pprint(dUser)
-
 	# If the type is set
 	if type_ is not None:
 
