@@ -1,5 +1,5 @@
 /**
- * Signed In
+ * Require User
  *
  * Wrapper for all pages that require sign in
  *
@@ -23,6 +23,7 @@ import SignIn from 'components/dialogs/SignIn';
 // Local components
 import Clients from './Clients';
 import Home from './Home';
+import Tasks from './Tasks';
 import Users from './Users';
 
 // Shared communication modules
@@ -88,6 +89,12 @@ export default function RequireUser(props) {
 		<Switch>
 			<Route exact path="/clients">
 				<Clients
+					{...props}
+				/>
+			</Route>
+			<Route exact path="/tasks">
+				<Tasks
+					clients={clients}
 					{...props}
 				/>
 			</Route>

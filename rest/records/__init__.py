@@ -254,15 +254,15 @@ class Task(Record_MySQL.Record):
 		"""
 
 		# Init the where
-		lWhere = ['`t`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)' % (
+		lWhere = ['`t`.`end` BETWEEN FROM_UNIXTIME(%d) AND FROM_UNIXTIME(%d)' % (
 			start, end
 		)]
 
 		# If we have clients
 		if clients:
-			lWhere.append('`p`.`client` %s' % isinstance(clients, list) and \
+			lWhere.append('`p`.`client` %s' % (isinstance(clients, list) and \
 							("IN ('%s')" % "','".join(clients)) or \
-							("= '%s'" % clients)
+							("= '%s'" % clients))
 			)
 
 		# Fetch the record structure
@@ -270,7 +270,7 @@ class Task(Record_MySQL.Record):
 
 		# Generate SQL
 		sSQL = "SELECT\n" \
-				"	`t`.`client` as `client`,\n" \
+				"	`p`.`client` as `client`,\n" \
 				"	`c`.`name` as `clientName`,\n" \
 				"	`t`.`project` as `project`,\n" \
 				"	`p`.`name` as `projectName`,\n" \
@@ -283,10 +283,11 @@ class Task(Record_MySQL.Record):
 				"JOIN `%(db)s`.`project` as `p` ON `t`.`project` = `p`.`_id`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
 				"JOIN `%(db)s`.`user` as `u` ON `t`.`user` = `u`.`_id`\n" \
-				"WHERE %s" % {
+				"WHERE %(where)s\n" \
+				"ORDER BY `start`" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
-			"where": '\nAND'.join(lWhere),
+			"where": '\nAND'.join(lWhere)
 		}
 
 		# Execute and return the select

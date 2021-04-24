@@ -145,16 +145,12 @@ class Primary(Services.Service):
 		# Get the user
 		dUser = User.cacheGet(sesh['user_id'])
 
-		pprint(dUser)
-
 		# Fetch the clients using IDs the user has access to
 		lClients = Client.get(
 			dUser['access'] and dUser['access'] or None,
 			filter={"_archived": False},
 			raw=['_id', 'name']
 		)
-
-		pprint(lClients)
 
 		# Return the cients
 		return Services.Response(lClients)
@@ -1176,7 +1172,11 @@ class Primary(Services.Service):
 				lClients = dUser['access']
 
 		# Get all tasks that end in the given timeframe
-		lTasks = Task.getByClient(lClients, data['start'], data['end'])
+		lTasks = Task.byClient(data['start'], data['end'], lClients)
+
+		# Go through each task and calculate the elpased seconds
+		for d in lTasks:
+			d['elapsed'] = d['end'] - d['start']
 
 		# Return the records
 		return Services.Response(lTasks)
