@@ -72,6 +72,14 @@ export default function Menu(props) {
 						</ListItem>
 					</Link>
 				}
+				{rights.invoices &&
+					<Link to="/invoices" onClick={props.onClose}>
+						<ListItem button>
+							<ListItemIcon><i className="fas fa-file-invoice-dollar" /></ListItemIcon>
+							<ListItemText primary="Invoices" />
+						</ListItem>
+					</Link>
+				}
 				{rights.tasks &&
 					<Link to="/tasks" onClick={props.onClose}>
 						<ListItem button>

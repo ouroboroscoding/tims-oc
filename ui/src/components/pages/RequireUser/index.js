@@ -23,6 +23,8 @@ import SignIn from 'components/dialogs/SignIn';
 // Local components
 import Clients from './Clients';
 import Home from './Home';
+import Invoice from './Invoice';
+import Invoices from './Invoices';
 import Tasks from './Tasks';
 import Users from './Users';
 
@@ -89,6 +91,15 @@ export default function RequireUser(props) {
 		<Switch>
 			<Route exact path="/clients">
 				<Clients
+					{...props}
+				/>
+			</Route>
+			<Route path="/invoice/:_id" children={
+				<Invoice {...props} />
+			}/>
+			<Route exact path="/invoices">
+				<Invoices
+					clients={clients}
 					{...props}
 				/>
 			</Route>

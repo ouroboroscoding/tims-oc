@@ -11,12 +11,43 @@
 		},
 		"table": "invoice"
 	},
+
 	"__name__": "Invoice",
-	"_id": {"__type__":"uuid", "__optional__":true},
-	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
-	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"client": {"__type__":"uuid"},
-	"identifier": {"__type__":"uint"},
-	"start": {"__type__":"timestamp"},
-	"end": {"__type__":"timestamp"}
+
+	"_id": {
+		"__type__":"uuid",
+		"__optional__":true
+	},
+
+	"_created": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__react__":{"title":"Created"},
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
+	},
+
+	"_updated": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}
+	},
+
+	"client": {
+		"__type__":"uuid"
+	},
+
+	"identifier": {
+		"__type__":"uint",
+		"__react__":{"title":"Invoice #"}
+	},
+
+	"start": {
+		"__type__":"timestamp",
+		"__react__":{"title":"From"}
+	},
+
+	"end": {
+		"__type__":"timestamp",
+		"__react__":{"title":"To"}
+	}
 }

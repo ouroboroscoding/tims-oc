@@ -148,7 +148,7 @@ export default function Tasks(props) {
 					defaultValue={date(dateInc(-13))}
 					inputRef={refStart}
 					inputProps={{
-						min: '2021-01-01',
+						min: '2020-01-01',
 						max: sToday
 					}}
 					label="Start"
@@ -162,7 +162,7 @@ export default function Tasks(props) {
 					defaultValue={sToday}
 					inputRef={refEnd}
 					inputProps={{
-						min: '2021-01-01',
+						min: '2020-01-01',
 						max: sToday
 					}}
 					label="End"

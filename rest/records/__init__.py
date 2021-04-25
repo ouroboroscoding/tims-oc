@@ -176,6 +176,65 @@ class Invoice(Record_MySQL.Record):
 		# Add 1 and return
 		return iIdentifier + 1
 
+	@classmethod
+	def range(cls, start, end, clients, custom={}):
+		"""Range
+
+		Returns all invoices in a timeframe that are optionally associated with
+		specific clients
+
+		Arguments:
+			start (uint): The minimum time the task can end in
+			end (uint): The maximum time the task can end in
+			clients (str): Optional ID or IDs of clients
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Init the where
+		lWhere = ['`i`.`_created` BETWEEN FROM_UNIXTIME(%d) AND FROM_UNIXTIME(%d)' % (
+			start, end
+		)]
+
+		# If we have clients
+		if clients:
+			lWhere.append('`i`.`client` %s' % (isinstance(clients, list) and \
+							("IN ('%s')" % "','".join(clients)) or \
+							("= '%s'" % clients))
+			)
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`i`.`_id` as `_id`,\n" \
+				"	`i`.`_created` as `_created`,\n" \
+				"	`i`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
+				"	`i`.`identifier` as `identifier`,\n" \
+				"	`i`.`start` as `start`,\n" \
+				"	`i`.`end` as `end`\n" \
+				"FROM `%(db)s`.`%(table)s` as `i`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `i`.`client` = `c`.`_id`\n" \
+				"WHERE %(where)s\n" \
+				"ORDER BY `i`.`_created` DESC" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"where": '\nAND'.join(lWhere)
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
+
 # InvoiceItem class
 class InvoiceItem(Record_MySQL.Record):
 	"""InvoiceItem
@@ -185,6 +244,48 @@ class InvoiceItem(Record_MySQL.Record):
 
 	_conf = None
 	"""Configuration"""
+
+	@classmethod
+	def byInvoice(cls, invoice, custom={}):
+		"""By Invoice
+
+		Returns all items associated with a specific invoice, including the
+		names of the projects
+
+		Arguments:
+			invoice (str): The ID of the invoice
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`i`.`project` as `project`,\n" \
+				"	`p`.`name` as `projectName`,\n" \
+				"	`i`.`minutes` as `minutes`,\n" \
+				"	`i`.`amount` as `amount`" \
+				"FROM `%(db)s`.`%(table)s` as `i`\n" \
+				"JOIN `%(db)s`.`project` as `p` ON `i`.`project` = `p`.`_id`\n" \
+				"WHERE `invoice` = '%(invoice)s'\n" \
+				"ORDER BY `p`.`name`" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"invoice": invoice
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
 
 	@classmethod
 	def config(cls):
@@ -275,11 +376,124 @@ class Task(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
-	def byClient(cls, start, end, clients=None, custom={}):
-		"""By Client
+	def byUser(cls, user, start, end, custom={}):
+		"""By User
 
-		Returns all tasks in a timeframe that are assigned to projects with
-		a specific client
+		Returns all tasks in a timeframe that are assigned to a specific user
+
+		Arguments:
+			user (str): The ID of the user
+			start (uint): The minimum time the task can end in
+			end (uint): The maximum time the task can end in
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`p`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
+				"	`t`.`project` as `project`,\n" \
+				"	`p`.`name` as `projectName`,\n" \
+				"	`t`.`start` as `start`,\n" \
+				"	`t`.`end` as `end`,\n" \
+				"	`t`.`description` as `description`\n" \
+				"FROM `%(db)s`.`%(table)s` as `t`\n" \
+				"JOIN `%(db)s`.`project` as `p` ON `t`.`project` = `p`.`_id`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
+				"WHERE `t`.`user` = '%(user)s'\n" \
+				"AND `t`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"user": user,
+			"start": start,
+			"end": end
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
+
+	@classmethod
+	def config(cls):
+		"""Config
+
+		Returns the configuration data associated with the record type
+
+		Returns:
+			dict
+		"""
+
+		# If we haven loaded the config yet
+		if not cls._conf:
+			cls._conf = Record_MySQL.Record.generateConfig(
+				Tree.fromFile('definitions/task.json')
+			)
+
+		# Return the config
+		return cls._conf
+
+	@classmethod
+	def open(cls, user, custom={}):
+		"""Open
+
+		Returns an unfinished task by user if one exists
+
+		Arguments:
+			user (str): The ID of the user
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			dict | None
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`t`.`_id`,\n" \
+				"	`p`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
+				"	`t`.`project` as `project`,\n" \
+				"	`p`.`name` as `projectName`,\n" \
+				"	`t`.`start` as `start`,\n" \
+				"	`t`.`description` as `description`\n" \
+				"FROM `%(db)s`.`%(table)s` as `t`\n" \
+				"JOIN `%(db)s`.`project` as `p` ON `t`.`project` = `p`.`_id`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
+				"WHERE `t`.`user` = '%(user)s'\n" \
+				"AND `t`.`end` IS NULL" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"user": user
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ROW
+		)
+
+	@classmethod
+	def range(cls, start, end, clients=None, custom={}):
+		"""Range
+
+		Returns all tasks in a timeframe that are optionally associated with
+		specific clients
 
 		Arguments:
 			start (uint): The minimum time the task can end in
@@ -336,119 +550,6 @@ class Task(Record_MySQL.Record):
 			sSQL,
 			Record_MySQL.ESelect.ALL
 		)
-
-	@classmethod
-	def byUser(cls, user, start, end, custom={}):
-		"""By User
-
-		Returns all tasks in a timeframe that are assigned to a specific user
-
-		Arguments:
-			user (str): The ID of the user
-			start (uint): The minimum time the task can end in
-			end (uint): The maximum time the task can end in
-			custom (dict): Custom Host and DB info
-				'host' the name of the host to get/set data on
-				'append' optional postfix for dynamic DBs
-
-		Returns:
-			list
-		"""
-
-		# Fetch the record structure
-		dStruct = cls.struct(custom)
-
-		# Generate SQL
-		sSQL = "SELECT\n" \
-				"	`p`.`client` as `client`,\n" \
-				"	`c`.`name` as `clientName`,\n" \
-				"	`t`.`project` as `project`,\n" \
-				"	`p`.`name` as `projectName`,\n" \
-				"	`t`.`start` as `start`,\n" \
-				"	`t`.`end` as `end`,\n" \
-				"	`t`.`description` as `description`\n" \
-				"FROM `%(db)s`.`%(table)s` as `t`\n" \
-				"JOIN `%(db)s`.`project` as `p` ON `t`.`project` = `p`.`_id`\n" \
-				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
-				"WHERE `t`.`user` = '%(user)s'\n" \
-				"AND `t`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)" % {
-			"db": dStruct['db'],
-			"table": dStruct['table'],
-			"user": user,
-			"start": start,
-			"end": end
-		}
-
-		# Execute and return the select
-		return Record_MySQL.Commands.select(
-			dStruct['host'],
-			sSQL,
-			Record_MySQL.ESelect.ALL
-		)
-
-	@classmethod
-	def open(cls, user, custom={}):
-		"""Open
-
-		Returns an unfinished task by user if one exists
-
-		Arguments:
-			user (str): The ID of the user
-			custom (dict): Custom Host and DB info
-				'host' the name of the host to get/set data on
-				'append' optional postfix for dynamic DBs
-
-		Returns:
-			dict | None
-		"""
-
-		# Fetch the record structure
-		dStruct = cls.struct(custom)
-
-		# Generate SQL
-		sSQL = "SELECT\n" \
-				"	`t`.`_id`,\n" \
-				"	`p`.`client` as `client`,\n" \
-				"	`c`.`name` as `clientName`,\n" \
-				"	`t`.`project` as `project`,\n" \
-				"	`p`.`name` as `projectName`,\n" \
-				"	`t`.`start` as `start`,\n" \
-				"	`t`.`description` as `description`\n" \
-				"FROM `%(db)s`.`%(table)s` as `t`\n" \
-				"JOIN `%(db)s`.`project` as `p` ON `t`.`project` = `p`.`_id`\n" \
-				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
-				"WHERE `t`.`user` = '%(user)s'\n" \
-				"AND `t`.`end` IS NULL" % {
-			"db": dStruct['db'],
-			"table": dStruct['table'],
-			"user": user
-		}
-
-		# Execute and return the select
-		return Record_MySQL.Commands.select(
-			dStruct['host'],
-			sSQL,
-			Record_MySQL.ESelect.ROW
-		)
-
-	@classmethod
-	def config(cls):
-		"""Config
-
-		Returns the configuration data associated with the record type
-
-		Returns:
-			dict
-		"""
-
-		# If we haven loaded the config yet
-		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/task.json')
-			)
-
-		# Return the config
-		return cls._conf
 
 # User class
 class User(Record_MySQL.Record):

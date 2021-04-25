@@ -745,7 +745,9 @@ class Primary(Services.Service):
 		dProjects = {}
 
 		# Fetch all the tasks for the client in the given timeframe
-		lTasks = Tasks.byClient(data['start'], data['end'], data['client'])
+		lTasks = Task.range(data['start'], data['end'], data['client'])
+
+		pprint(lTasks)
 
 		# Go through each task
 		for d in lTasks:
@@ -787,7 +789,9 @@ class Primary(Services.Service):
 				}
 
 			# Increment the projects total minutes
-			dProject[d['project']]['minutes'] += iTotalMinutes
+			dProjects[d['project']]['minutes'] += iTotalMinutes
+
+		pprint(dProjects)
 
 		# Go through each project and calculate the amount
 		for sProject in dProjects:
@@ -832,8 +836,10 @@ class Primary(Services.Service):
 			# Create the item
 			oItem.create()
 
-		# Return the new invoice ID
-		return Services.Response(sID)
+		# Return the new invoice as raw data
+		return Services.Response(
+			oInvoice.record()
+		)
 
 	def invoice_delete(self, data, sesh):
 		"""Invoice delete
@@ -880,7 +886,24 @@ class Primary(Services.Service):
 		Returns:
 			Services.Response
 		"""
-		pass
+
+		# If the ID is missing
+		if '_id' not in data:
+			return Services.Error(1001, [['_id', 'missing']])
+
+		# Find the invoice
+		dInvoice = Invoice.get(data['_id'], raw=True)
+		if not dInvoice:
+			return Services.Error(2003, 'invoice')
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], ['client', 'accounting'], dInvoice['client'])
+
+		# Find all the items associated and add them to the invoice
+		dInvoice['items'] = InvoiceItem.byInvoice(data['_id'])
+
+		# Return the invoice
+		return Services.Response(dInvoice)
 
 	def invoices_read(self, data, sesh):
 		"""Invoices read
@@ -894,7 +917,45 @@ class Primary(Services.Service):
 		Returns:
 			Services.Response
 		"""
-		pass
+
+		# Make sure we have all necessary data
+		try: DictHelper.eval(data, ['start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Get the signed in user
+		dUser = User.cacheGet(sesh['user_id'])
+		if not dUser:
+			return Services.Error(2003, 'user')
+
+		# If a specific task is passed
+		if 'client' in data:
+
+			# Check rights
+			Rights.verifyOrRaise(dUser, ['accounting', 'client'], data['client'])
+
+			# Set the filter
+			lClients = data['client']
+
+		# Else
+		else:
+
+			# Check type
+			if dUser['type'] not in ['admin', 'accounting', 'client']:
+				return Services.Error(Rights.INVALID)
+
+			# If the user has full access
+			if dUser['access'] is None:
+				lClients = None
+
+			# Else, filter just those clients available to the user
+			else:
+				lClients = dUser['access']
+
+		# Get all invoices in the given timeframe
+		lInvoices = Invoice.range(data['start'], data['end'], lClients)
+
+		# Return the records
+		return Services.Response(lInvoices)
 
 	def project_create(self, data, sesh):
 		"""Project create
@@ -1267,13 +1328,17 @@ class Primary(Services.Service):
 		if 'client' in data:
 
 			# Check rights
-			Rights.verifyOrRaise(dUser, 'client', data['client'])
+			Rights.verifyOrRaise(dUser, ['client', 'manager'], data['client'])
 
 			# Set the filter
 			lClients = data['client']
 
 		# Else
 		else:
+
+			# Check type
+			if dUser['type'] not in ['admin', 'client', 'manager']:
+				return Services.Error(Rights.INVALID)
 
 			# If the user has full access
 			if dUser['access'] is None:
@@ -1284,7 +1349,7 @@ class Primary(Services.Service):
 				lClients = dUser['access']
 
 		# Get all tasks that end in the given timeframe
-		lTasks = Task.byClient(data['start'], data['end'], lClients)
+		lTasks = Task.range(data['start'], data['end'], lClients)
 
 		# Go through each task and calculate the elpased seconds
 		for d in lTasks:

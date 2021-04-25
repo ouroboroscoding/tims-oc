@@ -68,9 +68,19 @@ def verify(user, type_=None, client=None):
 		if dUser['type'] == 'admin':
 			return True
 
-		# If the user is not the correct type
-		if dUser['type'] != type_:
-			return False
+		# If we got a list
+		if isinstance(type_, (list,tuple)):
+
+			# If the user is not in the list
+			if dUser['type'] not in type_:
+				return False
+
+		# Else, we most likely got a single value
+		else:
+
+			# If the user is not the correct type
+			if dUser['type'] != type_:
+				return False
 
 	# If the user has limited access
 	if dUser['access'] is not None:

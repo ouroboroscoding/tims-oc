@@ -31,10 +31,10 @@ import Rest from 'shared/communication/rest';
 import Events from 'shared/generic/events';
 import { afindi, clone } from 'shared/generic/tools';
 
-// Load the user and permission definitions
+// Load the user definition
 import UserDef from 'definitions/user';
 
-// Create Trees using the definitions
+// Create the Tree using the definition
 const UserTree = new Tree(clone(UserDef));
 
 /**
