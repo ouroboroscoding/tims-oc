@@ -902,6 +902,26 @@ class Primary(Services.Service):
 		# Find all the items associated and add them to the invoice
 		dInvoice['items'] = InvoiceItem.byInvoice(data['_id'])
 
+		# Generate the total
+		dInvoice['amount'] = Decimal('0.00')
+		dInvoice['minutes'] = 0
+		for d in dInvoice['items']:
+			dInvoice['amount'] += d['amount']
+			dInvoice['minutes'] += d['minutes']
+
+		# If we need details
+		if 'details' in data and data['details']:
+
+			# Add the details section to the invoice
+			dInvoice['details'] = {
+
+				# Fetch the client
+				"client": Client.get(dInvoice['client'], raw=True),
+
+				# Fetch the company
+				"company": Company.get(raw=True, limit=1)
+			}
+
 		# Return the invoice
 		return Services.Response(dInvoice)
 

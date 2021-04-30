@@ -15,6 +15,14 @@ import { useParams } from 'react-router-dom';
 
 // Material UI
 import Box from '@material-ui/core/Box';
+import IconButton from '@material-ui/core/IconButton';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableFooter from '@material-ui/core/TableFooter';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
 // Shared communication modules
@@ -22,6 +30,7 @@ import Rest from 'shared/communication/rest';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
+import { date, dateInc, timeElapsed } from 'shared/generic/tools';
 
 /**
  * Invoice
@@ -48,7 +57,8 @@ export default function Invoice(props) {
 
 		// Get the invoice data from the server
 		Rest.read('primary', 'invoice', {
-			_id: _id
+			_id: _id,
+			details: true
 		}).done(res => {
 
 			// If there's an error
@@ -69,10 +79,79 @@ export default function Invoice(props) {
 
 	}, [_id]);
 
+	function pdf() {
+
+	}
+
+	// Still loading
+	if(invoice === false) {
+		return <Box className="singlePage"><Typography>Loading...</Typography></Box>
+	}
+
 	// Render
 	return (
-		<Box className="singlePage">
-			<pre>{JSON.stringify(invoice, null, 4)}</pre>
+		<Box id="invoice" className="singlePage">
+			<Box className="header flexColumns">
+				<Box className="logo flexStatic"></Box>
+				<Box className="company flexGrow">
+					<Typography className="name">{invoice.details.company.name}</Typography>
+					<Typography className="address">
+						{invoice.details.company.address1 + (invoice.details.company.address2 || '')}<br />
+						{invoice.details.company.city}, {invoice.details.company.division}, {invoice.details.company.country}
+					</Typography>
+				</Box>
+				<Box className="pdf flexStatic">
+					<Tooltip title="Generate PDF">
+						<IconButton onClick={pdf}>
+							<i className="fas fa-file-pdf" />
+						</IconButton>
+					</Tooltip>
+				</Box>
+			</Box>
+			<hr />
+			<Box className="details flexColumns">
+				<Box className="client flexGrow">
+					<Typography className="title">Bill To:</Typography>
+					<Typography className="name">{invoice.details.client.name}</Typography>
+					<Typography className="address">
+						{invoice.details.client.address1 + (invoice.details.client.address2 || '')}<br />
+						{invoice.details.client.city}, {invoice.details.client.division}, {invoice.details.client.country}
+					</Typography>
+				</Box>
+				<Box className="invoice flexGrow">
+					<Typography className="title">Invoice #{invoice.identifier}</Typography>
+					{(invoice.details.company.payable_to !== null && invoice.details.company.payable_to !== '') &&
+						<Typography>Payable to: {invoice.details.company.payable_to}</Typography>
+					}
+					<Typography>Created: {date(invoice._created)}</Typography>
+					<Typography>Due: {date(dateInc(invoice.details.client.due, invoice._created))}</Typography>
+				</Box>
+			</Box>
+			<Table className="items">
+				<TableHead>
+					<TableRow>
+						<TableCell className="project">Project</TableCell>
+						<TableCell className="hours">Hours</TableCell>
+						<TableCell className="amount">Amount</TableCell>
+					</TableRow>
+				</TableHead>
+				<TableBody>
+					{invoice.items.map((o,i) =>
+						<TableRow className={i%2 === 0 ? 'even' : 'odd'}>
+							<TableCell className="project">{o.projectName}</TableCell>
+							<TableCell className="hours">{timeElapsed(o.minutes)}</TableCell>
+							<TableCell className="amount">${o.amount}</TableCell>
+						</TableRow>
+					)}
+				</TableBody>
+				<TableFooter>
+					<TableRow>
+						<TableCell className="total">Total</TableCell>
+						<TableCell className="hours">{timeElapsed(invoice.minutes)}</TableCell>
+						<TableCell className="amount">${invoice.amount}</TableCell>
+					</TableRow>
+				</TableFooter>
+			</Table>
 		</Box>
 	);
 }

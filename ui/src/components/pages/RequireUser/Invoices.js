@@ -35,7 +35,7 @@ import Rest from 'shared/communication/rest';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
-import { clone, date, dateInc, timeElapsed } from 'shared/generic/tools';
+import { clone, date, dateInc } from 'shared/generic/tools';
 
 // Load the invoice definition
 import InvoiceDef from 'definitions/invoice';

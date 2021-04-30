@@ -1,0 +1,91 @@
+#invoice {
+
+	hr {
+		margin: 20px auto;
+		width: 80%;
+	}
+
+	.header {
+		margin-bottom: 20px;
+
+		.logo {
+		}
+
+		.company {
+
+			.name {
+				font-size: 3em;
+				font-weight: bold;
+			}
+
+			.address {
+				font-weight: bold;
+			}
+		}
+
+		.pdf {
+			i {
+				font-size: 3rem;
+			}
+		}
+	}
+
+	.details {
+
+		.title {
+			font-size: 1.75rem;
+			font-weight: bold;
+		}
+
+		.client {
+
+		}
+
+		.invoice {
+			text-align: right;
+		}
+	}
+
+	.items {
+		margin-top: 20px;
+
+		thead {
+			th {
+				background-color: black;
+				color: white;
+				font-size: 1rem;
+				font-weight: bold;
+			}
+		}
+
+		tbody {
+			tr.even {
+				background-color: white;
+			}
+			tr.odd {
+				background-color: lightgrey;
+			}
+		}
+
+		tfoot {
+			td {
+				font-size: 1.1rem;
+				font-weight: bold;
+				text-align: right;
+			}
+		}
+
+		.project {
+			width: 70%;
+		}
+
+		.hours, .amount {
+			width: 15%;
+			text-align: right;
+		}
+
+		.total {
+			width: 70%;
+		}
+	}
+}
