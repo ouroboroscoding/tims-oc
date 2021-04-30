@@ -51,7 +51,7 @@
 
 		thead {
 			th {
-				background-color: black;
+				background-color: #484848;
 				color: white;
 				font-size: 1rem;
 				font-weight: bold;
@@ -60,10 +60,10 @@
 
 		tbody {
 			tr.even {
-				background-color: white;
+				background-color: #ffffff;
 			}
 			tr.odd {
-				background-color: lightgrey;
+				background-color: #efefef;
 			}
 		}
 
@@ -76,16 +76,16 @@
 		}
 
 		.project {
-			width: 70%;
+			width: 80%;
 		}
 
 		.hours, .amount {
-			width: 15%;
+			width: 10%;
 			text-align: right;
 		}
 
 		.total {
-			width: 70%;
+			width: 80%;
 		}
 	}
 }
