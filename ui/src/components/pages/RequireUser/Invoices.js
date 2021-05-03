@@ -135,6 +135,11 @@ function Generate(props) {
 				Events.trigger('error', Rest.errorMessage(res.error));
 			}
 
+			// If there was a warning (PDF generation)
+			if(res.warning) {
+				Events.trigger('warning', res.warning);
+			}
+
 			// If we got data
 			if(res.data) {
 				props.onSuccess(res.data);

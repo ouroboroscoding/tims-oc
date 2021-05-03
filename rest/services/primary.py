@@ -8,17 +8,19 @@ __author__		= "Chris Nasr"
 __copyright__	= "OuroborosCoding"
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
-__email__		= "chris@fuelforthefire.ca"
+__email__		= "chris@ouroboroscoding.com"
 __created__		= "2021-04-06"
 
 # Python imports
+from base64 import b64decode, b64encode
 from decimal import Decimal, ROUND_UP
 from pprint import pprint
 from time import time
 
 # Pip imports
 from redis import StrictRedis
-from RestOC import Conf, DictHelper, Errors, Services, Sesh, StrHelper
+from RestOC import Conf, DateTimeHelper, DictHelper, Errors, Services, Sesh, \
+					StrHelper, Templates
 from RestOC.Record_MySQL import DuplicateException
 
 # Record imports
@@ -26,7 +28,10 @@ from records import Access, Client, Company, Invoice, InvoiceItem, Key, \
 					Project, Task, User
 
 # Shared imports
-from shared import EMail, Rights
+from shared import EMail, Rights, SSS
+
+# Defines
+_INVOICE_S3_KEY = '%(client)s/%(invoice)s.pdf'
 
 class Primary(Services.Service):
 	"""Primary Service class
@@ -105,6 +110,20 @@ class Primary(Services.Service):
 
 		# Pass the Redis connection to records that need it
 		User.redis(self._redis)
+
+		# Get the S3 config
+		dS3 = Conf.get('s3')
+
+		# Init the S3 module
+		SSS.init(
+			dS3['profile'],
+			dS3['conf'],
+			dS3['bucket'],
+			dS3['path']
+		)
+
+		# Store the lifetime of S3 urls
+		self._s3_expires = dS3['expires']
 
 		# Return self for chaining
 		return self
@@ -737,7 +756,7 @@ class Primary(Services.Service):
 		Rights.verifyOrRaise(sesh['user_id'], 'accounting', data['client'])
 
 		# Fetch the client info
-		dClient = Client.get(data['client'], raw=['rate', 'task_minimum', 'task_overflow'])
+		dClient = Client.get(data['client'], raw=True)
 		if not dClient:
 			return Services.Response(dClient)
 
@@ -746,8 +765,6 @@ class Primary(Services.Service):
 
 		# Fetch all the tasks for the client in the given timeframe
 		lTasks = Task.range(data['start'], data['end'], data['client'])
-
-		pprint(lTasks)
 
 		# Go through each task
 		for d in lTasks:
@@ -791,8 +808,6 @@ class Primary(Services.Service):
 			# Increment the projects total minutes
 			dProjects[d['project']]['minutes'] += iTotalMinutes
 
-		pprint(dProjects)
-
 		# Go through each project and calculate the amount
 		for sProject in dProjects:
 
@@ -819,6 +834,9 @@ class Primary(Services.Service):
 		# Create the invoice and store the ID
 		sID = oInvoice.create()
 
+		# Init the items list for the PDF
+		lItems = []
+
 		# Go through each project
 		for sProject in dProjects:
 
@@ -836,9 +854,57 @@ class Primary(Services.Service):
 			# Create the item
 			oItem.create()
 
+			# Add it to the list
+			lItems.append(oItem.record())
+
+		# Generate the template data
+		dTpl = {
+			"company": Company.get(raw=True, limit=1),
+			"client": dClient,
+			"invoice": Invoice.get(sID, raw=True),
+			"items": lItems
+		}
+		dTpl['company']['address'] = '%s%s' % (dTpl['company']['address1'], (dTpl['company']['address2'] and dTpl['company']['address2'] or ''))
+		dTpl['client']['address'] = '%s%s' % (dTpl['client']['address1'], (dTpl['client']['address2'] and dTpl['client']['address2'] or ''))
+		dTpl['invoice']['amount'] = Decimal('0.00')
+		dTpl['invoice']['minutes'] = 0
+		dTpl['invoice']['created'] = DateTimeHelper.date(dTpl['invoice']['_created'])
+		dTpl['invoice']['due'] = DateTimeHelper.date(
+			DateTimeHelper.dateInc(dTpl['client']['due'], dTpl['invoice']['_created'])
+		)
+		for d in dTpl['items']:
+			dTpl['invoice']['amount'] += Decimal(d['amount'])
+			dTpl['invoice']['minutes'] += d['minutes']
+			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes'])
+		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes'])
+		dTpl['invoice']['amount'] = str(d['amount'])
+
+		# Generate the PDF
+		sPDF = Templates.generate('pdf/invoice.html', dTpl, 'en-US', pdf=True)
+
+		# Create the Key for S3
+		sKey = _INVOICE_S3_KEY % {
+			"client": oInvoice['client'],
+			"invoice": oInvoice['_id']
+		}
+
+		# Store the PDF localy for testing
+		with open('temp/%s.pdf' % sID, 'wb') as f:
+			f.write(sPDF)
+
+		# Init the warning
+		mWarning = None
+
+		# Create new object and upload it
+		try:
+			SSS.put(sKey, sPDF, headers={"ContentType":'application/pdf',"ContentLength":len(sPDF)})
+		except SSS.SSSException as e:
+			mWarning = 'PDF Generation Failed: %s' % str(e.args)
+
 		# Return the new invoice as raw data
 		return Services.Response(
-			oInvoice.record()
+			oInvoice.record(),
+			warning=mWarning
 		)
 
 	def invoice_delete(self, data, sesh):

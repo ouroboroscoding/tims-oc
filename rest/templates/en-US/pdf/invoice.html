@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="pdfkit-page-size" content="Letter"/>
+		<meta name="pdfkit-orientation" content="Portrait"/>
+		<style>
+			hr {margin: 20px auto; width: 80%;}
+			.header {margin-bottom: 20px;}
+			.header .company .name {font-size: 2.75em;font-weight: bold;}
+			.header .company .address {font-weight: bold;}
+			.details .title {font-size: 1.75rem;font-weight: bold;}
+			.details .invoice {text-align: right;}
+			.items {margin-top: 20px;}
+			.items thead th {background-color: #484848;color: white;font-size: 1rem;font-weight: bold;}
+			.items tbody tr:nth-child(even) {background-color: #ffffff;}
+			.items tbody tr:nth-child(odd) {background-color: #efefef;}
+			.items tfoot td {font-size: 1.1rem;font-weight: bold;text-align: right;}
+			.items .project {width: 80%;}
+			.items .hours, .items .amount {width: 10%;text-align: right;}
+			.items .total {width: 80%;}
+
+			.flex {display: -webkit-box;display: -webkit-flex;display: flex;flex-direction: row;}
+			.flexGrow {-webkit-box-flex: 1;-webkit-flex: 1;flex: 1;}
+		</style>
+	</head>
+	<body>
+		<div class="header flex">
+			<div class="logo"></div>
+			<div class="company flexGrow">
+				<p class="name">{{ company['name'] }}</p>
+				<p class="address">
+					{{ company['address'] }}<br />
+					{{ company['city'] }}, {{ company['division'] }}, {{ company['country'] }}
+				</p>
+			</div>
+		</div>
+		<hr />
+		<div class="details flex">
+			<div class="client flexGrow">
+				<p class="title">Bill To:</p>
+				<p class="name">{{ client['name'] }}</p>
+				<p class="address">
+					{{ company['address'] }}<br />
+					{{ client['city'] }}, {{ client['division'] }}, {{ client['country'] }}
+				</p>
+			</div>
+			<div class="invoice flexGrow">
+				<p class="title">Invoice #{{ invoice.identifier }}</p>
+				{% if company['payable_to'] %}<p>Payable to: {{ company['payable_to'] }}</p>{% endif %}
+				<p>Created: {{ invoice['created'] }}</p>
+				<p>Due: {{ invoice['due'] }}</p>
+			</div>
+		</div>
+		<table class="items">
+			<thead>
+				<tr>
+					<th class="project">Project</th>
+					<th class="hours">Hours</th>
+					<th class="amount">Amount</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for item in items %}
+					<tr>
+						<td class="project">{{ item['projectName'] }}</td>
+						<td class="hours">{{ item['elapsedTime'] }}</td>
+						<td class="amount">${{ item['amount'] }}</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+			<TableFooter>
+				<tr>
+					<td class="total">Total</td>
+					<td class="hours">{{ invoice['elapsedTime'] }}</td>
+					<td class="amount">${{ invoice['amount'] }}</td>
+				</tr>
+			</TableFooter>
+		</table>
+	</body>
+</html>

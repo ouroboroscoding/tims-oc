@@ -49,6 +49,17 @@
 		}
 	},
 
+	"s3": {
+		"expires": 86400,
+		"profile": "s3",
+		"conf": {
+			"connect_timeout": 5,
+			"read_timeout": 2
+		},
+		"bucket": "",
+		"path": ""
+	},
+
 	"services": {
 		"salt": null
 	}
