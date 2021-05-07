@@ -2,8 +2,8 @@
 	"__mysql__": {
 		"auto_primary": "UUID()",
 		"create": [
-			"_created", "_updated", "name", "payable_to",
-			"address1", "address2", "city", "division", "country", "postal_code"
+			"_created", "_updated", "name", "payable_to", "address1", "address2",
+			"city", "division", "country", "postal_code", "taxes"
 		],
 		"db": "tims-ouroboros",
 		"host": "primary",
@@ -12,16 +12,74 @@
 		},
 		"table": "company"
 	},
+
 	"__name__": "Company",
-	"_id": {"__type__":"uuid", "__optional__":true},
-	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
-	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"name": {"__type__":"string", "__maximum__":63},
-	"payable_to": {"__type__":"string", "__maximum__":63, "__optional__":true},
-	"address1": {"__type__":"string", "__maximum__":127},
-	"address2": {"__type__":"string", "__maximum__":31, "__optional__":true},
-	"city": {"__type__":"string", "__maximum__":31},
-	"division": {"__type__":"string", "__maximum__":2},
-	"country": {"__type__":"string", "__maximum__":2},
-	"postal_code": {"__type__":"string", "__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$", "__sql__":{"type":"varchar(10)"}}
+
+	"_id":{
+		"__type__":"uuid",
+		"__optional__":true},
+
+	"_created": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__": {"opts":"default CURRENT_TIMESTAMP"}
+	},
+
+	"_updated": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__": {"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}
+	},
+
+	"name": {
+		"__type__":"string",
+		"__maximum__":63
+	},
+
+	"payable_to": {
+		"__type__":"string",
+		"__maximum__":63,
+		"__optional__":true
+	},
+
+	"address1": {
+		"__type__":"string",
+		"__maximum__":127
+	},
+
+	"address2": {
+		"__type__":"string",
+		"__maximum__":31,
+		"__optional__":true
+	},
+
+	"city": {
+		"__type__":"string",
+		"__maximum__":31
+	},
+
+	"division": {
+		"__type__":"string",
+		"__maximum__":2
+	},
+
+	"country": {
+		"__type__":"string",
+		"__maximum__":2
+	},
+
+	"postal_code": {
+		"__type__":"string",
+		"__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$",
+		"__sql__": {"type":"varchar(10)"}
+	},
+
+	"taxes": {
+		"__type__": "json",
+		"__decoded__": {
+			"__array__": "unique",
+			"name": {"__type__": "string"},
+			"percentage": {"__type__": "decimal"}
+		}
+	}
 }

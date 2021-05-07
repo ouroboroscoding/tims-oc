@@ -82,7 +82,7 @@ class Client(Record_MySQL.Record):
 class Company(Record_MySQL.Record):
 	"""Company
 
-	Represents a client (company) that can be billed
+	Represents the company doing the tasks that will invoice the client
 	"""
 
 	_conf = None
@@ -102,6 +102,55 @@ class Company(Record_MySQL.Record):
 		if not cls._conf:
 			cls._conf = Record_MySQL.Record.generateConfig(
 				Tree.fromFile('definitions/company.json')
+			)
+
+		# Return the config
+		return cls._conf
+
+	@classmethod
+	def getAndDecodeTaxes(cls):
+		"""Get and Decode Taxes
+
+		Gets the company (there should only be one) and converts the taxes to
+		a list from JSON
+
+		Returns:
+			dict
+		"""
+
+		# Get the one company
+		dCompany = cls.get(raw=True, limit=1)
+
+		# Decode the taxes
+		dCompany['taxes'] = JSON.decode(dCompany['taxes'])
+
+		# Return the company
+		return dCompany
+
+# Company Tax class
+class CompanyTax(Record_MySQL.Record):
+	"""Company
+
+	Represents taxes added by the company on invoices
+	"""
+
+	_conf = None
+	"""Configuration"""
+
+	@classmethod
+	def config(cls):
+		"""Config
+
+		Returns the configuration data associated with the record type
+
+		Returns:
+			dict
+		"""
+
+		# If we haven loaded the config yet
+		if not cls._conf:
+			cls._conf = Record_MySQL.Record.generateConfig(
+				Tree.fromFile('definitions/company_tax.json')
 			)
 
 		# Return the config
@@ -218,7 +267,8 @@ class Invoice(Record_MySQL.Record):
 				"	`c`.`name` as `clientName`,\n" \
 				"	`i`.`identifier` as `identifier`,\n" \
 				"	`i`.`start` as `start`,\n" \
-				"	`i`.`end` as `end`\n" \
+				"	`i`.`end` as `end`,\n" \
+				"	`i`.`total` as `total`\n" \
 				"FROM `%(db)s`.`%(table)s` as `i`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `i`.`client` = `c`.`_id`\n" \
 				"WHERE %(where)s\n" \

@@ -5,19 +5,23 @@
 		<meta name="pdfkit-orientation" content="Portrait"/>
 		<style>
 			hr {margin: 20px auto; width: 80%;}
+			p {margin: 0;}
 			.header {margin-bottom: 20px;}
 			.header .company .name {font-size: 2.75em;font-weight: bold;}
 			.header .company .address {font-weight: bold;}
 			.details .title {font-size: 1.75rem;font-weight: bold;}
 			.details .invoice {text-align: right;}
-			.items {margin-top: 20px;}
+			.items {margin-top: 20px;width: 100%;}
+			.items tr {outline: 0;vertical-align: middle;}
+			.items td, .items th {padding: 16px;}
 			.items thead th {background-color: #484848;color: white;font-size: 1rem;font-weight: bold;}
 			.items tbody tr:nth-child(even) {background-color: #ffffff;}
 			.items tbody tr:nth-child(odd) {background-color: #efefef;}
-			.items tfoot td {font-size: 1.1rem;font-weight: bold;text-align: right;}
+			.items tfoot tr {font-size: 1.1rem;text-align: right;}
 			.items .project {width: 80%;}
 			.items .hours, .items .amount {width: 10%;text-align: right;}
-			.items .total {width: 80%;}
+			.items .name {width: 80%;text-align: right;}
+			.items tfoot tr.total td {font-size:1.2rem;font-weight:bold}
 
 			.flex {display: -webkit-box;display: -webkit-flex;display: flex;flex-direction: row;}
 			.flexGrow {-webkit-box-flex: 1;-webkit-flex: 1;flex: 1;}
@@ -40,7 +44,7 @@
 				<p class="title">Bill To:</p>
 				<p class="name">{{ client['name'] }}</p>
 				<p class="address">
-					{{ company['address'] }}<br />
+					{{ client['address'] }}<br />
 					{{ client['city'] }}, {{ client['division'] }}, {{ client['country'] }}
 				</p>
 			</div>
@@ -68,13 +72,27 @@
 					</tr>
 				{% endfor %}
 			</tbody>
-			<TableFooter>
-				<tr>
-					<td class="total">Total</td>
-					<td class="hours">{{ invoice['elapsedTime'] }}</td>
-					<td class="amount">${{ invoice['amount'] }}</td>
+			<tfoot>
+				{% if invoice['taxes'] %}
+					<tr class="subtotal">
+						<td class="name">Sub-Total</td>
+						<td class="hours">{{ invoice['elapsedTime'] }}</td>
+						<td class="amount">${{ invoice['subtotal'] }}</td>
+					</tr>
+					{% for tax in invoice['taxes'] %}
+						<tr class="tax">
+							<td class="name">{{ tax['name'] }}</td>
+							<td class="hours">&nbsp;</td>
+							<td class="amount">${{ tax['amount'] }}</td>
+						</tr>
+					{% endfor %}
+				{% endif %}
+				<tr class="total">
+					<td class="name">Total</td>
+					<td class="hours">&nbsp;</td>
+					<td class="amount">${{ invoice['total'] }}</td>
 				</tr>
-			</TableFooter>
+			</tfoot>
 		</table>
 	</body>
 </html>

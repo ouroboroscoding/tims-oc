@@ -19,8 +19,8 @@ from time import time
 
 # Pip imports
 from redis import StrictRedis
-from RestOC import Conf, DateTimeHelper, DictHelper, Errors, Services, Sesh, \
-					StrHelper, Templates
+from RestOC import Conf, DateTimeHelper, DictHelper, Errors, JSON, \
+					Services, Sesh, StrHelper, Templates
 from RestOC.Record_MySQL import DuplicateException
 
 # Record imports
@@ -91,6 +91,64 @@ class Primary(Services.Service):
 					# Find the existing key
 					dKey = Key.filter({"user": user, "type": type}, raw=['_id'], limit=1)
 					return dKey['_id']
+
+	def _generateInvoicePdf(self, _id):
+		"""Generate Invoice PDF
+
+		Generates and uploads the PDF for a specific invoice
+
+		Arguments:
+			_id (str): The ID of the invoice
+
+		Returns:
+			None
+		"""
+
+		# Get the invoice
+		dInvoice = Invoice.get(_id, raw=True)
+
+		# Decode taxes
+		dInvoice['taxes'] = JSON.decode(dInvoice['taxes'])
+
+		# Generate the template data
+		dTpl = {
+			"company": Company.getAndDecodeTaxes(),
+			"client": Client.get(dInvoice['client'], raw=True),
+			"invoice": dInvoice,
+			"items": InvoiceItem.byInvoice(_id)
+		}
+		dTpl['company']['address'] = '%s%s' % (dTpl['company']['address1'], (dTpl['company']['address2'] and dTpl['company']['address2'] or ''))
+		dTpl['client']['address'] = '%s%s' % (dTpl['client']['address1'], (dTpl['client']['address2'] and dTpl['client']['address2'] or ''))
+		dTpl['invoice']['minutes'] = 0
+		dTpl['invoice']['created'] = DateTimeHelper.date(dTpl['invoice']['_created'])
+		dTpl['invoice']['due'] = DateTimeHelper.date(
+			DateTimeHelper.dateInc(dTpl['client']['due'], dTpl['invoice']['_created'])
+		)
+		for d in dTpl['items']:
+			dTpl['invoice']['minutes'] += d['minutes']
+			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes'])
+		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes'])
+
+		# Generate the PDF
+		sPDF = Templates.generate('pdf/invoice.html', dTpl, 'en-US', pdf=True)
+
+		# Create the Key for S3
+		sKey = _INVOICE_S3_KEY % {
+			"client": dInvoice['client'],
+			"invoice": _id
+		}
+
+		# Init the result
+		mResult = None
+
+		# Create new object and upload it
+		try:
+			SSS.put(sKey, sPDF, headers={"ContentType":'application/pdf',"ContentLength":len(sPDF)})
+		except SSS.SSSException as e:
+			mResult = 'PDF Generation Failed: %s' % str(e.args)
+
+		# Return the result
+		return mResult
 
 	def initialise(self):
 		"""Initialise
@@ -683,7 +741,7 @@ class Primary(Services.Service):
 		"""
 
 		# Fetch the record
-		dCompany = Company.get(raw=True, limit=1)
+		dCompany = Company.getAndDecodeTaxes()
 		if not dCompany:
 			return Services.Error(2003)
 
@@ -719,6 +777,15 @@ class Primary(Services.Service):
 		for f in ['_id', '_created', '_updated']:
 			if f in data:
 				del data[f]
+
+		# If we got taxes
+		if 'taxes' in data:
+
+			# And it's a list
+			if isinstance(data['taxes'], list):
+
+				# Encode it
+				data['taxes'] = JSON.encode(data['taxes'])
 
 		# Update each field, keeping track of errors
 		lErrors = []
@@ -808,6 +875,9 @@ class Primary(Services.Service):
 			# Increment the projects total minutes
 			dProjects[d['project']]['minutes'] += iTotalMinutes
 
+		# Init the subtotal
+		deSubTotal = Decimal('0.00')
+
 		# Go through each project and calculate the amount
 		for sProject in dProjects:
 
@@ -820,22 +890,50 @@ class Primary(Services.Service):
 			# Round up to closest cent
 			dProjects[sProject]['amount'] = dePrice.quantize(Decimal('1.00'), rounding=ROUND_UP)
 
+			# Update the sub-total
+			deSubTotal += dProjects[sProject]['amount']
+
+		# Get the company info
+		dCompany = Company.getAndDecodeTaxes()
+
+		# Init the taxes and total
+		deTotal = Decimal(deSubTotal);
+		lTaxes = []
+
+		# Go through any taxes we have
+		for d in dCompany['taxes']:
+
+			# Generate the percentage as a divisor
+			dePercentage = Decimal(d['percentage']) / Decimal('100')
+
+			# Generate from the subtotal
+			deAmount = (deSubTotal * dePercentage).quantize(Decimal('1.00'))
+
+			# Add the tax to the list
+			lTaxes.append({
+				"name": d['name'],
+				"amount": deAmount
+			})
+
+			# Update the total
+			deTotal += deAmount
+
 		# Create an instance of the invoice to check for problems
 		try:
 			oInvoice = Invoice({
 				"client": data['client'],
 				"identifier": Invoice.getNextIdentifier(),
 				"start": data['start'],
-				"end": data['end']
+				"end": data['end'],
+				"subtotal": deSubTotal,
+				"taxes": JSON.encode(lTaxes),
+				"total": deTotal
 			})
 		except ValueError as e:
 			return Services.Error(1001, e.args[0])
 
 		# Create the invoice and store the ID
 		sID = oInvoice.create()
-
-		# Init the items list for the PDF
-		lItems = []
 
 		# Go through each project
 		for sProject in dProjects:
@@ -854,52 +952,8 @@ class Primary(Services.Service):
 			# Create the item
 			oItem.create()
 
-			# Add it to the list
-			lItems.append(oItem.record())
-
-		# Generate the template data
-		dTpl = {
-			"company": Company.get(raw=True, limit=1),
-			"client": dClient,
-			"invoice": Invoice.get(sID, raw=True),
-			"items": lItems
-		}
-		dTpl['company']['address'] = '%s%s' % (dTpl['company']['address1'], (dTpl['company']['address2'] and dTpl['company']['address2'] or ''))
-		dTpl['client']['address'] = '%s%s' % (dTpl['client']['address1'], (dTpl['client']['address2'] and dTpl['client']['address2'] or ''))
-		dTpl['invoice']['amount'] = Decimal('0.00')
-		dTpl['invoice']['minutes'] = 0
-		dTpl['invoice']['created'] = DateTimeHelper.date(dTpl['invoice']['_created'])
-		dTpl['invoice']['due'] = DateTimeHelper.date(
-			DateTimeHelper.dateInc(dTpl['client']['due'], dTpl['invoice']['_created'])
-		)
-		for d in dTpl['items']:
-			dTpl['invoice']['amount'] += Decimal(d['amount'])
-			dTpl['invoice']['minutes'] += d['minutes']
-			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes'])
-		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes'])
-		dTpl['invoice']['amount'] = str(d['amount'])
-
 		# Generate the PDF
-		sPDF = Templates.generate('pdf/invoice.html', dTpl, 'en-US', pdf=True)
-
-		# Create the Key for S3
-		sKey = _INVOICE_S3_KEY % {
-			"client": oInvoice['client'],
-			"invoice": oInvoice['_id']
-		}
-
-		# Store the PDF localy for testing
-		with open('temp/%s.pdf' % sID, 'wb') as f:
-			f.write(sPDF)
-
-		# Init the warning
-		mWarning = None
-
-		# Create new object and upload it
-		try:
-			SSS.put(sKey, sPDF, headers={"ContentType":'application/pdf',"ContentLength":len(sPDF)})
-		except SSS.SSSException as e:
-			mWarning = 'PDF Generation Failed: %s' % str(e.args)
+		mWarning = self._generateInvoicePdf(sID)
 
 		# Return the new invoice as raw data
 		return Services.Response(
@@ -969,11 +1023,12 @@ class Primary(Services.Service):
 		dInvoice['items'] = InvoiceItem.byInvoice(data['_id'])
 
 		# Generate the total
-		dInvoice['amount'] = Decimal('0.00')
 		dInvoice['minutes'] = 0
 		for d in dInvoice['items']:
-			dInvoice['amount'] += d['amount']
 			dInvoice['minutes'] += d['minutes']
+
+		# Convert the taxes
+		dInvoice['taxes'] = JSON.decode(dInvoice['taxes'])
 
 		# If we need details
 		if 'details' in data and data['details']:
@@ -985,11 +1040,48 @@ class Primary(Services.Service):
 				"client": Client.get(dInvoice['client'], raw=True),
 
 				# Fetch the company
-				"company": Company.get(raw=True, limit=1)
+				"company": Company.getAndDecodeTaxes()
 			}
 
 		# Return the invoice
 		return Services.Response(dInvoice)
+
+	def invoicePdf_read(self, data, sesh):
+		"""Invoice PDF read
+
+		Returns the temporary URL for an invoices PDF
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# If the ID is missing
+		if '_id' not in data:
+			return Services.Error(1001, [['_id', 'missing']])
+
+		# Find the invoice
+		dInvoice = Invoice.get(data['_id'], raw=True)
+		if not dInvoice:
+			return Services.Error(2003, 'invoice')
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], ['client', 'accounting'], dInvoice['client'])
+
+		# Generate the temporary URL
+		sURL = SSS.url(
+			_INVOICE_S3_KEY % {
+				"client": dInvoice['client'],
+				"invoice": data['_id']
+			},
+			self._s3_expires
+		)
+
+		# Return the URL
+		return Services.Response(sURL)
 
 	def invoices_read(self, data, sesh):
 		"""Invoices read
@@ -1501,7 +1593,7 @@ class Primary(Services.Service):
 		sKey = self._createKey(sID, 'setup')
 
 		# Fetch the company name
-		dCompany = Company.get(raw=['name'], limit=1)
+		dCompany = Company.getAndDecodeTaxes()
 
 		# Create the setup template data
 		dTpl = {

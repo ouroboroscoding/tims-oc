@@ -41,7 +41,7 @@ import { clone, date, dateInc } from 'shared/generic/tools';
 import InvoiceDef from 'definitions/invoice';
 let InvoiceClone = clone(InvoiceDef)
 InvoiceClone.__react__ = {
-	results: ['_created', 'clientName', 'identifier', 'start', 'end']
+	results: ['_created', 'clientName', 'identifier', 'start', 'end', 'total']
 };
 InvoiceClone.clientName = {__type__: 'string', __react__: {title: 'Client'}}
 
@@ -146,8 +146,6 @@ function Generate(props) {
 			}
 		});
 	}
-
-	console.log(range);
 
 	// Render
 	return (
@@ -296,12 +294,38 @@ export default function Invoices(props) {
 
 	// Called when a new invoice is generated
 	function invoiceGenerated(invoice) {
-		console.log(invoice);
+
+		// Hide the form
+		generateSet(false);
+
+		// Add it to the top of the results
+		let lInvoices = clone(invoices);
+		lInvoices.unshift(invoice);
+		invoicesSet(lInvoices);
 	}
 
 	// Called to load pdf of invoice
-	function invoicePdf(value) {
-		console.log(value);
+	function invoicePdf(invoice) {
+
+		// Tell the server to generate and return the link
+		Rest.read('primary', 'invoice/pdf', {
+			_id: invoice._id
+		}).done(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				if(res.error.code === 2003) {
+					Events.trigger('error', 'No such invoice');
+				} else {
+					Events.trigger('error', Rest.errorMessage(res.error));
+				}
+			}
+
+			// If we got data
+			if(res.data) {
+				window.open(res.data, '_blank');
+			}
+		});
 	}
 
 	// Called to load invoice
@@ -396,7 +420,8 @@ export default function Invoices(props) {
 							}]}
 							custom={{
 								start: value => date(value.start),
-								end: value => date(value.end)
+								end: value => date(value.end),
+								total: value => '$' + value.total
 							}}
 							data={invoices}
 							noun=""

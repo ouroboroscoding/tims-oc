@@ -79,8 +79,28 @@ export default function Invoice(props) {
 
 	}, [_id]);
 
+	// Fetch the URL for the PDF
 	function pdf() {
 
+		// Tell the server to generate and return the link
+		Rest.read('primary', 'invoice/pdf', {
+			_id: _id
+		}).done(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				if(res.error.code === 2003) {
+					Events.trigger('error', 'No such invoice');
+				} else {
+					Events.trigger('error', Rest.errorMessage(res.error));
+				}
+			}
+
+			// If we got data
+			if(res.data) {
+				window.open(res.data, '_blank');
+			}
+		});
 	}
 
 	// Still loading
@@ -145,10 +165,26 @@ export default function Invoice(props) {
 					)}
 				</TableBody>
 				<TableFooter>
-					<TableRow>
-						<TableCell className="total">Total</TableCell>
-						<TableCell className="hours">{timeElapsed(invoice.minutes)}</TableCell>
-						<TableCell className="amount">${invoice.amount}</TableCell>
+					{invoice.taxes.length > 0 &&
+						<React.Fragment>
+							<TableRow className="subtotal">
+								<TableCell className="name">Sub-Total</TableCell>
+								<TableCell className="hours">{timeElapsed(invoice.minutes)}</TableCell>
+								<TableCell className="amount">${invoice.subtotal}</TableCell>
+							</TableRow>
+							{invoice.taxes.map(o =>
+								<TableRow className="tax">
+									<TableCell className="name">{o.name}</TableCell>
+									<TableCell className="hours">&nbsp;</TableCell>
+									<TableCell className="amount">${o.amount}</TableCell>
+								</TableRow>
+							)}
+						</React.Fragment>
+					}
+					<TableRow className="total">
+						<TableCell className="name">Total</TableCell>
+						<TableCell className="hours">&nbsp;</TableCell>
+						<TableCell className="amount">${invoice.total}</TableCell>
 					</TableRow>
 				</TableFooter>
 			</Table>

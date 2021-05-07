@@ -2,7 +2,7 @@
 	"__mysql__": {
 		"auto_primary": "UUID()",
 		"create": ["_created", "_updated", "client", "identifier",
-					"start", "end", "rate"],
+					"start", "end", "subtotal", "taxes", "total"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
@@ -49,5 +49,22 @@
 	"end": {
 		"__type__":"timestamp",
 		"__react__":{"title":"To"}
+	},
+
+	"subtotal": {
+		"__type__": "price"
+	},
+
+	"taxes": {
+		"__type__": "json",
+		"__decoded__": {
+			"__array__": "unqiue",
+			"name": {"__type__":"string"},
+			"amount": {"__type__":"price"}
+		}
+	},
+
+	"total": {
+		"__type__": "price"
 	}
 }
