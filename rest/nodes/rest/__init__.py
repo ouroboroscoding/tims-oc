@@ -47,7 +47,7 @@ def init(dbs=[], services={}, templates=False):
 		Record_MySQL.addHost(s, Conf.get(("mysql", "hosts", s)))
 
 	# Init the Sesh module
-	Sesh.init(Conf.get(("redis", "session")))
+	Sesh.init(Conf.get(("redis", "primary")))
 
 	# Create the REST config instance
 	oRestConf = REST.Config(Conf.get("rest"))
