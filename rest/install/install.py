@@ -52,6 +52,7 @@ if __name__ == "__main__":
 		"city": "Coolsville",
 		"division": "QC",
 		"country": "CA",
-		"postal_code": "H4G2R3"
+		"postal_code": "H4G2R3",
+		"taxes": "[]"
 	})
 	oCompany.create()
