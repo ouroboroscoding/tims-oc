@@ -126,9 +126,7 @@ export default function Task(props) {
 		}
 
 		// Tell the server to start a task
-		Rest.create('primary', 'task/start', {
-			project: project
-		}).done(res => {
+		Rest.create('primary', 'task/start', oData).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
@@ -147,6 +145,7 @@ export default function Task(props) {
 				res.data.clientName = oClient.name;
 				res.data.project = project;
 				res.data.projectName = oProject.name;
+				res.data.description = sDescription;
 
 				// Store the task
 				taskSet(res.data);

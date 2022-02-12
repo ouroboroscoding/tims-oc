@@ -16,9 +16,13 @@ import importlib
 import os
 import platform
 import sys
+import traceback
 
 # Pip imports
 from RestOC import Conf, Record_Base, Record_ReDB, REST, Services
+
+# Shared imports
+from shared import EMail
 
 # If the version argument is missing
 if len(sys.argv) < 2:
@@ -26,14 +30,14 @@ if len(sys.argv) < 2:
 	sys.exit(1)
 
 # Load the config
-Conf.load('../config.json')
-sConfOverride = '../config.%s.json' % platform.node()
+Conf.load('config.json')
+sConfOverride = 'config.%s.json' % platform.node()
 if os.path.isfile(sConfOverride):
 	Conf.load_merge(sConfOverride)
 
-# Add the global prepend and primary host to rethinkdb
-Record_Base.dbPrepend(Conf.get(("rethinkdb", "prepend"), ''))
-Record_ReDB.addHost('primary', Conf.get(("rethinkdb", "hosts", "primary")))
+# Add the global prepend and primary host to mysql
+Record_Base.dbPrepend(Conf.get(("mysql", "prepend"), ''))
+Record_ReDB.addHost('primary', Conf.get(("mysql", "hosts", "primary")))
 
 # Register all services
 Services.register(
@@ -54,4 +58,17 @@ except ImportError as e:
 	sys.exit(1)
 
 # Run the cron with whatever additional arguments were passed
-sys.exit(oCron.run(*(sys.argv[2:])))
+try:
+	sys.exit(oCron.run(*(sys.argv[2:])))
+
+# Catch and and all exceptions
+except Exception as e:
+
+	# Send an email about the error
+	EMail.error('TIMS Cron Failed', '%s\n\n%s' % (
+		', '.join([str(s) for s in e.args]),
+		traceback.format_exc()
+	))
+
+	# Exit
+	sys.exit(1)
