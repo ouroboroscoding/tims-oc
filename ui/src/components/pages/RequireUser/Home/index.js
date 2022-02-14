@@ -17,7 +17,7 @@ import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
 
 // Local components
-import Task from './Task';
+import Work from './Work';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -72,7 +72,7 @@ export default function Home(props) {
 				:
 					<React.Fragment>
 						{props.user.type === 'worker' &&
-							<Task
+							<Work
 								clients={clients}
 								{...props}
 							/>

@@ -29,8 +29,8 @@ import Typography from '@material-ui/core/Typography';
 import Rest from 'shared/communication/rest';
 
 // Shared generic modules
+import { increment, iso, elapsed } from 'shared/generic/dates';
 import Events from 'shared/generic/events';
-import { date, dateInc, timeElapsed } from 'shared/generic/tools';
 
 /**
  * Invoice
@@ -143,8 +143,8 @@ export default function Invoice(props) {
 					{(invoice.details.company.payable_to !== null && invoice.details.company.payable_to !== '') &&
 						<Typography>Payable to: {invoice.details.company.payable_to}</Typography>
 					}
-					<Typography>Created: {date(invoice._created)}</Typography>
-					<Typography>Due: {date(dateInc(invoice.details.client.due, invoice._created))}</Typography>
+					<Typography>Created: {iso(invoice._created, false)}</Typography>
+					<Typography>Due: {iso(increment(invoice.details.client.due, invoice._created), false)}</Typography>
 				</Box>
 			</Box>
 			<Table className="items">
@@ -159,7 +159,7 @@ export default function Invoice(props) {
 					{invoice.items.map((o,i) =>
 						<TableRow className={i%2 === 0 ? 'even' : 'odd'}>
 							<TableCell className="project">{o.projectName}</TableCell>
-							<TableCell className="hours">{timeElapsed(o.minutes)}</TableCell>
+							<TableCell className="hours">{elapsed(o.minutes)}</TableCell>
 							<TableCell className="amount">${o.amount}</TableCell>
 						</TableRow>
 					)}
@@ -169,7 +169,7 @@ export default function Invoice(props) {
 						<React.Fragment>
 							<TableRow className="subtotal">
 								<TableCell className="name">Sub-Total</TableCell>
-								<TableCell className="hours">{timeElapsed(invoice.minutes)}</TableCell>
+								<TableCell className="hours">{elapsed(invoice.minutes)}</TableCell>
 								<TableCell className="amount">${invoice.subtotal}</TableCell>
 							</TableRow>
 							{invoice.taxes.map(o =>

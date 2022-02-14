@@ -32,21 +32,21 @@ class LibraryWritersAreOftenIdiots extends React.Component {
 	componentDidMount() {
 
 		// Track any popup events
-		Events.add('error', this.error);
-		Events.add('info', this.popup);
-		Events.add('popup', this.popup);
-		Events.add('success', this.success);
-		Events.add('warning', this.warning);
+		Events.subscribe('error', this.error);
+		Events.subscribe('info', this.popup);
+		Events.subscribe('popup', this.popup);
+		Events.subscribe('success', this.success);
+		Events.subscribe('warning', this.warning);
 	}
 
 	componentWillUnmount() {
 
 		// Stop tracking any popup events
-		Events.remove('error', this.error);
-		Events.remove('info', this.popup);
-		Events.remove('popup', this.popup);
-		Events.remove('success', this.success);
-		Events.remove('warning', this.warning);
+		Events.unsubscribe('error', this.error);
+		Events.unsubscribe('info', this.popup);
+		Events.unsubscribe('popup', this.popup);
+		Events.unsubscribe('success', this.success);
+		Events.unsubscribe('warning', this.warning);
 	}
 
 	error(msg) {

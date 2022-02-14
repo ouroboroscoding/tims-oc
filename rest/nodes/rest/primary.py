@@ -50,9 +50,7 @@ REST.Server({
 	"/projects": {"methods": REST.READ, "session": True},
 
 	# Tasks
-	"/task/start": {"methods": REST.CREATE, "session": True},
-	"/task/end": {"methods": REST.UPDATE, "session": True},
-	"/task": {"methods": REST.UPDATE | REST.DELETE, "session": True},
+	"/task": {"methods": REST.ALL, "session": True},
 	"/tasks": {"methods": REST.READ, "session": True},
 
 	# Users
@@ -60,6 +58,12 @@ REST.Server({
 	"/user/passwd": {"methods": REST.UPDATE, "session": True},
 	"/user/access": {"methods": REST.CREATE | REST.DELETE | REST.READ, "session": True},
 	"/users": {"methods": REST.READ, "session": True},
+
+	# Work
+	"/work/start": {"methods": REST.CREATE, "session": True},
+	"/work/end": {"methods": REST.UPDATE, "session": True},
+	"/work": {"methods": REST.UPDATE | REST.DELETE, "session": True},
+	"/works": {"methods": REST.READ, "session": True},
 
 	# Session
 	"/signin": {"methods": REST.POST},
@@ -69,9 +73,9 @@ REST.Server({
 	"/account/clients": {"methods": REST.READ, "session": True},
 	"/account/forgot": {"methods": REST.CREATE | REST.UPDATE},
 	"/account/setup": {"methods": REST.READ | REST.UPDATE},
-	"/account/task": {"methods": REST.READ, "session": True},
-	"/account/tasks": {"methods": REST.READ, "session": True},
-	"/account/verify": {"methods": REST.UPDATE}
+	"/account/verify": {"methods": REST.UPDATE},
+	"/account/work": {"methods": REST.READ, "session": True},
+	"/account/works": {"methods": REST.READ, "session": True}
 
 }, 'primary', "https?://(.*\\.)?%s" % Conf.get(("rest","allowed")).replace('.', '\\.')).run(
 	host=oRestConf['primary']['host'],

@@ -1,49 +1,57 @@
 /**
  * Tasks
  *
- * Handles whether to load client or worker tasks based on the user type
+ * Manage the tasks in the system
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
  * @copyright OuroborosCoding
- * @created 2021-04-24
+ * @created 2022-02-14
  */
 
 // NPM modules
 import PropTypes from 'prop-types';
-import React, { useEffect, useRef, useState } from 'react';
-import Parent from 'format-oc/Parent';
+import React, { useEffect, useState } from 'react';
+import Tree from 'format-oc/Tree';
 
 // Material UI
 import Box from '@material-ui/core/Box';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
+import Grid from '@material-ui/core/Grid';
+import IconButton from '@material-ui/core/IconButton';
+import FormControl from '@material-ui/core/FormControl';
+import InputLabel from '@material-ui/core/InputLabel';
+import Paper from '@material-ui/core/Paper';
+import Select from '@material-ui/core/Select';
+import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
-// Format Components
-import { Results } from 'shared/components/Format';
+// Shared components
+import { Form, Results } from 'shared/components/Format';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
 
 // Shared generic modules
 import Events from 'shared/generic/events';
-import { date, dateInc, timeElapsed } from 'shared/generic/tools';
+import { afindi, clone } from 'shared/generic/tools';
 
-// Results info
-let TasksParent = new Parent({
-	clientName: {__type__: 'string', __react__: {title: 'Client'}},
-	projectName: {__type__: 'string', __react__: {title: 'Project'}},
-	userName: {__type__: 'string', __react__: {title: 'Employee'}},
-	description: {__type__: 'string'},
-	start: {__type__: 'timestamp', __react__: {title: 'Started'}},
-	end: {__type__: 'timestamp', __react__: {title: 'Finished'}},
-	elapsed: {__type__: 'uint', __react__: {type: 'time_elapsed'}}
-});
+// Load the task and project definitions
+import TaskDef from 'definitions/task';
+
+// Add the task/project names
+let TaskResults = clone(TaskDef);
+TaskResults.__react__ = {
+	create: ['name', 'description'],
+	results: ['_created', '_updated', 'name', 'description', '_archived'],
+	update: ['name', 'description']
+}
+
+// Create Trees using the definitions
+const TaskTree = new Tree(TaskResults);
 
 /**
  * Tasks
  *
- * Displays tasks
+ * Fetches and displays the tasks in the system
  *
  * @name Tasks
  * @access public
@@ -53,152 +61,221 @@ let TasksParent = new Parent({
 export default function Tasks(props) {
 
 	// State
-	let [fields, fieldsSet] = useState(['clientName', 'projectName', 'userName', 'description', 'start', 'end', 'elapsed'])
-	let [noun, nounSet] = useState(null);
-	let [range, rangeSet] = useState(null);
-	let [results, resultsSet] = useState(false);
-
-	// Refs
-	let refStart = useRef();
-	let refEnd = useRef();
+	let [client, clientSet] = useState(props.clients[0] ? props.clients[0]._id : false);
+	let [create, createSet] = useState(false);
+	let [project, projectSet] = useState(false);
+	let [projects, projectsSet] = useState({});
+	let [rights, rightsSet] = useState(false);
+	let [tasks, tasksSet] = useState(false);
 
 	// Load effect
 	useEffect(() => {
 
-		// Figure out the noun
-		switch(props.user.type) {
-			case 'accounting':
-			case 'client':
-				fieldsSet(['clientName', 'projectName', 'description', 'start', 'end', 'elapsed'])
-			// eslint-disable-next-line
-			case 'admin':
-			case 'manager':
-				nounSet('tasks');
-				break;
+		// Set rights
+		rightsSet(['admin', 'manager'].includes(props.user.type));
 
-			case 'worker':
-				fieldsSet(['clientName', 'projectName', 'description', 'start', 'end', 'elapsed'])
-				nounSet('account/tasks');
-				break;
+	}, [props.user]);
 
-			// no default
-		}
-
-		// Get a range of the last two weeks
-		let oStart = dateInc(-13);
-		oStart.setHours(0, 0, 0, 0);
-		let oEnd = new Date();
-		oEnd.setHours(23, 59, 59, 0);
-		rangeSet([
-			oStart.getTime() / 1000,
-			oEnd.getTime() / 1000
-		]);
-
-	}, [props.user])
-
-	// Noun/Range effect
+	// Client effect
 	useEffect(() => {
-		// If we have a noun and a range
-		if(noun && range) {
-			fetch();
+
+		// If we have a client selected
+		if(client) {
+
+			// If we don't have the projects stored for the client
+			if(!projects[client]) {
+
+				// Make the request to the serve
+				Rest.read('primary', 'projects', {
+					client: client
+				}).done(res => {
+
+					// If there's an error
+					if(res.error && !res._handled) {
+						Events.trigger('error', Rest.errorMessage(res.error));
+					}
+
+					// If there's data
+					if(res.data) {
+
+						// Make sure we have the latest projects and update it
+						projectsSet(val => {
+							val[client] = res.data;
+							return clone(val);
+						});
+
+						// Set the project based on available ones for the
+						//	client
+						projectSet(res.data[0] ? res.data[0]._id : false);
+					}
+				});
+			}
+
+			// Else, we already have the projects
+			else {
+
+				// Set the project based on available ones for the client
+				projectSet(projects[client][0] ? projects[client][0]._id : false);
+			}
 		}
-	// eslint-disable-next-line
-	}, [noun, range]);
 
-	// Fetch the tasks
-	function fetch() {
+	}, [client, projects]);
 
-		// Make the request to the server
-		Rest.read('primary', noun, {
-			start: range[0],
-			end: range[1]
-		}).done(res => {
+	// Project effect
+	useEffect(() => {
 
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
-			}
+		// If we have a project selected
+		if(project) {
 
-			// If we got data
-			if(res.data) {
-				resultsSet(res.data);
-			}
-		});
+			// Fetch the tasks
+			Rest.read('primary', 'tasks', {
+				project: project
+			}).done(res => {
+
+				// If we got an error
+				if(res.error && !res._handled) {
+					Events.trigger('error', Rest.errorMessage(res.error));
+				}
+
+				// If we got data
+				if(res.data) {
+					tasksSet(res.data);
+				}
+			});
+		}
+
+	}, [project]);
+
+	// Called when a task has been updated
+	function taskArchived(task) {
+		let i = afindi(tasks, '_id', task._id);
+		if(i > -1) {
+			let lTasks = clone(tasks);
+			lTasks.splice(i, 1);
+			tasksSet(lTasks);
+		}
+	};
+
+	// Called when a new task is created
+	function taskCreated(task) {
+		let lTasks = clone(tasks);
+		task._created = Date.now()/1000;
+		task._updated = Date.now()/1000;
+		task._archived = false;
+		lTasks.unshift(task);
+		tasksSet(lTasks);
+		createSet(false);
 	}
 
-	// Converts the start and end dates into timestamps
-	function rangeUpdate() {
-		rangeSet([
-			(new Date(refStart.current.value + ' 00:00:00')).getTime() / 1000,
-			(new Date(refEnd.current.value + ' 23:59:59')).getTime() / 1000
-		]);
-	}
-
-	// Generate today date
-	let sToday = date(new Date());
+	// Called when a task has been updated
+	function taskUpdated(task) {
+		let i = afindi(tasks, '_id', task._id);
+		if(i > -1) {
+			let lTasks = clone(tasks);
+			task._updated = Date.now()/1000;
+			lTasks[i] = task;
+			tasksSet(lTasks);
+		}
+	};
 
 	// Render
 	return (
 		<Box id="tasks" className="singlePage">
-			<Box className="pageHeader">
-				<Typography>Tasks</Typography>
+			<Box className="pageHeader flexColumns">
+				<Typography className="flexGrow">Tasks</Typography>
 			</Box>
-			<Box className="filter">
-				<TextField
-					defaultValue={date(dateInc(-13))}
-					inputRef={refStart}
-					inputProps={{
-						min: '2020-01-01',
-						max: sToday
-					}}
-					label="Start"
-					size="small"
-					type="date"
-					variant="outlined"
-					InputLabelProps={{ shrink: true }}
-				/>
-				<Typography>-</Typography>
-				<TextField
-					defaultValue={sToday}
-					inputRef={refEnd}
-					inputProps={{
-						min: '2020-01-01',
-						max: sToday
-					}}
-					label="End"
-					size="small"
-					type="date"
-					variant="outlined"
-					InputLabelProps={{ shrink: true }}
-				/>
-				<Button
-					color="primary"
-					onClick={rangeUpdate}
-					variant="contained"
-				>Fetch</Button>
-			</Box>
+			<Grid container spacing={2}>
+				<Grid item xs={12} md={6} lg={4} xl={3} className="field">
+					<FormControl>
+						<InputLabel>Client</InputLabel>
+						<Select
+							label="Select Client"
+							native
+							onChange={ev => clientSet(ev.currentTarget.value)}
+						>
+							{props.clients.map(o =>
+								<option key={o._id} value={o._id}>{o.name}</option>
+							)}
+						</Select>
+					</FormControl>
+				</Grid>
+				{client &&
+					<React.Fragment>
+						<Grid item xs={12} md={6} lg={4} xl={3} className="field">
+							{!projects[client] ?
+								<Typography>Loading...</Typography>
+							:
+								<React.Fragment>
+									{projects[client].length === 0 ?
+										<Typography>No projects associated with client</Typography>
+									:
+										<FormControl>
+											<InputLabel>Project</InputLabel>
+											<Select
+												label="Select Project"
+												native
+												onChange={ev => projectSet(ev.currentTarget.value)}
+											>
+												{projects[client].map(o =>
+													<option key={o._id} value={o._id}>{o.name}</option>
+												)}
+											</Select>
+										</FormControl>
+									}
+								</React.Fragment>
+							}
+						</Grid>
+						{(rights && project) &&
+							<Grid item xs={12} md={6} lg={4} xl={3} className="actions">
+								<Tooltip title="Create Task">
+									<IconButton onClick={ev => createSet(b => !b)}>
+										<i className={'fas fa-plus-circle ' + (create ? 'open' : 'close')} />
+									</IconButton>
+								</Tooltip>
+							</Grid>
+						}
+					</React.Fragment>
+				}
+			</Grid>
+			{create &&
+				<Paper>
+					<Form
+						beforeSubmit={values => {
+							values.project = project;
+							return values;
+						}}
+						cancel={ev => createSet(false)}
+						errors={{
+							"2004": "Name already in use"
+						}}
+						noun="task"
+						service="primary"
+						success={taskCreated}
+						title="Create Task"
+						tree={TaskTree}
+						type="create"
+					/>
+				</Paper>
+			}
 			<br />
-			{results &&
-				<Box className="results">
-					{results.length === 0 ?
-						<Typography>No results</Typography>
+			{tasks === false ?
+				<Typography>Loading...</Typography>
+			:
+				<React.Fragment>
+					{tasks.length === 0 ?
+						<Typography>No tasks found</Typography>
 					:
 						<Results
-							custom={{
-								elapsed: row => timeElapsed(row.elapsed)
-							}}
-							data={results}
-							fields={fields}
-							noun=""
-							orderBy="start"
-							remove={false}
-							service=""
-							totals={true}
-							tree={TasksParent}
-							update={false}
+							data={tasks}
+							noun="task"
+							orderBy="name"
+							remove={rights ? taskArchived : false}
+							service="primary"
+							tree={TaskTree}
+							update={rights ? taskUpdated : false}
 						/>
 					}
-				</Box>
+				</React.Fragment>
 			}
 		</Box>
 	);
@@ -206,6 +283,7 @@ export default function Tasks(props) {
 
 // Valid props
 Tasks.propTypes = {
+	clients: PropTypes.array.isRequired,
 	mobile: PropTypes.bool.isRequired,
 	user: PropTypes.object.isRequired
 }

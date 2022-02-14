@@ -664,10 +664,13 @@ class Work(Record_MySQL.Record):
 				"	`c`.`name` as `clientName`,\n" \
 				"	`w`.`project` as `project`,\n" \
 				"	`p`.`name` as `projectName`,\n" \
+				"	`w`.`task` as `task`,\n" \
+				"	`t`.`name` as `taskName`,\n" \
 				"	`w`.`start` as `start`,\n" \
 				"	`w`.`end` as `end`,\n" \
 				"	`w`.`description` as `description`\n" \
 				"FROM `%(db)s`.`%(table)s` as `w`\n" \
+				"JOIN `%(db)s`.`task` as `t` ON `w`.`task` = `t`.`_id`\n" \
 				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
 				"WHERE `w`.`user` = '%(user)s'\n" \
@@ -731,9 +734,12 @@ class Work(Record_MySQL.Record):
 				"	`c`.`name` as `clientName`,\n" \
 				"	`w`.`project` as `project`,\n" \
 				"	`p`.`name` as `projectName`,\n" \
+				"	`w`.`task` as `task`,\n" \
+				"	`t`.`name` as `taskName`,\n" \
 				"	`w`.`start` as `start`,\n" \
 				"	`w`.`description` as `description`\n" \
 				"FROM `%(db)s`.`%(table)s` as `w`\n" \
+				"JOIN `%(db)s`.`task` as `t` ON `w`.`project` = `t`.`_id`\n" \
 				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
 				"WHERE `w`.`user` = '%(user)s'\n" \
@@ -790,12 +796,15 @@ class Work(Record_MySQL.Record):
 				"	`c`.`name` as `clientName`,\n" \
 				"	`w`.`project` as `project`,\n" \
 				"	`p`.`name` as `projectName`,\n" \
+				"	`w`.`task` as `task`,\n" \
+				"	`t`.`name` as `taskName`,\n" \
 				"	`w`.`user` as `user`,\n" \
 				"	`u`.`name` as `userName`,\n" \
 				"	`w`.`start` as `start`,\n" \
 				"	`w`.`end` as `end`,\n" \
 				"	`w`.`description` as `description`\n" \
 				"FROM `%(db)s`.`%(table)s` as `w`\n" \
+				"JOIN `%(db)s`.`task` as `t` ON `w`.`task` = `t`.`_id`\n" \
 				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
 				"JOIN `%(db)s`.`user` as `u` ON `w`.`user` = `u`.`_id`\n" \

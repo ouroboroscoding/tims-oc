@@ -34,8 +34,9 @@ import { Results } from 'shared/components/Format';
 import Rest from 'shared/communication/rest';
 
 // Shared generic modules
+import { increment, iso } from 'shared/generic/dates';
 import Events from 'shared/generic/events';
-import { clone, date, dateInc } from 'shared/generic/tools';
+import { clone } from 'shared/generic/tools';
 
 // Load the invoice definition
 import InvoiceDef from 'definitions/invoice';
@@ -101,7 +102,7 @@ function Generate(props) {
 	let [range, rangeSet] = useState(previousMonth());
 
 	// Get today's date
-	let sToday = date(new Date());
+	let sToday = iso(new Date(), false);
 
 	// Called when either range value is changed
 	function rangeUpdate(type, value) {
@@ -181,7 +182,7 @@ function Generate(props) {
 							onChange={ev => rangeUpdate('start', ev.currentTarget.value)}
 							type="date"
 							variant="outlined"
-							value={date(range[0])}
+							value={iso(range[0], false)}
 						/>
 					</Grid>
 					<Grid item xs={12} md={3} className="field">
@@ -195,7 +196,7 @@ function Generate(props) {
 							onChange={ev => rangeUpdate('end', ev.currentTarget.value)}
 							type="date"
 							variant="outlined"
-							value={date(range[1])}
+							value={iso(range[1], false)}
 						/>
 					</Grid>
 				</Grid>
@@ -251,7 +252,7 @@ export default function Invoices(props) {
 		});
 
 		// Get a range of the last 365 days
-		let oStart = dateInc(-365);
+		let oStart = increment(-365);
 		oStart.setHours(0, 0, 0, 0);
 		let oEnd = new Date();
 		oEnd.setHours(23, 59, 59, 0);
@@ -342,7 +343,7 @@ export default function Invoices(props) {
 	}
 
 	// Generate today date
-	let sToday = date(new Date());
+	let sToday = iso(new Date(), false);
 
 	// Render
 	return (
@@ -361,7 +362,7 @@ export default function Invoices(props) {
 			</Box>
 			<Box className="filter">
 				<TextField
-					defaultValue={date(dateInc(-365))}
+					defaultValue={iso(increment(-365), false)}
 					inputRef={refStart}
 					inputProps={{
 						min: '2020-01-01',
@@ -419,8 +420,8 @@ export default function Invoices(props) {
 								callback: invoicePdf
 							}]}
 							custom={{
-								start: value => date(value.start),
-								end: value => date(value.end),
+								start: value => iso(value.start, false),
+								end: value => iso(value.end, false),
 								total: value => '$' + value.total
 							}}
 							data={invoices}
