@@ -374,7 +374,7 @@ export default function Invoices(props) {
 					variant="outlined"
 					InputLabelProps={{ shrink: true }}
 				/>
-				<Typography>-</Typography>
+				<span> - </span>
 				<TextField
 					defaultValue={sToday}
 					inputRef={refEnd}
@@ -388,6 +388,7 @@ export default function Invoices(props) {
 					variant="outlined"
 					InputLabelProps={{ shrink: true }}
 				/>
+				&nbsp;&nbsp;
 				<Button
 					color="primary"
 					onClick={rangeUpdate}

@@ -126,8 +126,8 @@ class Primary(Services.Service):
 		)
 		for d in dTpl['items']:
 			dTpl['invoice']['minutes'] += d['minutes']
-			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes'])
-		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes'])
+			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
+		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
 
 		# Generate the PDF
 		sPDF = Templates.generate('pdf/invoice.html', dTpl, 'en-US', pdf=True)
@@ -831,16 +831,29 @@ class Primary(Services.Service):
 		dProjects = {}
 
 		# Fetch all the tasks for the client in the given timeframe
-		lWorks = Work.range(data['start'], data['end'], data['client'])
+		lWorks = Work.forInvoice(data['start'], data['end'], data['client'])
 
-		# Go through each task
+		# Calculate the total elapsed per unique task
+		dTasks = {}
 		for d in lWorks:
 
 			# Get the total seconds
 			iElapsed = d['end'] - d['start']
 
+			# Add it to the existing, or init the task
+			try:
+				dTasks[d['task']]['elapsed'] += iElapsed
+			except KeyError:
+				dTasks[d['task']] = {
+					"project": d['project'],
+					"elapsed": iElapsed
+				}
+
+		# Go through each unique task
+		for d in dTasks.values():
+
 			# Round to the nearest minute
-			iMinutes, iRemainder = divmod(iElapsed, 60)
+			iMinutes, iRemainder = divmod(d['elapsed'], 60)
 
 			# If the remaining seconds are anything over 15, round up
 			if iRemainder > 15:
@@ -865,15 +878,14 @@ class Primary(Services.Service):
 				# Multiply the blocks by the minimum
 				iTotalMinutes = dClient['task_minimum'] * iBlocks
 
-			# If we don't have the project yet
-			if d['project'] not in dProjects:
+			# Increase the project or init it
+			try:
+				dProjects[d['project']]['minutes'] += iTotalMinutes
+			except KeyError:
 				dProjects[d['project']] = {
-					"minutes": 0,
+					"minutes": iTotalMinutes,
 					"price": Decimal('0.00')
 				}
-
-			# Increment the projects total minutes
-			dProjects[d['project']]['minutes'] += iTotalMinutes
 
 		# Init the subtotal
 		deSubTotal = Decimal('0.00')

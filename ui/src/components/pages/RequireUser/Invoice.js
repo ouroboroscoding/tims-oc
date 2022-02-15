@@ -159,7 +159,7 @@ export default function Invoice(props) {
 					{invoice.items.map((o,i) =>
 						<TableRow className={i%2 === 0 ? 'even' : 'odd'}>
 							<TableCell className="project">{o.projectName}</TableCell>
-							<TableCell className="hours">{elapsed(o.minutes)}</TableCell>
+							<TableCell className="hours">{elapsed(o.minutes*60, {show_seconds: false, show_zero_hours: true})}</TableCell>
 							<TableCell className="amount">${o.amount}</TableCell>
 						</TableRow>
 					)}
@@ -169,7 +169,7 @@ export default function Invoice(props) {
 						<React.Fragment>
 							<TableRow className="subtotal">
 								<TableCell className="name">Sub-Total</TableCell>
-								<TableCell className="hours">{elapsed(invoice.minutes)}</TableCell>
+								<TableCell className="hours">{elapsed(invoice.minutes*60, {show_seconds: false, show_zero_hours: true})}</TableCell>
 								<TableCell className="amount">${invoice.subtotal}</TableCell>
 							</TableRow>
 							{invoice.taxes.map(o =>

@@ -709,6 +709,47 @@ class Work(Record_MySQL.Record):
 		return cls._conf
 
 	@classmethod
+	def forInvoice(cls, start, end, client, custom={}):
+		"""For Invoice
+
+		Pulls out data needed to generate an invoice
+
+		Arguments:
+			start (uint): The minimum time the work can end in
+			end (uint): The maximum time the work can end in
+			clients (str): Optional ID or IDs of clients
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT `w`.`project`, `w`.`task`, `w`.`start`, `w`.`end`\n" \
+				"FROM `%(db)s`.`%(table)s` as `w`\n" \
+				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
+				"WHERE `p`.`client` = '%(client)s'\n" \
+				"AND `w`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"client": client,
+			"start": start,
+			"end": end
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
+
+	@classmethod
 	def open(cls, user, custom={}):
 		"""Open
 
