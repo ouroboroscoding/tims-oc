@@ -15,7 +15,7 @@ __created__		= "2021-03-16"
 import re
 
 # Pip imports
-from RestOC import Conf, SMTP
+from RestOC import Conf, SMTP, Templates
 
 last_error = ''
 """The last error generated"""
@@ -123,7 +123,7 @@ def send(conf):
 
 	# Send the e-mail
 	iRes = SMTP.Send(
-		__mdConf['override'] or conf['to'],
+		('override' in __mdConf and __mdConf['override']) and __mdConf['override'] or conf['to'],
 		conf['subject'],
 		conf
 	)
@@ -138,6 +138,27 @@ def send(conf):
 
 	# Return OK
 	return True
+
+def template(tpl, data, locale):
+	"""Template
+
+	Generates the content and subject and returns it
+
+	Arguments:
+		tpl (str): The name of the template
+		data (dict): The data used to generate the template
+		locale (str): The locale to use to generate the template
+
+	Returns:
+		dict
+	"""
+
+	# Generate each of the types and return them
+	return {
+		"subject": Templates.generate('email/subject/%s' % tpl, data, locale),
+		"text": Templates.generate('email/text/%s' % tpl, data, locale),
+		"html": Templates.generate('email/html/%s' % tpl, data, locale)
+	}
 
 def valid(address):
 	"""Valid

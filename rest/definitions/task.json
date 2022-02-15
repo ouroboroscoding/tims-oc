@@ -9,6 +9,13 @@
 		},
 		"table": "task"
 	},
+
+	"__react__": {
+		"create": ["name", "description"],
+		"results": ["_created", "_updated", "name", "description", "_archived"],
+		"update": ["name", "description"]
+	},
+
 	"__name__": "Task",
 
 	"_id": {

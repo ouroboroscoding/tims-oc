@@ -720,7 +720,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'accounting', Rights.READ)
+		Rights.verifyOrRaise(sesh['user_id'], ['accounting', 'manager'], Rights.READ)
 
 		# Fetch and return the clients
 		return Services.Response(

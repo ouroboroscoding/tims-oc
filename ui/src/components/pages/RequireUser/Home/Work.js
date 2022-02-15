@@ -11,16 +11,22 @@
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
+import Tree from 'format-oc/Tree';
 
 // Material UI
 import Box from '@material-ui/core/Box';
 import Button from '@material-ui/core/Button';
 import FormControl from '@material-ui/core/FormControl';
+import IconButton from '@material-ui/core/IconButton';
 import InputLabel from '@material-ui/core/InputLabel';
 import Paper from '@material-ui/core/Paper';
 import Select from '@material-ui/core/Select';
 import TextField from '@material-ui/core/TextField';
+import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
+
+// Shared components
+import { Form } from 'shared/components/Format';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -29,6 +35,12 @@ import Rest from 'shared/communication/rest';
 import { iso } from 'shared/generic/dates';
 import Events from 'shared/generic/events';
 import { afindo, clone } from 'shared/generic/tools';
+
+// Load the task and project definitions
+import TaskDef from 'definitions/task';
+
+// Create Trees using the definitions
+const TaskTree = new Tree(clone(TaskDef));
 
 /**
  * Work
@@ -45,6 +57,7 @@ export default function Work(props) {
 
 	// State
 	let [client, clientSet] = useState(props.clients[0] ? props.clients[0]._id : false);
+	let [create, createSet] = useState(false);
 	let [project, projectSet] = useState(false);
 	let [projects, projectsSet] = useState({});
 	let [task, taskSet] = useState(false);
@@ -161,7 +174,23 @@ export default function Work(props) {
 			}
 		}
 
-	}, [project, tasks]);
+	// eslint-disable-next-line
+	}, [project]);
+
+	// Called when a new task is created
+	function taskCreated(task) {
+
+		// Clone the current tasks and push this task to the current project
+		let lTasks = clone(tasks);
+		lTasks[project].push(task);
+		tasksSet(lTasks);
+
+		// Set the current selected task to this one
+		taskSet(task._id);
+
+		// Hide the create form
+		createSet(false);
+	}
 
 	// End the work
 	function workEnd() {
@@ -273,6 +302,7 @@ export default function Work(props) {
 									label="Select Client"
 									native
 									onChange={ev => clientSet(ev.currentTarget.value)}
+									value={client}
 								>
 									{props.clients.map(o =>
 										<option key={o._id} value={o._id}>{o.name}</option>
@@ -297,6 +327,7 @@ export default function Work(props) {
 															label="Select Project"
 															native
 															onChange={ev => projectSet(ev.currentTarget.value)}
+															value={project}
 														>
 															{projects[client].map(o =>
 																<option key={o._id} value={o._id}>{o.name}</option>
@@ -312,33 +343,61 @@ export default function Work(props) {
 															<Typography>No tasks associated with project</Typography>
 														:
 															<React.Fragment>
-																<Box className="field">
-																	<FormControl>
-																		<InputLabel>Task</InputLabel>
-																		<Select
-																			label="Select Task"
-																			native
-																			onChange={ev => taskSet(ev.currentTarget.value)}
-																		>
-																			{tasks[project].map(o =>
-																				<option key={o._id} value={o._id}>{o.name}</option>
-																			)}
-																		</Select>
-																	</FormControl>
+																<Box className="flexColumns">
+																	<Box className="field flexGrow">
+																		<FormControl>
+																			<InputLabel>Task</InputLabel>
+																			<Select
+																				label="Select Task"
+																				native
+																				onChange={ev => taskSet(ev.currentTarget.value)}
+																				value={task}
+																			>
+																				{tasks[project].map(o =>
+																					<option key={o._id} value={o._id}>{o.name}</option>
+																				)}
+																			</Select>
+																		</FormControl>
+																	</Box>
+																	<Box className="flexStatic" style={{paddingTop: '20px'}}>
+																		<Tooltip title="Create Task">
+																			<IconButton onClick={ev => createSet(b => !b)}>
+																				<i className={'fas fa-plus-circle ' + (create ? 'open' : 'close')} />
+																			</IconButton>
+																		</Tooltip>
+																	</Box>
 																</Box>
-																{task &&
-																	<React.Fragment>
-																		<Box className="field">
-																			<TextField
-																				inputRef={descrRef}
-																				label="Description"
-																				placeholder="Description"
-																			/>
-																		</Box>
-																		<Box className="actions">
-																			<Button color="primary" onClick={workStart} variant="contained">Start</Button>
-																		</Box>
-																	</React.Fragment>
+																{create ?
+																	<Form
+																		beforeSubmit={values => {
+																			values.project = project;
+																			return values;
+																		}}
+																		cancel={ev => createSet(false)}
+																		errors={{
+																			"2004": "Name already in use"
+																		}}
+																		noun="task"
+																		service="primary"
+																		success={taskCreated}
+																		title="Create Task"
+																		tree={TaskTree}
+																		type="create"
+																	/>
+																:
+																	task &&
+																		<React.Fragment>
+																			<Box className="field">
+																				<TextField
+																					inputRef={descrRef}
+																					label="Description"
+																					placeholder="Description"
+																				/>
+																			</Box>
+																			<Box className="actions">
+																				<Button color="primary" onClick={workStart} variant="contained">Start</Button>
+																			</Box>
+																		</React.Fragment>
 																}
 															</React.Fragment>
 														}

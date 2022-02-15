@@ -37,16 +37,8 @@ import { afindi, clone } from 'shared/generic/tools';
 // Load the task and project definitions
 import TaskDef from 'definitions/task';
 
-// Add the task/project names
-let TaskResults = clone(TaskDef);
-TaskResults.__react__ = {
-	create: ['name', 'description'],
-	results: ['_created', '_updated', 'name', 'description', '_archived'],
-	update: ['name', 'description']
-}
-
 // Create Trees using the definitions
-const TaskTree = new Tree(TaskResults);
+const TaskTree = new Tree(clone(TaskDef));
 
 /**
  * Tasks
