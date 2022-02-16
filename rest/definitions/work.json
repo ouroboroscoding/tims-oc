@@ -1,0 +1,24 @@
+{
+	"__mysql__": {
+		"auto_primary": "UUID()",
+		"create": [	"_created", "_updated", "project", "user", "start", "end",
+					"description"],
+		"db": "tims-ouroboros",
+		"host": "primary",
+		"indexes": {
+			"project": null,
+			"user": null
+		},
+		"table": "work"
+	},
+	"__name__": "Work",
+	"_id": {"__type__":"uuid", "__optional__":true},
+	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
+	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
+	"project": {"__type__":"uuid"},
+	"task": {"__type__":"uuid"},
+	"user": {"__type__":"uuid"},
+	"start": {"__type__":"timestamp"},
+	"end": {"__type__":"timestamp", "__optional__":true},
+	"description": {"__type__":"string", "__optional__": true, "__maximum__":255}
+}

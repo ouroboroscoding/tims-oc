@@ -13,6 +13,7 @@ __created__		= "2019-03-30"
 
 # Python imports
 from time import time
+import traceback
 
 # PIP imports
 from RestOC import JSON
@@ -153,7 +154,10 @@ def run(l, log):
 		try:
 			res = m.run()
 		except Exception as e:
-			print("%s\n" % str(e))
+			print('%s\n\n%s' % (
+				', '.join([str(s) for s in e.args]),
+				traceback.format_exc()
+			))
 
 		# If we failed
 		if not res:

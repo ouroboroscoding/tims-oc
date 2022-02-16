@@ -32,14 +32,14 @@ if len(sys.argv) < 2:
 sVer = sys.argv[1].replace('.', '_')
 
 # Load the config
-Conf.load('../config.json')
-sConfOverride = '../config.%s.json' % platform.node()
+Conf.load('config.json')
+sConfOverride = 'config.%s.json' % platform.node()
 if os.path.isfile(sConfOverride):
 	Conf.load_merge(sConfOverride)
 
-# Add the global prepend and primary host to rethinkdb
-Record_Base.dbPrepend(Conf.get(("rethinkdb", "prepend"), ''))
-Record_MySQL.addHost('primary', Conf.get(("rethinkdb", "hosts", "primary")))
+# Add the global prepend and primary host to mysql
+Record_Base.dbPrepend(Conf.get(("mysql", "prepend"), ''))
+Record_MySQL.addHost('primary', Conf.get(("mysql", "hosts", "primary")))
 
 # Register all services
 Services.register(

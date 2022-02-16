@@ -25,7 +25,7 @@ from RestOC.Record_MySQL import DuplicateException
 
 # Record imports
 from records import Access, Client, Company, Invoice, InvoiceItem, Key, \
-					Project, Task, User
+					Project, Task, User, Work
 
 # Shared imports
 from shared import EMail, Rights, SSS
@@ -36,12 +36,12 @@ _INVOICE_S3_KEY = '%(client)s/%(invoice)s.pdf'
 class Primary(Services.Service):
 	"""Primary Service class
 
-	Service for main tasks
+	Service for main requests
 	"""
 
 	_install = [
 		Access, Client, Company, Invoice, InvoiceItem, Key, Project, Task, \
-		User
+		User, Work
 	]
 	"""Record types called in install"""
 
@@ -126,8 +126,8 @@ class Primary(Services.Service):
 		)
 		for d in dTpl['items']:
 			dTpl['invoice']['minutes'] += d['minutes']
-			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes'])
-		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes'])
+			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
+		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
 
 		# Generate the PDF
 		sPDF = Templates.generate('pdf/invoice.html', dTpl, 'en-US', pdf=True)
@@ -308,12 +308,12 @@ class Primary(Services.Service):
 		# Look up the key
 		oKey = Key.get(data['key'])
 		if not oKey:
-			return Services.Error(2003, 'key')
+			return Services.Error(2003, ['key', data['key']])
 
 		# Find the user
 		oUser = User.get(oKey['user'])
 		if not oUser:
-			return Services.Error(2003, 'user')
+			return Services.Error(2003, ['user', oKey['user']])
 
 		# Make sure the new password is strong enough
 		if not User.passwordStrength(data['passwd']):
@@ -368,7 +368,7 @@ class Primary(Services.Service):
 		# Find the user
 		oUser = User.get(data['_id'])
 		if not oUser:
-			return Services.Error(2003)
+			return Services.Error(2003, ['user', data['_id']])
 
 		# If we have an old password
 		if 'passwd' in data:
@@ -407,12 +407,12 @@ class Primary(Services.Service):
 		# Look up the key
 		dKey = Key.get(data['key'], raw=True)
 		if not dKey:
-			return Services.Error(2003, 'key')
+			return Services.Error(2003, ['key', data['key']])
 
 		# Get the user's name and locale
 		dUser = User.get(dKey['user'], raw=['name', 'locale'])
 		if not dUser:
-			return Services.Error(2003, 'user')
+			return Services.Error(2003, ['user', dKey['user']])
 
 		# Return the user
 		return Services.Response(dUser)
@@ -437,12 +437,12 @@ class Primary(Services.Service):
 		# Look up the key
 		oKey = Key.get(data['key'])
 		if not oKey:
-			return Services.Error(2003, 'key')
+			return Services.Error(2003, ['key', data['key']])
 
 		# Find the user
 		oUser = User.get(oKey['user'])
 		if not oUser:
-			return Services.Error(2003, 'user')
+			return Services.Error(2003, ['user', oKey['user']])
 
 		# Make sure the new password is strong enough
 		if not User.passwordStrength(data['passwd']):
@@ -469,10 +469,46 @@ class Primary(Services.Service):
 		# Return the session ID
 		return Services.Response(oSesh.id())
 
-	def accountTask_read(self, data, sesh):
-		"""Account: Task read
+	def accountVerify_update(self, data):
+		"""Account: Verify update
 
-		Returns an existing open task if one exists
+		Takes the key and the email and makrs the user as verified
+
+		Arguments:
+			data (dict): Data sent with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have the key
+		if 'key' not in data:
+			return Services.Error(1001, [['key', 'missing']])
+
+		# Look up the key
+		oKey = Key.get(data['key'])
+		if not oKey:
+			return Services.Error(2003, ['key', data['key']])
+
+		# Find the user
+		oUser = User.get(oKey['user'])
+		if not oUser:
+			return Services.Error(2003, ['user', oKey['user']])
+
+		# Update the user to verified
+		oUser['verified'] = True
+		oUser.save()
+
+		# Delete the key
+		oKey.delete()
+
+		# Return OK
+		return Services.Response(True)
+
+	def accountWork_read(self, data, sesh):
+		"""Account: Work read
+
+		Returns an existing open work record if one exists
 
 		Arguments:
 			data (dict): The data passed to the request
@@ -485,14 +521,14 @@ class Primary(Services.Service):
 		# Look for any non-ended task with the signed in user and return it
 		#	(or None)
 		return Services.Response(
-			Task.open(sesh['user_id'])
+			Work.open(sesh['user_id'])
 		)
 
-	def accountTasks_read(self, data, sesh):
-		"""Account: Tasks read
+	def accountWorks_read(self, data, sesh):
+		"""Account: Works read
 
-		Returns all the tasks associated with the user in the given date/time
-		range
+		Returns all the work records associated with the user in the given
+		date/time range
 
 		Arguments:
 			data (dict): The data passed to the request
@@ -515,50 +551,14 @@ class Primary(Services.Service):
 			return Services.Error(1001, lErrors)
 
 		# Fetch the tasks by the signed in user
-		lTasks = Task.byUser(sesh['user_id'], data['start'], data['end'])
+		lWorks = Work.byUser(sesh['user_id'], data['start'], data['end'])
 
 		# Go through each task and calculate the elpased seconds
-		for d in lTasks:
+		for d in lWorks:
 			d['elapsed'] = d['end'] - d['start']
 
 		# Return all the tasks
-		return Services.Response(lTasks)
-
-	def accountVerify_update(self, data):
-		"""Account: Verify update
-
-		Takes the key and the email and makrs the user as verified
-
-		Arguments:
-			data (dict): Data sent with the request
-
-		Returns:
-			Services.Response
-		"""
-
-		# Make sure we have the key
-		if 'key' not in data:
-			return Services.Error(1001, [['key', 'missing']])
-
-		# Look up the key
-		oKey = Key.get(data['key'])
-		if not oKey:
-			return Services.Error(2003, 'key')
-
-		# Find the user
-		oUser = User.get(oKey['user'])
-		if not oUser:
-			return Services.Error(2003, 'user')
-
-		# Update the user to verified
-		oUser['verified'] = True
-		oUser.save()
-
-		# Delete the key
-		oKey.delete()
-
-		# Return OK
-		return Services.Response(True)
+		return Services.Response(lWorks)
 
 	def client_create(self, data, sesh):
 		"""Client create
@@ -614,7 +614,7 @@ class Primary(Services.Service):
 		# Find the client
 		oClient = Client.get(data['_id'])
 		if not oClient:
-			return Services.Error(2003)
+			return Services.Error(2003, ['client', data['_id']])
 
 		# Mark the client as archived
 		oClient['_archived'] = True
@@ -645,7 +645,7 @@ class Primary(Services.Service):
 		# Fetch the record
 		dClient = Client.get(data['_id'], raw=True)
 		if not dClient:
-			return Services.Error(2003)
+			return Services.Error(2003, ['client', data['_id']])
 
 		# Return the record data
 		return Services.Response(dClient)
@@ -673,7 +673,7 @@ class Primary(Services.Service):
 		# Find the record
 		oClient = Client.get(data['_id'])
 		if not oClient:
-			return Services.Error(2003)
+			return Services.Error(2003, ['client', data['_id']])
 
 		# Remove fields that can't be changed
 		for f in ['_id', '_created', '_updated', '_archived']:
@@ -720,7 +720,7 @@ class Primary(Services.Service):
 		"""
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'accounting', Rights.READ)
+		Rights.verifyOrRaise(sesh['user_id'], ['accounting', 'manager'], Rights.READ)
 
 		# Fetch and return the clients
 		return Services.Response(
@@ -743,7 +743,7 @@ class Primary(Services.Service):
 		# Fetch the record
 		dCompany = Company.getAndDecodeTaxes()
 		if not dCompany:
-			return Services.Error(2003)
+			return Services.Error(2003, ['company', data['_id']])
 
 		# Return the record data
 		return Services.Response(dCompany)
@@ -771,7 +771,7 @@ class Primary(Services.Service):
 		# Find the record
 		oCompany = Company.get(data['_id'])
 		if not oCompany:
-			return Services.Error(2003)
+			return Services.Error(2003, ['company', data['_id']])
 
 		# Remove fields that can't be changed
 		for f in ['_id', '_created', '_updated']:
@@ -831,16 +831,29 @@ class Primary(Services.Service):
 		dProjects = {}
 
 		# Fetch all the tasks for the client in the given timeframe
-		lTasks = Task.range(data['start'], data['end'], data['client'])
+		lWorks = Work.forInvoice(data['start'], data['end'], data['client'])
 
-		# Go through each task
-		for d in lTasks:
+		# Calculate the total elapsed per unique task
+		dTasks = {}
+		for d in lWorks:
 
 			# Get the total seconds
 			iElapsed = d['end'] - d['start']
 
+			# Add it to the existing, or init the task
+			try:
+				dTasks[d['task']]['elapsed'] += iElapsed
+			except KeyError:
+				dTasks[d['task']] = {
+					"project": d['project'],
+					"elapsed": iElapsed
+				}
+
+		# Go through each unique task
+		for d in dTasks.values():
+
 			# Round to the nearest minute
-			iMinutes, iRemainder = divmod(iElapsed, 60)
+			iMinutes, iRemainder = divmod(d['elapsed'], 60)
 
 			# If the remaining seconds are anything over 15, round up
 			if iRemainder > 15:
@@ -865,15 +878,14 @@ class Primary(Services.Service):
 				# Multiply the blocks by the minimum
 				iTotalMinutes = dClient['task_minimum'] * iBlocks
 
-			# If we don't have the project yet
-			if d['project'] not in dProjects:
+			# Increase the project or init it
+			try:
+				dProjects[d['project']]['minutes'] += iTotalMinutes
+			except KeyError:
 				dProjects[d['project']] = {
-					"minutes": 0,
+					"minutes": iTotalMinutes,
 					"price": Decimal('0.00')
 				}
-
-			# Increment the projects total minutes
-			dProjects[d['project']]['minutes'] += iTotalMinutes
 
 		# Init the subtotal
 		deSubTotal = Decimal('0.00')
@@ -1190,7 +1202,7 @@ class Primary(Services.Service):
 		# Find the record
 		oProject = Project.get(data['_id'])
 		if not oProject:
-			return Services.Error(2003)
+			return Services.Error(2003, ['project', data['_id']])
 
 		# Check rights
 		Rights.verifyOrRaise(sesh['user_id'], 'manager', oProject['client'])
@@ -1221,7 +1233,7 @@ class Primary(Services.Service):
 		# Fetch the record
 		dProject = Project.get(data['_id'], raw=True)
 		if not dProject:
-			return Services.Error(2003)
+			return Services.Error(2003, ['project', data['_id']])
 
 		# Check rights
 		Rights.verifyOrRaise(sesh['user_id'], None, dProject['client'])
@@ -1242,9 +1254,6 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'manager')
-
 		# Make sure the ID is passed
 		if '_id' not in data:
 			return Services.Errro(1001, [['_id', 'missing']])
@@ -1252,7 +1261,10 @@ class Primary(Services.Service):
 		# Find the record
 		oProject = Project.get(data['_id'])
 		if not oProject:
-			return Services.Error(2003)
+			return Services.Error(2003, ['project', data['_id']])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager', )
 
 		# Remove fields that can't be changed
 		for f in ['_id', '_created', '_updated', '_archived', 'client']:
@@ -1358,10 +1370,10 @@ class Primary(Services.Service):
 		# Return OK
 		return Services.Response(True)
 
-	def taskStart_create(self, data, sesh):
-		"""Task Start
+	def task_create(self, data, sesh):
+		"""Task create
 
-		Handles starting a new task, which just stores the start timestamp
+		Handles creating a new task
 
 		Arguments:
 			data (dict): The data passed to the request
@@ -1371,30 +1383,21 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Make sure the project was passed
+		# Make sure the client was passed
 		if 'project' not in data:
 			return Services.Error(1001, [['project', 'missing']])
 
-		# Find the project
+		# Fetch the project
 		dProject = Project.get(data['project'], raw=['client'])
 		if not dProject:
-			return Services.Error(2003)
+			return Services.Error(2003, 'project:%s' % data['project'])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'worker', dProject['client'])
-
-		# If we have an existing open task
-		if Task.open(sesh['user_id']):
-			return Services.Error(2103)
+		Rights.verifyOrRaise(sesh['user_id'], ['manager', 'worker'], dProject['client'])
 
 		# Create an instance to verify the fields
 		try:
-			oTask = Task({
-				"project": data['project'],
-				"user": sesh['user_id'],
-				"start": int(time()),
-				"description": ('description' in data and data['description'] or '')
-			})
+			oTask = Task(data)
 		except ValueError as e:
 			return Services.Error(1001, e.args[0])
 
@@ -1404,56 +1407,13 @@ class Primary(Services.Service):
 		except DuplicateException:
 			return Services.Error(2004)
 
-		# Return the new ID and start time
-		return Services.Response({
-			"_id": sID,
-			"start": oTask['start']
-		})
-
-	def taskEnd_update(self, data, sesh):
-		"""Task End
-
-		Handles ending an existing task
-
-		Arguments:
-			data (dict): The data passed to the request
-			sesh (Sesh._Session): The session associated with the request
-
-		Returns:
-			Services.Response
-		"""
-
-		# If the ID is missing
-		if '_id' not in data:
-			return Services.Error(1001, ['_id', 'missing'])
-
-		# Find the task
-		oTask = Task.get(data['_id'])
-		if not oTask:
-			return Services.Error(2003)
-
-		# If the user doesn't match the person who started the task
-		if sesh['user_id'] != oTask['user']:
-			return Services.Error(Rights.INVALID)
-
-		# If the description was passed
-		if 'description' in data:
-			oTask['description'] = data['description']
-
-		# Set the end time
-		oTask['end'] = int(time())
-
-		# Save the task
-		if not oTask.save():
-			return Services.Response(False)
-
-		# Return the end time
-		return Services.Response(oTask['end'])
+		# Return the new ID
+		return Services.Response(sID)
 
 	def task_delete(self, data, sesh):
 		"""Task delete
 
-		Deletes an existing task
+		Deletes (archives) an existing task
 
 		Arguments:
 			data (dict): The data passed to the request
@@ -1463,27 +1423,111 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], 'manager')
-
-		# If the ID is missing
+		# Make sure the ID is passed
 		if '_id' not in data:
-			return Services.Error(1001, ['_id', 'missing'])
+			return Services.Errro(1001, [['_id', 'missing']])
 
-		# Find the task
+		# Find the record
 		oTask = Task.get(data['_id'])
 		if not oTask:
-			return Services.Error(2003)
+			return Services.Error(2003, 'task:%s' % data['_id'])
 
-		# Delete the task and return the result
+		# Find the associated project
+		dProject = Project.get(oTask['project'], raw=['client'])
+		if not dProject:
+			return Services.Error(2003, 'project:%s' % oTask['project'])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager', dProject['client'])
+
+		# Mark the task as archived
+		oTask['_archived'] = True
+
+		# Return the new ID
+		return Services.Response(sID)
+
+	def task_read(self, data, sesh):
+		"""Task read
+
+		Fetches and returns data on an existing task
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure the ID is passed
+		if '_id' not in data:
+			return Services.Errro(1001, [['_id', 'missing']])
+
+		# Fetch the record
+		dTask = Task.get(data['_id'], raw=True)
+		if not dTask:
+			return Services.Error(2003, ['task', data['_id']])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], None, dTask['client'])
+
+		# Return the record data
+		return Services.Response(dTask)
+
+	def task_update(self, data, sesh):
+		"""Task update
+
+		Updates an existing task
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure the ID is passed
+		if '_id' not in data:
+			return Services.Errro(1001, [['_id', 'missing']])
+
+		# Find the record
+		oTask = Task.get(data['_id'])
+		if not oTask:
+			return Services.Error(2003, ['task', data['_id']])
+
+		# Find the project
+		dProject = Project.get(oTask['project'], raw=['client'])
+		if not dProject:
+			return Services.Error(2003, ['project', oTask['project']])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager', dProject['client'])
+
+		# Remove fields that can't be changed
+		for f in ['_id', '_created', '_updated', '_archived', 'client']:
+			if f in data:
+				del data[f]
+
+		# Update each field, keeping track of errors
+		lErrors = []
+		for f in data:
+			try: oTask[f] = data[f]
+			except ValueError as e: lErrors.extend(e.args[0])
+
+		# If there's any errors
+		if lErrors:
+			return Services.Error(1001, lErrors)
+
+		# Save the record and return the result
 		return Services.Response(
-			oTask.delete()
+			oTask.save()
 		)
 
 	def tasks_read(self, data, sesh):
 		"""Tasks read
 
-		Fetches and returns data on tasks for a specific client in a range
+		Fetches and returns data on all tasks in a given client
 
 		Arguments:
 			data (dict): The data passed to the request
@@ -1493,48 +1537,35 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Make sure we have all necessary data
-		try: DictHelper.eval(data, ['start', 'end'])
-		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+		# If the project ID isn't passed
+		if 'project' not in data:
+			return Services.Error(1001, [['project', 'missing']])
 
-		# Get the signed in user
-		dUser = User.cacheGet(sesh['user_id'])
-		if not dUser:
-			return Services.Error(2003, 'user')
+		# Find the project
+		dProject = Project.get(data['project'], raw=['client'])
+		if not dProject:
+			return Services.Error(2003, ['project', data['project']])
 
-		# If a specific task is passed
-		if 'client' in data:
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], None, dProject['client'])
 
-			# Check rights
-			Rights.verifyOrRaise(dUser, ['client', 'manager'], data['client'])
+		# Filter
+		dFilter = {
+			"project": data['project']
+		}
 
-			# Set the filter
-			lClients = data['client']
+		# If we don't want archived
+		if 'include_arvchived' not in data or not data['include_archived']:
+			dFilter['_archived'] = False
 
-		# Else
-		else:
-
-			# Check type
-			if dUser['type'] not in ['admin', 'client', 'manager']:
-				return Services.Error(Rights.INVALID)
-
-			# If the user has full access
-			if dUser['access'] is None:
-				lClients = None
-
-			# Else, filter just those clients available to the user
-			else:
-				lClients = dUser['access']
-
-		# Get all tasks that end in the given timeframe
-		lTasks = Task.range(data['start'], data['end'], lClients)
-
-		# Go through each task and calculate the elpased seconds
-		for d in lTasks:
-			d['elapsed'] = d['end'] - d['start']
-
-		# Return the records
-		return Services.Response(lTasks)
+		# Fetch and return the projects
+		return Services.Response(
+			Task.filter(
+				dFilter,
+				raw=True,
+				orderby='name'
+			)
+		)
 
 	def user_create(self, data, sesh):
 		"""User create
@@ -1642,7 +1673,7 @@ class Primary(Services.Service):
 		# Find the user
 		oUser = User.get(data['_id'])
 		if not oUser:
-			return Services.Error(2003)
+			return Services.Error(2003, ['user', data['_id']])
 
 		# Mark the user as archived
 		oUser['_archived'] = True
@@ -1679,7 +1710,7 @@ class Primary(Services.Service):
 		# Fetch from the cache
 		dUser = User.cacheGet(data['_id'])
 		if not dUser:
-			return Services.Error(2003)
+			return Services.Error(2003, ['user', data['id']])
 
 		# Return the record data
 		return Services.Response(dUser)
@@ -1713,7 +1744,7 @@ class Primary(Services.Service):
 		# Find the record
 		oUser = User.get(data['_id'])
 		if not oUser:
-			return Services.Error(2003)
+			return Services.Error(2003, ['user', data['_id']])
 
 		# Don't send the verification email unless the email has changed
 		bSendVerify = False
@@ -1824,7 +1855,7 @@ class Primary(Services.Service):
 		# Find the record
 		oUser = User.get(data['_id'])
 		if not oUser:
-			return Services.Error(2003)
+			return Services.Error(2003, ['user', data['_id']])
 
 		# If we have an old password
 		if 'passwd' in data:
@@ -1866,11 +1897,11 @@ class Primary(Services.Service):
 
 		# Make sure the client exists
 		if not Client.exists(data['client']):
-			return Services.Error(2003, 'client')
+			return Services.Error(2003, ['client', data['client']])
 
 		# Make sure the user exists
 		if not User.exists(data['user']):
-			return Services.Error(2003, 'user')
+			return Services.Error(2003, ['user', data['user']])
 
 		# Add the access
 		oAccess = Access({
@@ -1904,7 +1935,7 @@ class Primary(Services.Service):
 			# Find the access
 			oAccess = Access.get(data['_id'])
 			if not oAccess:
-				return Services.Error(2003)
+				return Services.Error(2003, ['access', data['_id']])
 
 			# Check rights
 			Rights.verifyOrRaise(sesh['user_id'], 'manager', oAccess['client'])
@@ -1987,3 +2018,185 @@ class Primary(Services.Service):
 				orderby='email'
 			)
 		)
+
+	def workStart_create(self, data, sesh):
+		"""Work Start
+
+		Handles starting new work, which just stores the start timestamp
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have all necessary data
+		try: DictHelper.eval(data, ['project', 'task'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Find the project
+		dProject = Project.get(data['project'], raw=['client'])
+		if not dProject:
+			return Services.Error(2003, ['project', data['project']])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'worker', dProject['client'])
+
+		# Find the task
+		dTask
+
+		# If we have an existing open work record
+		if Work.open(sesh['user_id']):
+			return Services.Error(2103)
+
+		# Create an instance to verify the fields
+		try:
+			oWork = Work({
+				"project": data['project'],
+				"task": data['task'],
+				"user": sesh['user_id'],
+				"start": int(time()),
+				"description": ('description' in data and data['description'] or '')
+			})
+		except ValueError as e:
+			return Services.Error(1001, e.args[0])
+
+		# Create the record and check for a duplicate name
+		try:
+			sID = oWork.create()
+		except DuplicateException:
+			return Services.Error(2004)
+
+		# Return the new ID and start time
+		return Services.Response({
+			"_id": sID,
+			"start": oWork['start']
+		})
+
+	def workEnd_update(self, data, sesh):
+		"""Work End
+
+		Handles ending an existing work record
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# If the ID is missing
+		if '_id' not in data:
+			return Services.Error(1001, ['_id', 'missing'])
+
+		# Find the record
+		oWork = Work.get(data['_id'])
+		if not oWork:
+			return Services.Error(2003, ['work', data['_id']])
+
+		# If the user doesn't match the person who started the work
+		if sesh['user_id'] != oWork['user']:
+			return Services.Error(Rights.INVALID)
+
+		# If the description was passed
+		if 'description' in data:
+			oWork['description'] = data['description']
+
+		# Set the end time
+		oWork['end'] = int(time())
+
+		# Save the work
+		if not oWork.save():
+			return Services.Response(False)
+
+		# Return the end time
+		return Services.Response(oWork['end'])
+
+	def work_delete(self, data, sesh):
+		"""Work delete
+
+		Deletes an existing work record
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
+
+		# If the ID is missing
+		if '_id' not in data:
+			return Services.Error(1001, ['_id', 'missing'])
+
+		# Find the record
+		oWork = Work.get(data['_id'])
+		if not oWork:
+			return Services.Error(2003, ['work', data['_id']])
+
+		# Delete the record and return the result
+		return Services.Response(
+			oWork.delete()
+		)
+
+	def works_read(self, data, sesh):
+		"""Works read
+
+		Fetches and returns data on work for a specific client in a range
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have all necessary data
+		try: DictHelper.eval(data, ['start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Get the signed in user
+		dUser = User.cacheGet(sesh['user_id'])
+		if not dUser:
+			return Services.Error(2003, ['user', data['user_id']])
+
+		# If a specific work is passed
+		if 'client' in data:
+
+			# Check rights
+			Rights.verifyOrRaise(dUser, ['client', 'manager'], data['client'])
+
+			# Set the filter
+			lClients = data['client']
+
+		# Else
+		else:
+
+			# Check type
+			if dUser['type'] not in ['admin', 'client', 'manager']:
+				return Services.Error(Rights.INVALID)
+
+			# If the user has full access
+			if dUser['access'] is None:
+				lClients = None
+
+			# Else, filter just those clients available to the user
+			else:
+				lClients = dUser['access']
+
+		# Get all records that end in the given timeframe
+		lWorks = Work.range(data['start'], data['end'], lClients)
+
+		# Go through each record and calculate the elpased seconds
+		for d in lWorks:
+			d['elapsed'] = d['end'] - d['start']
+
+		# Return the records
+		return Services.Response(lWorks)

@@ -10,20 +10,14 @@
 
 // NPM modules
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 // Material UI
 import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
 
 // Local components
-import Task from './Task';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
+import Work from './Work';
 
 /**
  * Home
@@ -37,43 +31,17 @@ import Events from 'shared/generic/events';
  */
 export default function Home(props) {
 
-	// State
-	let [clients, clientsSet] = useState(false);
-
-	// User effect
-	useEffect(() => {
-		clientsFetch();
-	}, [props.user]);
-
-	// Fetch all clients the user has access to
-	function clientsFetch() {
-
-		// Make the request to the server
-		Rest.read('primary', 'account/clients').done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
-			}
-
-			// If we got data
-			if(res.data) {
-				clientsSet(res.data);
-			}
-		});
-	}
-
 	// Render
 	return (
 		<Box id="home" className="singlePage">
 			<Box className="container sm">
-				{clients === false ?
+				{props.clients === false ?
 					<Typography>Loading...</Typography>
 				:
 					<React.Fragment>
 						{props.user.type === 'worker' &&
-							<Task
-								clients={clients}
+							<Work
+								clients={props.clients}
 								{...props}
 							/>
 						}
@@ -86,6 +54,7 @@ export default function Home(props) {
 
 // Valid props
 Home.propTypes = {
+	clients: PropTypes.array.isRequired,
 	mobile: PropTypes.bool.isRequired,
 	user: PropTypes.object.isRequired
 }

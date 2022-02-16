@@ -8,14 +8,69 @@ __author__		= "Chris Nasr"
 __copyright__	= "OuroborosCoding"
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
-__email__		= "ouroboroscode@gmail.com"
+__email__		= "chris@ouroboroscoding.com"
 __created__		= "2021-03-16"
 
-# Pip imports
-from RestOC import SMTP, Templates
+# Python imports
+import re
 
-last_error = '';
+# Pip imports
+from RestOC import Conf, SMTP, Templates
+
+last_error = ''
 """The last error generated"""
+
+__regex = re.compile(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$')
+"""E-mail address regular expression"""
+
+__mdConf = None
+"""Email conf"""
+
+def _init():
+	"""Init
+
+	Initialises the module
+
+	Returns:
+		None
+	"""
+
+	# Import the module variable
+	global __mdConf
+
+	# Load email conf
+	__mdConf = Conf.get('email')
+
+	# Init the SMTP module
+	SMTP.init(**__mdConf['smtp'])
+
+def error(subject, error):
+	"""Email Error
+
+	Send out an email with an error message
+
+	Arguments:
+		error (str): The error to email
+
+	Returns:
+		bool
+	"""
+
+	# For debugging
+	print('Emailing: %s, %s' % (subject, error))
+
+	# Send the email
+	bRes = send({
+		"to": Conf.get(('developer', 'emails')),
+		"subject": subject,
+		"text": error
+	})
+	if not bRes:
+		print('Failed to send email: %s' % EMail.last_error)
+		return False
+
+	# Return OK
+	return True
 
 def send(conf):
 	"""Send
@@ -31,13 +86,17 @@ def send(conf):
 
 	global last_error
 
+	# If we haven't been initialised
+	if not __mdConf:
+		_init()
+
 	# Check that we have at least one type of body
 	if 'html' not in conf and 'text' not in conf:
 		raise ValueError('must pass one of "text" or "html"')
 
 	# If the from is not set
 	if 'from' not in conf:
-		conf['from'] = 'noreply@localhost'
+		conf['from'] = __mdConf['from']
 
 	# If there's an attachment
 	if 'attachments' in conf:
@@ -63,7 +122,11 @@ def send(conf):
 			conf['attachments'][i]['body'] = b64decode(conf['attachments'][i]['body'])
 
 	# Send the e-mail
-	iRes = SMTP.Send(conf['to'], conf['subject'], conf)
+	iRes = SMTP.Send(
+		('override' in __mdConf and __mdConf['override']) and __mdConf['override'] or conf['to'],
+		conf['subject'],
+		conf
+	)
 
 	# If there was an error
 	if iRes != SMTP.OK:
@@ -96,3 +159,22 @@ def template(tpl, data, locale):
 		"text": Templates.generate('email/text/%s' % tpl, data, locale),
 		"html": Templates.generate('email/html/%s' % tpl, data, locale)
 	}
+
+def valid(address):
+	"""Valid
+
+	Returns true if the email address is valid
+
+	Arguments:
+		address (str): The e-mail address to verify
+
+	Returns
+		bool
+	"""
+
+	# If we get a match
+	if __regex.match(address):
+		return True
+
+	# No match
+	return False

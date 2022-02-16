@@ -26,6 +26,7 @@ import Home from './Home';
 import Invoice from './Invoice';
 import Invoices from './Invoices';
 import Tasks from './Tasks';
+import Work from './Work';
 import Users from './Users';
 
 // Shared communication modules
@@ -103,14 +104,20 @@ export default function RequireUser(props) {
 					{...props}
 				/>
 			</Route>
+			<Route exact path="/users">
+				<Users
+					clients={clients}
+					{...props}
+				/>
+			</Route>
 			<Route exact path="/tasks">
 				<Tasks
 					clients={clients}
 					{...props}
 				/>
 			</Route>
-			<Route exact path="/users">
-				<Users
+			<Route exact path="/work">
+				<Work
 					clients={clients}
 					{...props}
 				/>

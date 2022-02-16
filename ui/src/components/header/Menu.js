@@ -50,8 +50,9 @@ export default function Menu(props) {
 			clients: ['admin', 'accounting', 'manager'].includes(props.user.type),
 			company: props.user.type === 'admin',
 			invoices: ['admin', 'accounting', 'client'].includes(props.user.type),
-			tasks: ['admin', 'manager', 'client', 'worker'].includes(props.user.type),
-			users: ['admin', 'manager'].includes(props.user.type)
+			tasks: ['admin', 'manager', 'client'].includes(props.user.type),
+			users: ['admin', 'manager'].includes(props.user.type),
+			work: ['admin', 'manager', 'client', 'worker'].includes(props.user.type)
 		} : _NO_RIGHTS);
 	}, [props.user]);
 
@@ -85,6 +86,14 @@ export default function Menu(props) {
 						<ListItem button>
 							<ListItemIcon><i className="fas fa-tasks" /></ListItemIcon>
 							<ListItemText primary="Tasks" />
+						</ListItem>
+					</Link>
+				}
+				{rights.work &&
+					<Link to="/work" onClick={props.onClose}>
+						<ListItem button>
+							<ListItemIcon><i className="fas fa-clock" /></ListItemIcon>
+							<ListItemText primary="Work" />
 						</ListItem>
 					</Link>
 				}

@@ -1,23 +1,59 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": [	"_created", "_updated", "project", "user", "start", "end",
-					"description"],
+		"create": [	"_created", "_updated", "project", "name", "description"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
-			"project": null,
-			"user": null
+			"project_name": {"unique": ["project", "name"]}
 		},
 		"table": "task"
 	},
+
+	"__react__": {
+		"create": ["name", "description"],
+		"results": ["_created", "_updated", "name", "description", "_archived"],
+		"update": ["name", "description"]
+	},
+
 	"__name__": "Task",
-	"_id": {"__type__":"uuid", "__optional__":true},
-	"_created": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP"}},
-	"_updated": {"__type__":"timestamp","__optional__":true,"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}},
-	"project": {"__type__":"uuid"},
-	"user": {"__type__":"uuid"},
-	"start": {"__type__":"timestamp"},
-	"end": {"__type__":"timestamp", "__optional__":true},
-	"description": {"__type__":"string", "__maximum__":255}
+
+	"_id": {
+		"__type__":"uuid",
+		"__optional__":true
+	},
+
+	"_created": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
+	},
+
+	"_updated": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP"}
+	},
+
+	"_archived": {
+		"__type__":"bool",
+		"__optional__":true,
+		"__sql__":{"opts": "not null default 0"},
+		"__react__":{"title":"Archived"}
+	},
+
+	"project": {
+		"__type__":"uuid"
+	},
+
+	"name": {
+		"__type__":"string",
+		"__maximum__":63
+	},
+
+	"description": {
+		"__type__":"string",
+		"__optional__": true,
+		"__maximum__":255
+	}
 }
