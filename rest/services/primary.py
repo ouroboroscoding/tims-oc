@@ -2045,7 +2045,9 @@ class Primary(Services.Service):
 		Rights.verifyOrRaise(sesh['user_id'], 'worker', dProject['client'])
 
 		# Find the task
-		dTask
+		dTask = Task.get(data['task'])
+		if not dTask:
+			return Services.Error(2003, ['task', data['task']])
 
 		# If we have an existing open work record
 		if Work.open(sesh['user_id']):
