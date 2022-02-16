@@ -1,7 +1,7 @@
 {
 	"__mysql__": {
 		"auto_primary": "UUID()",
-		"create": [	"_created", "_updated", "project", "name", "description"],
+		"create": [	"_created", "_updated", "_archived", "project", "name", "description"],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
