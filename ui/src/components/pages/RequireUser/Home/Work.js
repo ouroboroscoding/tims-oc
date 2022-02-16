@@ -339,67 +339,65 @@ export default function Work(props) {
 													<Typography>Loading...</Typography>
 												:
 													<React.Fragment>
-														{tasks[project].length === 0 ?
-															<Typography>No tasks associated with project</Typography>
-														:
-															<React.Fragment>
-																<Box className="flexColumns">
-																	<Box className="field flexGrow">
-																		<FormControl>
-																			<InputLabel>Task</InputLabel>
-																			<Select
-																				label="Select Task"
-																				native
-																				onChange={ev => taskSet(ev.currentTarget.value)}
-																				value={task}
-																			>
-																				{tasks[project].map(o =>
-																					<option key={o._id} value={o._id}>{o.name}</option>
-																				)}
-																			</Select>
-																		</FormControl>
-																	</Box>
-																	<Box className="flexStatic" style={{paddingTop: '20px'}}>
-																		<Tooltip title="Create Task">
-																			<IconButton onClick={ev => createSet(b => !b)}>
-																				<i className={'fas fa-plus-circle ' + (create ? 'open' : 'close')} />
-																			</IconButton>
-																		</Tooltip>
-																	</Box>
-																</Box>
-																{create ?
-																	<Form
-																		beforeSubmit={values => {
-																			values.project = project;
-																			return values;
-																		}}
-																		cancel={ev => createSet(false)}
-																		errors={{
-																			"2004": "Name already in use"
-																		}}
-																		noun="task"
-																		service="primary"
-																		success={taskCreated}
-																		title="Create Task"
-																		tree={TaskTree}
-																		type="create"
-																	/>
+														<Box className="flexColumns">
+															<Box className="field flexGrow">
+																{tasks[project].length === 0 ?
+																	<Typography>No tasks associated with project</Typography>
 																:
-																	task &&
-																		<React.Fragment>
-																			<Box className="field">
-																				<TextField
-																					inputRef={descrRef}
-																					label="Description"
-																					placeholder="Description"
-																				/>
-																			</Box>
-																			<Box className="actions">
-																				<Button color="primary" onClick={workStart} variant="contained">Start</Button>
-																			</Box>
-																		</React.Fragment>
+																	<FormControl>
+																		<InputLabel>Task</InputLabel>
+																		<Select
+																			label="Select Task"
+																			native
+																			onChange={ev => taskSet(ev.currentTarget.value)}
+																			value={task}
+																		>
+																			{tasks[project].map(o =>
+																				<option key={o._id} value={o._id}>{o.name}</option>
+																			)}
+																		</Select>
+																	</FormControl>
 																}
-															</React.Fragment>
+															</Box>
+															<Box className="flexStatic" style={{paddingTop: '20px'}}>
+																<Tooltip title="Create Task">
+																	<IconButton onClick={ev => createSet(b => !b)}>
+																		<i className={'fas fa-plus-circle ' + (create ? 'open' : 'close')} />
+																	</IconButton>
+																</Tooltip>
+															</Box>
+														</Box>
+														{create ?
+															<Form
+																beforeSubmit={values => {
+																	values.project = project;
+																	return values;
+																}}
+																cancel={ev => createSet(false)}
+																errors={{
+																	"2004": "Name already in use"
+																}}
+																noun="task"
+																service="primary"
+																success={taskCreated}
+																title="Create Task"
+																tree={TaskTree}
+																type="create"
+															/>
+														:
+															task &&
+																<React.Fragment>
+																	<Box className="field">
+																		<TextField
+																			inputRef={descrRef}
+																			label="Description"
+																			placeholder="Description"
+																		/>
+																	</Box>
+																	<Box className="actions">
+																		<Button color="primary" onClick={workStart} variant="contained">Start</Button>
+																	</Box>
+																</React.Fragment>
 														}
 													</React.Fragment>
 												}
