@@ -34,13 +34,43 @@ import Rest from 'shared/communication/rest';
 // Shared generic modules
 import { iso } from 'shared/generic/dates';
 import Events from 'shared/generic/events';
-import { afindo, clone } from 'shared/generic/tools';
+import {
+	afindi,
+	afindo,
+	clone,
+	safeLocalStorage
+} from 'shared/generic/tools';
 
 // Load the task and project definitions
 import TaskDef from 'definitions/task';
 
 // Create Trees using the definitions
 const TaskTree = new Tree(clone(TaskDef));
+
+/**
+ * Store Last Used
+ *
+ * Stores the last used variables in local storage so they can be used next
+ * time the app is used
+ *
+ * @name storeLastUsed
+ * @access private
+ * @param String which 'client', 'project', 'task'
+ * @param String value The value to store
+ * @returns void
+ */
+function storeLastUsed(which, value) {
+
+	// Get the existing values
+	let sLastUsed = safeLocalStorage('work_last_' + which, false);
+
+	// If the value changed
+	if(sLastUsed !== value) {
+
+		// Store the data in local storage
+		localStorage.setItem('work_last_' + which, value);
+	}
+}
 
 /**
  * Work
@@ -56,11 +86,11 @@ const TaskTree = new Tree(clone(TaskDef));
 export default function Work(props) {
 
 	// State
-	let [client, clientSet] = useState(props.clients[0] ? props.clients[0]._id : false);
+	let [client, clientSet] = useState(safeLocalStorage('work_last_client', props.clients[0] ? props.clients[0]._id : false));
 	let [create, createSet] = useState(false);
-	let [project, projectSet] = useState(false);
+	let [project, projectSet] = useState(safeLocalStorage('work_last_project', false));
 	let [projects, projectsSet] = useState({});
-	let [task, taskSet] = useState(false);
+	let [task, taskSet] = useState(safeLocalStorage('work_last_task', false));
 	let [tasks, tasksSet] = useState({});
 	let [work, workSet] = useState(null);
 
@@ -92,6 +122,9 @@ export default function Work(props) {
 		// If we have a client selected
 		if(client) {
 
+			// Update local storage
+			storeLastUsed('client', client);
+
 			// If we don't have the projects stored for the client
 			if(!projects[client]) {
 
@@ -114,9 +147,13 @@ export default function Work(props) {
 							return clone(val);
 						});
 
-						// Set the project based on available ones for the
-						//	client
-						projectSet(res.data[0] ? res.data[0]._id : false);
+						// If the project is not already valid
+						if(afindi(res.data, '_id', project) === -1) {
+
+							// Set the project based on available ones for the
+							//	client
+							projectSet(res.data[0] ? res.data[0]._id : false);
+						}
 					}
 				});
 			}
@@ -124,11 +161,16 @@ export default function Work(props) {
 			// Else, we already have the projects
 			else {
 
-				// Set the project based on available ones for the client
-				projectSet(projects[client][0] ? projects[client][0]._id : false);
+				// If the value is not already valid
+				if(afindi(projects[client], '_id', project) === -1) {
+
+					// Set the project based on available ones for the client
+					projectSet(projects[client][0] ? projects[client][0]._id : false);
+				}
 			}
 		}
 
+	// eslint-disable-next-line
 	}, [client, projects]);
 
 	// Project effect
@@ -136,6 +178,9 @@ export default function Work(props) {
 
 		// If we have a project selected
 		if(project) {
+
+			// Update local storage
+			storeLastUsed('project', project);
 
 			// If we don't have the projects stored for the project
 			if(!tasks[project]) {
@@ -159,9 +204,13 @@ export default function Work(props) {
 							return clone(val);
 						});
 
-						// Set the task based on available ones for the
-						//	project
-						taskSet(res.data[0] ? res.data[0]._id : false);
+						// If the task is not already valid
+						if(afindi(res.data, '_id', task) === -1) {
+
+							// Set the task based on available ones for the
+							//	project
+							taskSet(res.data[0] ? res.data[0]._id : false);
+						}
 					}
 				});
 			}
@@ -169,13 +218,29 @@ export default function Work(props) {
 			// Else, we already have the tasks
 			else {
 
-				// Set the task based on available ones for the project
-				taskSet(tasks[project][0] ? tasks[project][0]._id : false);
+				// If the value is not already valid
+				if(afindi(tasks[project], '_id', task) === -1) {
+
+					// Set the task based on available ones for the project
+					taskSet(tasks[project][0] ? tasks[project][0]._id : false);
+				}
 			}
 		}
 
 	// eslint-disable-next-line
 	}, [project]);
+
+	// Project effect
+	useEffect(() => {
+
+		// If we have a task selected
+		if(task) {
+
+			// Update local storage
+			storeLastUsed('task', task);
+		}
+
+	}, [task]);
 
 	// Called when a new task is created
 	function taskCreated(task) {

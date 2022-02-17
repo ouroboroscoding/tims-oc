@@ -780,7 +780,7 @@ class Work(Record_MySQL.Record):
 				"	`w`.`start` as `start`,\n" \
 				"	`w`.`description` as `description`\n" \
 				"FROM `%(db)s`.`%(table)s` as `w`\n" \
-				"JOIN `%(db)s`.`task` as `t` ON `w`.`project` = `t`.`_id`\n" \
+				"JOIN `%(db)s`.`task` as `t` ON `w`.`task` = `t`.`_id`\n" \
 				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
 				"WHERE `w`.`user` = '%(user)s'\n" \
