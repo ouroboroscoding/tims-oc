@@ -135,7 +135,7 @@ function Projects(props) {
 				<Typography className="flexGrow">Projects</Typography>
 				{props.rights &&
 					<Box className="flexStatic">
-						<Tooltip title="Create Client">
+						<Tooltip title="Create Project">
 							<IconButton onClick={ev => createSet(b => !b)}>
 								<i className={'fas fa-plus-circle ' + (create ? 'open' : 'close')} />
 							</IconButton>
