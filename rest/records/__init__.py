@@ -674,7 +674,8 @@ class Work(Record_MySQL.Record):
 				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
 				"WHERE `w`.`user` = '%(user)s'\n" \
-				"AND `w`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)" % {
+				"AND `w`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)\n" \
+				"ORDER BY `start`" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
 			"user": user,
