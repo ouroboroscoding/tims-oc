@@ -914,7 +914,7 @@ class Work(Record_MySQL.Record):
 				"	`u`.`name` as `userName`,\n" \
 				"	`w`.`start` as `start`,\n" \
 				"	`w`.`end` as `end`,\n" \
-				"	`w`.`description` as `description`\n" \
+				"	`t`.`description` as `description`\n" \
 				"FROM `%(db)s`.`%(table)s` as `w`\n" \
 				"JOIN `%(db)s`.`task` as `t` ON `w`.`task` = `t`.`_id`\n" \
 				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
