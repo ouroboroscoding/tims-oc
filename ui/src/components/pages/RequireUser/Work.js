@@ -21,7 +21,6 @@ import Typography from '@material-ui/core/Typography';
 
 // Format Components
 import { Results } from 'shared/components/Format';
-import { SelectData } from 'shared/components/Format/Shared';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
