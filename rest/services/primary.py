@@ -2147,6 +2147,53 @@ class Primary(Services.Service):
 			oWork.delete()
 		)
 
+	def work_update(self, data, sesh):
+		"""Work update
+
+		Updates the timestamps for an existing work record
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
+
+		# If the ID is missing
+		if '_id' not in data:
+			return Services.Error(1001, ['_id', 'missing'])
+
+		# Find the record
+		oWork = Work.get(data['_id'])
+		if not oWork:
+			return Services.Error(2003, ['work', data['_id']])
+
+		# Delete everything that can't be updated
+		for k in ['_id', '_created', '_updated', 'user', 'project', 'task']:
+			try: del data[k]
+			except KeyError: pass
+
+		# If there's nothing left
+		if not data:
+			return Services.Response(False)
+
+		# Update what's left
+		lErrors = []
+		for k in data:
+			try: oWork[k] = data[k]
+			except ValueError as e: lErrors.append(e.args[0])
+		if lErrors:
+			return Services.Error(1001, lErrors)
+
+		# Save the record and return the result
+		return Services.Response(
+			oWork.save()
+		)
+
 	def works_read(self, data, sesh):
 		"""Works read
 

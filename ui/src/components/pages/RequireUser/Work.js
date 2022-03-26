@@ -11,7 +11,7 @@
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
-import Parent from 'format-oc/Parent';
+import Tree from 'format-oc/Tree';
 
 // Material UI
 import Box from '@material-ui/core/Box';
@@ -21,6 +21,7 @@ import Typography from '@material-ui/core/Typography';
 
 // Format Components
 import { Results } from 'shared/components/Format';
+import { SelectData } from 'shared/components/Format/Shared';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -28,18 +29,24 @@ import Rest from 'shared/communication/rest';
 // Shared generic modules
 import { increment, iso, elapsed } from 'shared/generic/dates';
 import Events from 'shared/generic/events';
+import { afindi, clone } from 'shared/generic/tools';
 
-// Results info
-let WorkParent = new Parent({
-	clientName: {__type__: 'string', __react__: {title: 'Client'}},
-	projectName: {__type__: 'string', __react__: {title: 'Project'}},
-	taskName: {__type__: 'string', __react__: {title: 'Task'}},
-	userName: {__type__: 'string', __react__: {title: 'Employee'}},
-	description: {__type__: 'string'},
-	start: {__type__: 'timestamp', __react__: {title: 'Started'}},
-	end: {__type__: 'timestamp', __react__: {title: 'Finished'}},
-	elapsed: {__type__: 'uint', __react__: {type: 'time_elapsed'}}
-});
+// Definitions
+import WorkDef from 'definitions/work';
+
+// Clone the definition and add the extra fields
+let WorkFull = clone(WorkDef);
+WorkFull.__react__ = {
+	update: ['start', 'end', 'description']
+}
+WorkFull.clientName = {__type__: 'string', __react__: {title: 'Client'}};
+WorkFull.projectName = {__type__: 'string', __react__: {title: 'Project'}};
+WorkFull.taskName = {__type__: 'string', __react__: {title: 'Task'}};
+WorkFull.userName = {__type__: 'string', __react__: {title: 'Employee'}};
+WorkFull.elapsed = {__type__: 'uint', __react__: {type: 'time_elapsed'}};
+
+// Create the tree
+const WorkTree = new Tree(WorkFull);
 
 /**
  * Work
@@ -54,6 +61,7 @@ let WorkParent = new Parent({
 export default function Work(props) {
 
 	// State
+	let [remove, removeSet] = useState(false);
 	let [fields, fieldsSet] = useState(['clientName', 'projectName', 'taskName', 'userName', 'description', 'start', 'end', 'elapsed'])
 	let [noun, nounSet] = useState(null);
 	let [range, rangeSet] = useState(null);
@@ -66,6 +74,12 @@ export default function Work(props) {
 	// Load effect
 	useEffect(() => {
 
+		// Get a range of the last two weeks
+		let oStart = increment(-13);
+		oStart.setHours(0, 0, 0, 0);
+		let oEnd = new Date();
+		oEnd.setHours(23, 59, 59, 0);
+
 		// Figure out the noun
 		switch(props.user.type) {
 			case 'accounting':
@@ -75,9 +89,12 @@ export default function Work(props) {
 			case 'admin':
 			case 'manager':
 				nounSet('works');
+				removeSet(true);
 				break;
 
 			case 'worker':
+				oStart = new Date();
+				oStart.setHours(0, 0, 0, 0);
 				fieldsSet(['clientName', 'projectName', 'taskName', 'description', 'start', 'end', 'elapsed'])
 				nounSet('account/works');
 				break;
@@ -85,11 +102,7 @@ export default function Work(props) {
 			// no default
 		}
 
-		// Get a range of the last two weeks
-		let oStart = increment(-13);
-		oStart.setHours(0, 0, 0, 0);
-		let oEnd = new Date();
-		oEnd.setHours(23, 59, 59, 0);
+		// Set the default range
 		rangeSet([
 			oStart.getTime() / 1000,
 			oEnd.getTime() / 1000
@@ -133,6 +146,38 @@ export default function Work(props) {
 			(new Date(refStart.current.value + ' 00:00:00')).getTime() / 1000,
 			(new Date(refEnd.current.value + ' 23:59:59')).getTime() / 1000
 		]);
+	}
+
+	// Called when a record is removed
+	function removed(_id) {
+
+		// Find the record
+		let i = afindi(results, '_id', _id);
+
+		// If it's found, remove it from the list of results
+		if(i > -1) {
+			resultsSet(value => {
+				value.splice(i, 1);
+				return clone(value);
+			});
+		}
+	}
+
+	// Called when a record is updated
+	function updated(record) {
+
+		// Find the record
+		let i = afindi(results, '_id', record._id);
+
+		// If it's found, update it in the list of results
+		if(i > -1) {
+			resultsSet(value => {
+				record.start = parseInt(record.start);
+				record.end = parseInt(record.end);
+				results[i] = record;
+				return clone(value);
+			});
+		}
 	}
 
 	// Generate today date
@@ -190,13 +235,13 @@ export default function Work(props) {
 							}}
 							data={results}
 							fields={fields}
-							noun=""
+							noun="work"
 							orderBy="start"
-							remove={false}
-							service=""
+							remove={remove ? removed : false}
+							service="primary"
 							totals={true}
-							tree={WorkParent}
-							update={false}
+							tree={WorkTree}
+							update={remove ? updated : false}
 						/>
 					}
 				</Box>

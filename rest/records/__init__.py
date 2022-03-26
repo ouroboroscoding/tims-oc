@@ -834,6 +834,7 @@ class Work(Record_MySQL.Record):
 
 		# Generate SQL
 		sSQL = "SELECT\n" \
+				"	`w`.`_id` as `_id`,\n" \
 				"	`p`.`client` as `client`,\n" \
 				"	`c`.`name` as `clientName`,\n" \
 				"	`w`.`project` as `project`,\n" \
