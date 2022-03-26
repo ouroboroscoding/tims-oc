@@ -35,6 +35,7 @@ REST.Server({
 
 	# Clients
 	"/client": {"methods": REST.ALL, "session": True},
+	"/client/works": {"methods": REST.READ, "session": True},
 	"/clients": {"methods": REST.READ, "session": True},
 
 	# Companies

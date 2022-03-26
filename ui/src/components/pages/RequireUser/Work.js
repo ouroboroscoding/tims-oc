@@ -62,7 +62,7 @@ export default function Work(props) {
 
 	// State
 	let [remove, removeSet] = useState(false);
-	let [fields, fieldsSet] = useState(['clientName', 'projectName', 'taskName', 'userName', 'description', 'start', 'end', 'elapsed'])
+	let [fields, fieldsSet] = useState([])
 	let [noun, nounSet] = useState(null);
 	let [range, rangeSet] = useState(null);
 	let [results, resultsSet] = useState(false);
@@ -84,10 +84,14 @@ export default function Work(props) {
 		switch(props.user.type) {
 			case 'accounting':
 			case 'client':
-				fieldsSet(['clientName', 'projectName', 'taskName', 'description', 'start', 'end', 'elapsed'])
-			// eslint-disable-next-line
+				fieldsSet(['clientName', 'projectName', 'taskName', 'description', 'elapsed'])
+				nounSet('client/works');
+				removeSet(false);
+				break;
+
 			case 'admin':
 			case 'manager':
+				fieldsSet(['clientName', 'projectName', 'taskName', 'userName', 'description', 'start', 'end', 'elapsed']);
 				nounSet('works');
 				removeSet(true);
 				break;
@@ -97,6 +101,7 @@ export default function Work(props) {
 				oStart.setHours(0, 0, 0, 0);
 				fieldsSet(['clientName', 'projectName', 'taskName', 'description', 'start', 'end', 'elapsed'])
 				nounSet('account/works');
+				removeSet(false);
 				break;
 
 			// no default
@@ -191,7 +196,7 @@ export default function Work(props) {
 			</Box>
 			<Box className="filter">
 				<TextField
-					defaultValue={iso(increment(-13), false)}
+					defaultValue={props.user.type === 'worker' ? sToday : iso(increment(-13), false)}
 					inputRef={refStart}
 					inputProps={{
 						min: '2020-01-01',

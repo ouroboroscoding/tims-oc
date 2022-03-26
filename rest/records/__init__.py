@@ -858,9 +858,95 @@ class Work(Record_MySQL.Record):
 			"where": '\nAND'.join(lWhere)
 		}
 
+		print(sSQL)
+
 		# Execute and return the select
 		return Record_MySQL.Commands.select(
 			dStruct['host'],
 			sSQL,
 			Record_MySQL.ESelect.ALL
 		)
+
+	@classmethod
+	def range_grouped(cls, start, end, clients, custom={}):
+		"""Range Grouped
+
+		Returns all work in a timeframe that are associated with specific
+		clients and grouped by unique task
+
+		Arguments:
+			start (uint): The minimum time the work can end in
+			end (uint): The maximum time the work can end in
+			clients (str): ID or IDs of clients
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Init the where
+		lWhere = ['`w`.`end` BETWEEN FROM_UNIXTIME(%d) AND FROM_UNIXTIME(%d)' % (
+			start, end
+		)]
+
+		# If we have clients
+		if clients:
+			lWhere.append('`p`.`client` %s' % (isinstance(clients, list) and \
+							("IN ('%s')" % "','".join(clients)) or \
+							("= '%s'" % clients))
+			)
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`w`.`_id` as `_id`,\n" \
+				"	`p`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
+				"	`w`.`project` as `project`,\n" \
+				"	`p`.`name` as `projectName`,\n" \
+				"	`w`.`task` as `task`,\n" \
+				"	`t`.`name` as `taskName`,\n" \
+				"	`w`.`user` as `user`,\n" \
+				"	`u`.`name` as `userName`,\n" \
+				"	`w`.`start` as `start`,\n" \
+				"	`w`.`end` as `end`,\n" \
+				"	`w`.`description` as `description`\n" \
+				"FROM `%(db)s`.`%(table)s` as `w`\n" \
+				"JOIN `%(db)s`.`task` as `t` ON `w`.`task` = `t`.`_id`\n" \
+				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
+				"JOIN `%(db)s`.`user` as `u` ON `w`.`user` = `u`.`_id`\n" \
+				"WHERE %(where)s\n" \
+				"ORDER BY `clientName`, `projectName`, `taskName`" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"where": '\nAND'.join(lWhere)
+		}
+
+		# Execute and store the select
+		lRecords = Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
+
+		# Calculate the total elapsed per unique task
+		dTasks = {}
+		for d in lRecords:
+
+			# Get the total seconds
+			iElapsed = d['end'] - d['start']
+
+			# Add it to the existing, or init the task
+			try:
+				dTasks[d['task']]['elapsed'] += iElapsed
+			except KeyError:
+				dTasks[d['task']] = d
+				dTasks[d['task']]['elapsed'] = iElapsed
+
+		# Return the unique tasks with the total elapsed time
+		return list(dTasks.values())

@@ -50,7 +50,7 @@ export default function Menu(props) {
 			clients: ['admin', 'accounting', 'manager'].includes(props.user.type),
 			company: props.user.type === 'admin',
 			invoices: ['admin', 'accounting', 'client'].includes(props.user.type),
-			tasks: ['admin', 'manager', 'client'].includes(props.user.type),
+			tasks: ['admin', 'manager'].includes(props.user.type),
 			users: ['admin', 'manager'].includes(props.user.type),
 			work: ['admin', 'manager', 'client', 'worker'].includes(props.user.type)
 		} : _NO_RIGHTS);

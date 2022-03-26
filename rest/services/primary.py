@@ -706,6 +706,47 @@ class Primary(Services.Service):
 			oClient.save()
 		)
 
+	def clientWorks_read(self, data, sesh):
+		"""Client Works read
+
+		Returns the total time elapsed group by tasks for a specific timeframe,
+		for a specific client
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have all necessary data
+		try: DictHelper.eval(data, ['start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Get the signed in user
+		dUser = User.cacheGet(sesh['user_id'])
+		if not dUser:
+			return Services.Error(2003, ['user', data['user_id']])
+
+		# Check type
+		if dUser['type'] not in ['admin', 'client', 'manager']:
+			return Services.Error(Rights.INVALID)
+
+		# If the user has full access
+		if dUser['access'] is None:
+			lClients = None
+
+		# Else, filter just those clients available to the user
+		else:
+			lClients = dUser['access']
+
+		# Get all records that end in the given timeframe
+		lWorks = Work.range_grouped(data['start'], data['end'], lClients)
+
+		# Return the records
+		return Services.Response(lWorks)
+
 	def clients_read(self, data, sesh):
 		"""Clients read
 
@@ -1547,7 +1588,7 @@ class Primary(Services.Service):
 			return Services.Error(2003, ['project', data['project']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], None, dProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], ['admin', 'manager', 'worker'], dProject['client'])
 
 		# Filter
 		dFilter = {
