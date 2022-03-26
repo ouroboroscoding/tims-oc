@@ -706,6 +706,47 @@ class Primary(Services.Service):
 			oClient.save()
 		)
 
+	def clientWorks_read(self, data, sesh):
+		"""Client Works read
+
+		Returns the total time elapsed group by tasks for a specific timeframe,
+		for a specific client
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure we have all necessary data
+		try: DictHelper.eval(data, ['start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+
+		# Get the signed in user
+		dUser = User.cacheGet(sesh['user_id'])
+		if not dUser:
+			return Services.Error(2003, ['user', data['user_id']])
+
+		# Check type
+		if dUser['type'] not in ['admin', 'client', 'manager']:
+			return Services.Error(Rights.INVALID)
+
+		# If the user has full access
+		if dUser['access'] is None:
+			lClients = None
+
+		# Else, filter just those clients available to the user
+		else:
+			lClients = dUser['access']
+
+		# Get all records that end in the given timeframe
+		lWorks = Work.range_grouped(data['start'], data['end'], lClients)
+
+		# Return the records
+		return Services.Response(lWorks)
+
 	def clients_read(self, data, sesh):
 		"""Clients read
 
@@ -1547,7 +1588,7 @@ class Primary(Services.Service):
 			return Services.Error(2003, ['project', data['project']])
 
 		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], None, dProject['client'])
+		Rights.verifyOrRaise(sesh['user_id'], ['admin', 'manager', 'worker'], dProject['client'])
 
 		# Filter
 		dFilter = {
@@ -2145,6 +2186,53 @@ class Primary(Services.Service):
 		# Delete the record and return the result
 		return Services.Response(
 			oWork.delete()
+		)
+
+	def work_update(self, data, sesh):
+		"""Work update
+
+		Updates the timestamps for an existing work record
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'manager')
+
+		# If the ID is missing
+		if '_id' not in data:
+			return Services.Error(1001, ['_id', 'missing'])
+
+		# Find the record
+		oWork = Work.get(data['_id'])
+		if not oWork:
+			return Services.Error(2003, ['work', data['_id']])
+
+		# Delete everything that can't be updated
+		for k in ['_id', '_created', '_updated', 'user', 'project', 'task']:
+			try: del data[k]
+			except KeyError: pass
+
+		# If there's nothing left
+		if not data:
+			return Services.Response(False)
+
+		# Update what's left
+		lErrors = []
+		for k in data:
+			try: oWork[k] = data[k]
+			except ValueError as e: lErrors.append(e.args[0])
+		if lErrors:
+			return Services.Error(1001, lErrors)
+
+		# Save the record and return the result
+		return Services.Response(
+			oWork.save()
 		)
 
 	def works_read(self, data, sesh):
