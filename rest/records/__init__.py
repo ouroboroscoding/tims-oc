@@ -354,12 +354,19 @@ class Invoice(Record_MySQL.Record):
 			"client": cls.processValue(dStruct, 'client', clients)
 		}
 
-		# Execute and return the select
-		return Record_MySQL.Commands.select(
+		# Get the total
+		sTotal = Record_MySQL.Commands.select(
 			dStruct['host'],
 			sSQL,
 			Record_MySQL.ESelect.CELL
 		)
+
+		# If it's None
+		if sTotal == None:
+			return '0.00'
+
+		# Return the total
+		return sTotal
 
 # InvoiceItem class
 class InvoiceItem(Record_MySQL.Record):
@@ -508,12 +515,19 @@ class Payment(Record_MySQL.Record):
 			"client": cls.processValue(dStruct, 'client', client)
 		}
 
-		# Execute and return the select
-		return Record_MySQL.Commands.select(
+		# Get the total
+		sTotal = Record_MySQL.Commands.select(
 			dStruct['host'],
 			sSQL,
-			Record_MySQL.ESelect.ALL
+			Record_MySQL.ESelect.CELL
 		)
+
+		# If it's None
+		if sTotal == None:
+			return '0.00'
+
+		# Return the total
+		return sTotal
 
 	@classmethod
 	def config(cls):
