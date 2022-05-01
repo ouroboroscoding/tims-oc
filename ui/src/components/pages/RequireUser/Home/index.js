@@ -4,7 +4,7 @@
  * Main page of the site once signed in
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2021-04-17
  */
 
@@ -17,6 +17,7 @@ import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
 
 // Local components
+import Owes from './Owes';
 import Work from './Work';
 
 /**
@@ -39,6 +40,11 @@ export default function Home(props) {
 					<Typography>Loading...</Typography>
 				:
 					<React.Fragment>
+						{props.user.type === 'client' &&
+							<Owes
+								{...props}
+							/>
+						}
 						{props.user.type === 'worker' &&
 							<Work
 								clients={props.clients}

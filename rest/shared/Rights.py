@@ -93,6 +93,10 @@ def verify(user, type_=None, client=None):
 		if client not in dUser['access']:
 			return False
 
+	# Else if they should have limited access but don't
+	elif dUser['type'] == 'client':
+		return False
+
 	# Seems OK
 	return True
 

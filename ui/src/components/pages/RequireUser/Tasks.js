@@ -4,7 +4,7 @@
  * Manage the tasks in the system
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2022-02-14
  */
 

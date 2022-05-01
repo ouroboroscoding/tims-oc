@@ -1,0 +1,46 @@
+{
+	"__mysql__": {
+		"auto_primary": "UUID()",
+		"create": ["_created", "client", "transaction", "amount"],
+		"db": "tims-ouroboros",
+		"host": "primary",
+		"indexes": {
+			"client": null,
+			"transaction": {"unique": null}
+		},
+		"table": "payment"
+	},
+
+	"__react__": {
+		"create": ["transaction", "amount"],
+		"results": ["_created", "transaction", "amount"]
+	},
+
+	"__name__": "Payment",
+
+	"_id": {
+		"__type__":"uuid",
+		"__optional__":true
+	},
+
+	"_created": {
+		"__type__":"timestamp",
+		"__optional__":true,
+		"__react__":{"title":"Created"},
+		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
+	},
+
+	"client": {
+		"__type__":"uuid"
+	},
+
+	"transaction": {
+		"__type__":"string",
+		"__maximum__": 127,
+		"__react__":{"title":"Transaction ID"}
+	},
+
+	"amount": {
+		"__type__": "price"
+	}
+}

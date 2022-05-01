@@ -4,7 +4,7 @@
  * Displays invoices
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2021-04-25
  */
 
@@ -277,8 +277,7 @@ export default function Invoices(props) {
 
 		// Make the request to the server
 		Rest.read('primary', 'invoices', {
-			start: range[0],
-			end: range[1]
+			range: range
 		}).done(res => {
 
 			// If there's an error
