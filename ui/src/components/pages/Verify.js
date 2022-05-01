@@ -4,7 +4,7 @@
  * Displays the verification page
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2021-03-07
  */
 

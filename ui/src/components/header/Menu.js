@@ -4,7 +4,7 @@
  * Handles the menu drawer
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCooding
+ * @copyright Ouroboros Coding Inc.
  * @created 2021-04-11
  */
 
@@ -50,6 +50,7 @@ export default function Menu(props) {
 			clients: ['admin', 'accounting', 'manager'].includes(props.user.type),
 			company: props.user.type === 'admin',
 			invoices: ['admin', 'accounting', 'client'].includes(props.user.type),
+			payments: ['admin', 'accounting', 'client'].includes(props.user.type),
 			tasks: ['admin', 'manager'].includes(props.user.type),
 			users: ['admin', 'manager'].includes(props.user.type),
 			work: ['admin', 'manager', 'client', 'worker'].includes(props.user.type)
@@ -78,6 +79,14 @@ export default function Menu(props) {
 						<ListItem button>
 							<ListItemIcon><i className="fas fa-file-invoice-dollar" /></ListItemIcon>
 							<ListItemText primary="Invoices" />
+						</ListItem>
+					</Link>
+				}
+				{rights.payments &&
+					<Link to="/payments" onClick={props.onClose}>
+						<ListItem button>
+							<ListItemIcon><i className="fas fa-money-bill-1" /></ListItemIcon>
+							<ListItemText primary="Payments" />
 						</ListItem>
 					</Link>
 				}

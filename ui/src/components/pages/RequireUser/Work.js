@@ -4,7 +4,7 @@
  * Handles whether to load client or worker work based on the user type
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2021-04-24
  */
 

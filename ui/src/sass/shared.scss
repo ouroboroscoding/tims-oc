@@ -29,6 +29,10 @@ div.singlePage {
 	padding: 10px;
 }
 
+p:not(:last-child) {
+	margin-bottom: 10px;
+}
+
 p.error {
 	color: #ff0000;
 	font-weight: bold;
@@ -115,6 +119,14 @@ div.sectionHeader {
 /**
  * No Element Classes
  */
+.blue {
+	color: $cBlue;
+}
+
+.bold {
+	font-weight: bold;
+}
+
 .center {
 	text-align: center;
 }
@@ -145,6 +157,10 @@ div.sectionHeader {
 	.MuiInputBase-root, .MuiFormControl-root {
 		width: 100%;
 	}
+}
+
+.red {
+	color: $cRed;
 }
 
 /**

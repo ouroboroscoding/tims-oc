@@ -25,7 +25,7 @@ from RestOC.Record_MySQL import DuplicateException
 
 # Record imports
 from records import Access, Client, Company, Invoice, InvoiceItem, Key, \
-					Project, Task, User, Work
+					Payment, Project, Task, User, Work
 
 # Shared imports
 from shared import EMail, Rights, SSS
@@ -40,8 +40,8 @@ class Primary(Services.Service):
 	"""
 
 	_install = [
-		Access, Client, Company, Invoice, InvoiceItem, Key, Project, Task, \
-		User, Work
+		Access, Client, Company, Invoice, InvoiceItem, Key, Payment, Project, \
+		Task, User, Work
 	]
 	"""Record types called in install"""
 
@@ -706,6 +706,60 @@ class Primary(Services.Service):
 			oClient.save()
 		)
 
+	def clientOwes_read(self, data, sesh):
+		"""Client Owes
+
+		Fetches the total invoices and payments and returns the value remaining
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Get the signed in user
+		dUser = User.cacheGet(sesh['user_id'])
+		if not dUser:
+			return Services.Error(2003, 'user')
+
+		# If it's not a client
+		if dUser['type'] != 'client' or dUser['access'] == None:
+			return Services.Error(Rights.INVALID)
+
+		# Get the total for all invoices
+		deInvoices = Decimal(Invoice.total(dUser['access']))
+
+		# Get the total for all payments
+		dePayments = Decimal(Payment.total(dUser['access']))
+
+		# Return the difference
+		return Services.Response(
+			deInvoices - dePayments
+		)
+
+	def clients_read(self, data, sesh):
+		"""Clients read
+
+		Fetches and returns data on all clients
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], ['accounting', 'manager'])
+
+		# Fetch and return the clients
+		return Services.Response(
+			Client.get(raw=True, orderby='name')
+		)
+
 	def clientWorks_read(self, data, sesh):
 		"""Client Works read
 
@@ -735,6 +789,12 @@ class Primary(Services.Service):
 
 		# If the user has full access
 		if dUser['access'] is None:
+
+			# If they are a client they get nothing
+			if dUser['type'] == 'client':
+				return Services.Response([])
+
+			# Else, they get full access
 			lClients = None
 
 		# Else, filter just those clients available to the user
@@ -746,27 +806,6 @@ class Primary(Services.Service):
 
 		# Return the records
 		return Services.Response(lWorks)
-
-	def clients_read(self, data, sesh):
-		"""Clients read
-
-		Fetches and returns data on all clients
-
-		Arguments:
-			data (dict): The data passed to the request
-			sesh (Sesh._Session): The session associated with the request
-
-		Returns:
-			Services.Response
-		"""
-
-		# Check rights
-		Rights.verifyOrRaise(sesh['user_id'], ['accounting', 'manager'], Rights.READ)
-
-		# Fetch and return the clients
-		return Services.Response(
-			Client.get(raw=True, orderby='name')
-		)
 
 	def company_read(self, data, sesh):
 		"""Company read
@@ -1149,9 +1188,100 @@ class Primary(Services.Service):
 			Services.Response
 		"""
 
-		# Make sure we have all necessary data
-		try: DictHelper.eval(data, ['start', 'end'])
-		except ValueError as e: return Services.Response(error=(1001, [(f, 'missing') for f in e.args]))
+		# Get the signed in user
+		dUser = User.cacheGet(sesh['user_id'])
+		if not dUser:
+			return Services.Error(2003, 'user')
+
+		# If a specific task is passed
+		if 'client' in data:
+
+			# Check rights
+			Rights.verifyOrRaise(dUser, ['accounting', 'client'], data['client'])
+
+			# Set the filter
+			lClients = data['client']
+
+		# Else
+		else:
+
+			# Check type
+			if dUser['type'] not in ['admin', 'accounting', 'client']:
+				return Services.Error(Rights.INVALID)
+
+			# If the user has full access
+			if dUser['access'] is None:
+
+				# If they are a client they get nothing
+				if dUser['type'] == 'client':
+					return Services.Response([])
+
+				# Else, they get full access
+				lClients = None
+
+			# Else, filter just those clients available to the user
+			else:
+				lClients = dUser['access']
+
+		# If a range was specified
+		if 'range' in data and isinstance(data['range'], list):
+
+			# Get all invoices in the given timeframe
+			lInvoices = Invoice.range(data['range'], lClients)
+
+		# Else
+		else:
+
+			# Just get by client
+			lInvoices = Invoice.by_client(lClients)
+
+		# Return the records
+		return Services.Response(lInvoices)
+
+	def payment_create(self, data, sesh):
+		"""Payment create
+
+		Handles creating a new payment
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Make sure the client was passed
+		if 'client' not in data:
+			return Services.Error(1001, [['client', 'missing']])
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'accounting', data['client'])
+
+		# Create an instance to verify the fields
+		try:
+			oPayment = Payment(data)
+		except ValueError as e:
+			return Services.Error(1001, e.args[0])
+
+		# Create the record
+		sID = oPayment.create()
+
+		# Return the new ID
+		return Services.Response(sID)
+
+	def payments_read(self, data, sesh):
+		"""Payments read
+
+		Fetches and returns data on all invoices
+
+		Arguments:
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
 
 		# Get the signed in user
 		dUser = User.cacheGet(sesh['user_id'])
@@ -1176,17 +1306,32 @@ class Primary(Services.Service):
 
 			# If the user has full access
 			if dUser['access'] is None:
+
+				# If they are a client they get nothing
+				if dUser['type'] == 'client':
+					return Services.Response([])
+
+				# Else, they get full access
 				lClients = None
 
 			# Else, filter just those clients available to the user
 			else:
 				lClients = dUser['access']
 
-		# Get all invoices in the given timeframe
-		lInvoices = Invoice.range(data['start'], data['end'], lClients)
+		# If a range was specified
+		if 'range' in data and isinstance(data['range'], list):
+
+			# Get all invoices in the given timeframe
+			lPayments = Payment.range(data['range'], lClients)
+
+		# Else
+		else:
+
+			# Just get by client
+			lPayments = Payment.by_client(lClients)
 
 		# Return the records
-		return Services.Response(lInvoices)
+		return Services.Response(lPayments)
 
 	def project_create(self, data, sesh):
 		"""Project create
@@ -2275,6 +2420,12 @@ class Primary(Services.Service):
 
 			# If the user has full access
 			if dUser['access'] is None:
+
+				# If they are a client they get nothing
+				if dUser['type'] == 'client':
+					return Services.Response([])
+
+				# Else, they get full access
 				lClients = None
 
 			# Else, filter just those clients available to the user

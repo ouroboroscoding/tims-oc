@@ -4,7 +4,7 @@
  * Handles the loader
  *
  * @author Chris Nasr <ouroboroscoding@gmail.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2020-05-08
  */
 

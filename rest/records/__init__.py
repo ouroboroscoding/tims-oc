@@ -167,6 +167,51 @@ class Invoice(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
+	def by_client(cls, client, custom={}):
+		"""Range
+
+		Returns all invoices associated with a specific client
+
+		Arguments:
+			client (str): ID of the client
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`i`.`_id` as `_id`,\n" \
+				"	`i`.`_created` as `_created`,\n" \
+				"	`i`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
+				"	`i`.`identifier` as `identifier`,\n" \
+				"	`i`.`start` as `start`,\n" \
+				"	`i`.`end` as `end`,\n" \
+				"	`i`.`total` as `total`\n" \
+				"FROM `%(db)s`.`%(table)s` as `i`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `i`.`client` = `c`.`_id`\n" \
+				"WHERE `client` %(client)s\n" \
+				"ORDER BY `i`.`_created` DESC" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"client": cls.processValue(dStruct, 'client', client)
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
+
+	@classmethod
 	def config(cls):
 		"""Config
 
@@ -226,15 +271,14 @@ class Invoice(Record_MySQL.Record):
 		return iIdentifier + 1
 
 	@classmethod
-	def range(cls, start, end, clients, custom={}):
+	def range(cls, range, clients, custom={}):
 		"""Range
 
 		Returns all invoices in a timeframe that are optionally associated with
 		specific clients
 
 		Arguments:
-			start (uint): The minimum time the task can end in
-			end (uint): The maximum time the task can end in
+			range (uint[]): The start and end date of the invoices
 			clients (str): Optional ID or IDs of clients
 			custom (dict): Custom Host and DB info
 				'host' the name of the host to get/set data on
@@ -244,20 +288,17 @@ class Invoice(Record_MySQL.Record):
 			list
 		"""
 
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
 		# Init the where
 		lWhere = ['`i`.`_created` BETWEEN FROM_UNIXTIME(%d) AND FROM_UNIXTIME(%d)' % (
-			start, end
+			int(range[0]), int(range[1])
 		)]
 
 		# If we have clients
 		if clients:
-			lWhere.append('`i`.`client` %s' % (isinstance(clients, list) and \
-							("IN ('%s')" % "','".join(clients)) or \
-							("= '%s'" % clients))
-			)
-
-		# Fetch the record structure
-		dStruct = cls.struct(custom)
+			lWhere.append('`i`.`client` %s' % cls.processValue(dStruct, 'client', clients))
 
 		# Generate SQL
 		sSQL = "SELECT\n" \
@@ -283,6 +324,41 @@ class Invoice(Record_MySQL.Record):
 			dStruct['host'],
 			sSQL,
 			Record_MySQL.ESelect.ALL
+		)
+
+	@classmethod
+	def total(cls, clients, custom={}):
+		"""Total
+
+		Returns the total invoices amount for one or multiple clients
+
+		Arguments:
+			clients (str|str[]): The ID(s) of the client(s)
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			str
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT SUM(`total`)\n" \
+				"FROM `%(db)s`.`%(table)s` as `i`\n" \
+				"WHERE `client` %(client)s\n" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"client": cls.processValue(dStruct, 'client', clients)
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.CELL
 		)
 
 # InvoiceItem class
@@ -385,6 +461,169 @@ class Key(Record_MySQL.Record):
 
 		# Return the config
 		return cls._conf
+
+# Payment class
+class Payment(Record_MySQL.Record):
+	"""Payment
+
+	Represents a single payment by a client
+	"""
+
+	_conf = None
+	"""Configuration"""
+
+	@classmethod
+	def by_client(cls, client, custom={}):
+		"""Range
+
+		Returns all invoices associated with a specific client
+
+		Arguments:
+			client (str): ID of the client
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`i`.`_id` as `_id`,\n" \
+				"	`i`.`_created` as `_created`,\n" \
+				"	`i`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
+				"	`i`.`transaction` as `transaction`,\n" \
+				"	`i`.`amount` as `amount`\n" \
+				"FROM `%(db)s`.`%(table)s` as `i`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `i`.`client` = `c`.`_id`\n" \
+				"WHERE `client` %(client)s\n" \
+				"ORDER BY `i`.`_created` DESC" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"client": cls.processValue(dStruct, 'client', client)
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
+
+	@classmethod
+	def config(cls):
+		"""Config
+
+		Returns the configuration data associated with the record type
+
+		Returns:
+			dict
+		"""
+
+		# If we haven loaded the config yet
+		if not cls._conf:
+			cls._conf = Record_MySQL.Record.generateConfig(
+				Tree.fromFile('definitions/payment.json')
+			)
+
+		# Return the config
+		return cls._conf
+
+	@classmethod
+	def range(cls, range, clients, custom={}):
+		"""Range
+
+		Returns all payments in a timeframe that are optionally associated with
+		specific clients
+
+		Arguments:
+			range (uint[]): The start and end date of the payments
+			clients (str): Optional ID or IDs of clients
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			list
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Init the where
+		lWhere = ['`i`.`_created` BETWEEN FROM_UNIXTIME(%d) AND FROM_UNIXTIME(%d)' % (
+			int(range[0]), int(range[1])
+		)]
+
+		# If we have clients
+		if clients:
+			lWhere.append('`i`.`client` %s' % cls.processValue(dStruct, 'client', clients))
+
+		# Generate SQL
+		sSQL = "SELECT\n" \
+				"	`i`.`_id` as `_id`,\n" \
+				"	`i`.`_created` as `_created`,\n" \
+				"	`i`.`client` as `client`,\n" \
+				"	`c`.`name` as `clientName`,\n" \
+				"	`i`.`transaction` as `transaction`,\n" \
+				"	`i`.`amount` as `amount`\n" \
+				"FROM `%(db)s`.`%(table)s` as `i`\n" \
+				"JOIN `%(db)s`.`client` as `c` ON `i`.`client` = `c`.`_id`\n" \
+				"WHERE %(where)s\n" \
+				"ORDER BY `i`.`_created` DESC" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"where": '\nAND'.join(lWhere)
+		}
+
+		print(sSQL)
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.ALL
+		)
+
+	@classmethod
+	def total(cls, clients, custom={}):
+		"""Total
+
+		Returns the total payments amount for one or multiple clients
+
+		Arguments:
+			clients (str|str[]): The ID(s) of the client(s)
+			custom (dict): Custom Host and DB info
+				'host' the name of the host to get/set data on
+				'append' optional postfix for dynamic DBs
+
+		Returns:
+			str
+		"""
+
+		# Fetch the record structure
+		dStruct = cls.struct(custom)
+
+		# Generate SQL
+		sSQL = "SELECT SUM(`amount`)\n" \
+				"FROM `%(db)s`.`%(table)s` as `i`\n" \
+				"WHERE `client` %(client)s\n" % {
+			"db": dStruct['db'],
+			"table": dStruct['table'],
+			"client": cls.processValue(dStruct, 'client', clients)
+		}
+
+		# Execute and return the select
+		return Record_MySQL.Commands.select(
+			dStruct['host'],
+			sSQL,
+			Record_MySQL.ESelect.CELL
+		)
 
 # Project class
 class Project(Record_MySQL.Record):
