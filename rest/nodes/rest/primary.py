@@ -35,6 +35,7 @@ REST.Server({
 
 	# Clients
 	"/client": {"methods": REST.ALL, "session": True},
+	"/client/owes": {"methods": REST.READ, "session": True},
 	"/client/works": {"methods": REST.READ, "session": True},
 	"/clients": {"methods": REST.READ, "session": True},
 
@@ -45,6 +46,10 @@ REST.Server({
 	"/invoice": {"methods": REST.CREATE | REST.READ, "session": True},
 	"/invoice/pdf": {"methods": REST.READ, "session": True},
 	"/invoices": {"methods": REST.READ, "session": True},
+
+	# Payments
+	"/payment": {"methods": REST.CREATE, "session": True},
+	"/payments": {"methods": REST.READ, "session": True},
 
 	# Projects
 	"/project": {"methods": REST.ALL, "session": True},

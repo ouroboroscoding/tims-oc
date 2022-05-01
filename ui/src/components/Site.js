@@ -4,7 +4,7 @@
  * Primary entry into React app
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2021-04-02
  */
 
@@ -14,7 +14,7 @@ import { useHistory, Switch, Route } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 
 // Material UI
-import { createMuiTheme, ThemeProvider }  from '@material-ui/core/styles'
+import { createTheme, ThemeProvider }  from '@material-ui/core/styles'
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -42,7 +42,7 @@ import 'rest_init';
 import 'sass/site.scss';
 
 // Create the theme
-const Theme = createMuiTheme({
+const Theme = createTheme({
 	typography: {
 		fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif'
 	}

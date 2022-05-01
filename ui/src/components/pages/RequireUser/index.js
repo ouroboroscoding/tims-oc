@@ -4,7 +4,7 @@
  * Wrapper for all pages that require sign in
  *
  * @author Chris Nasr <chris@ouroboroscoding.com>
- * @copyright OuroborosCoding
+ * @copyright Ouroboros Coding Inc.
  * @created 2021-04-16
  */
 
@@ -25,6 +25,7 @@ import Clients from './Clients';
 import Home from './Home';
 import Invoice from './Invoice';
 import Invoices from './Invoices';
+import Payments from './Payments';
 import Tasks from './Tasks';
 import Work from './Work';
 import Users from './Users';
@@ -100,6 +101,12 @@ export default function RequireUser(props) {
 			}/>
 			<Route exact path="/invoices">
 				<Invoices
+					clients={clients}
+					{...props}
+				/>
+			</Route>
+			<Route exact path="/payments">
+				<Payments
 					clients={clients}
 					{...props}
 				/>

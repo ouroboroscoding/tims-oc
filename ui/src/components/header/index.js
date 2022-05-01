@@ -82,9 +82,11 @@ export default function Header(props) {
 						<i className="fas fa-bars" />
 					</IconButton>
 				}
-				<Typography className="title flexStatic">
-					<Link to="/" onClick={menuHide}>{props.mobile ? process.env.REACT_APP_SITENAME_SHORT : process.env.REACT_APP_SITENAME}</Link>
-				</Typography>
+				<Box className="flexStatic">
+					<Typography className="title">
+						<Link to="/" onClick={menuHide}>{props.mobile ? process.env.REACT_APP_SITENAME_SHORT : process.env.REACT_APP_SITENAME}</Link>
+					</Typography>
+				</Box>
 				<Box id="loader" className="flexGrow">
 					<Loader />
 				</Box>
