@@ -79,6 +79,7 @@ export default function Clients(props) {
 		// Set rights
 		rightsSet({
 			accounting: ['admin', 'accounting'].includes(props.user.type),
+			create: props.user.type === 'admin',
 			projects: ['admin', 'manager'].includes(props.user.type),
 			delete: props.user.type === 'admin'
 		});
