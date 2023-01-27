@@ -760,7 +760,7 @@ class User(Record_MySQL.Record):
 			del dUser['passwd']
 
 			# If the user is not an admin
-			if dUser['type'] is not 'admin':
+			if dUser['type'] != 'admin':
 
 				# Look for access values
 				lAccess = Access.filter({
