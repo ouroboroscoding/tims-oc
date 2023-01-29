@@ -37,8 +37,11 @@
 	},
 
 	"identifier": {
-		"__type__":"uint",
-		"__react__":{"title":"Invoice #"}
+		"__type__":"string",
+		"__react__":{"title":"Invoice #"},
+		"__sql__": {
+			"type": "char(6)"
+		}
 	},
 
 	"start": {
