@@ -107,12 +107,9 @@ class Primary(Services.Service):
 		# Get the invoice
 		dInvoice = Invoice.get(_id, raw=True)
 
-		# Decode taxes
-		dInvoice['taxes'] = JSON.decode(dInvoice['taxes'])
-
 		# Generate the template data
 		dTpl = {
-			"company": Company.getAndDecodeTaxes(),
+			"company": Company.get(raw=True, limit=1),
 			"client": Client.get(dInvoice['client'], raw=True),
 			"invoice": dInvoice,
 			"items": InvoiceItem.byInvoice(_id)
@@ -821,7 +818,7 @@ class Primary(Services.Service):
 		"""
 
 		# Fetch the record
-		dCompany = Company.getAndDecodeTaxes()
+		dCompany = Company.get(raw=True, limit=1)
 		if not dCompany:
 			return Services.Error(2003, ['company', data['_id']])
 
@@ -857,15 +854,6 @@ class Primary(Services.Service):
 		for f in ['_id', '_created', '_updated']:
 			if f in data:
 				del data[f]
-
-		# If we got taxes
-		if 'taxes' in data:
-
-			# And it's a list
-			if isinstance(data['taxes'], list):
-
-				# Encode it
-				data['taxes'] = JSON.encode(data['taxes'])
 
 		# Update each field, keeping track of errors
 		lErrors = []
@@ -986,7 +974,7 @@ class Primary(Services.Service):
 			deSubTotal += dProjects[sProject]['amount']
 
 		# Get the company info
-		dCompany = Company.getAndDecodeTaxes()
+		dCompany = Company.get(raw=True, limit=1)
 
 		# Init the taxes and total
 		deTotal = Decimal(deSubTotal);
@@ -1014,18 +1002,23 @@ class Primary(Services.Service):
 		try:
 			oInvoice = Invoice({
 				"client": data['client'],
-				"identifier": Invoice.getNextIdentifier(),
+				"identifier": StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False),
 				"start": data['start'],
 				"end": data['end'],
 				"subtotal": deSubTotal,
-				"taxes": JSON.encode(lTaxes),
+				"taxes": lTaxes,
 				"total": deTotal
 			})
 		except ValueError as e:
 			return Services.Error(1001, e.args[0])
 
 		# Create the invoice and store the ID
-		sID = oInvoice.create()
+		while True:
+			try:
+				sID = oInvoice.create()
+				break
+			except DuplicateException:
+				oInvoice['identifier'] = StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False)
 
 		# Go through each project
 		for sProject in dProjects:
@@ -1119,9 +1112,6 @@ class Primary(Services.Service):
 		for d in dInvoice['items']:
 			dInvoice['minutes'] += d['minutes']
 
-		# Convert the taxes
-		dInvoice['taxes'] = JSON.decode(dInvoice['taxes'])
-
 		# If we need details
 		if 'details' in data and data['details']:
 
@@ -1132,7 +1122,7 @@ class Primary(Services.Service):
 				"client": Client.get(dInvoice['client'], raw=True),
 
 				# Fetch the company
-				"company": Company.getAndDecodeTaxes()
+				"company": Company.get(raw=True, limit=1)
 			}
 
 		# Return the invoice
@@ -1810,7 +1800,7 @@ class Primary(Services.Service):
 		sKey = self._createKey(sID, 'setup')
 
 		# Fetch the company name
-		dCompany = Company.getAndDecodeTaxes()
+		dCompany = Company.get(raw=True, limit=1)
 
 		# Create the setup template data
 		dTpl = {

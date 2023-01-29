@@ -107,26 +107,6 @@ class Company(Record_MySQL.Record):
 		# Return the config
 		return cls._conf
 
-	@classmethod
-	def getAndDecodeTaxes(cls):
-		"""Get and Decode Taxes
-
-		Gets the company (there should only be one) and converts the taxes to
-		a list from JSON
-
-		Returns:
-			dict
-		"""
-
-		# Get the one company
-		dCompany = cls.get(raw=True, limit=1)
-
-		# Decode the taxes
-		dCompany['taxes'] = JSON.decode(dCompany['taxes'])
-
-		# Return the company
-		return dCompany
-
 # Company Tax class
 class CompanyTax(Record_MySQL.Record):
 	"""Company
@@ -229,46 +209,6 @@ class Invoice(Record_MySQL.Record):
 
 		# Return the config
 		return cls._conf
-
-	@classmethod
-	def getNextIdentifier(cls, custom={}):
-		"""Get Next Identifier
-
-		Gets the next available invoice identifier which is used for client
-		identification as opposed to system identification
-
-		Arguments:
-			custom (dict): Custom Host and DB info
-				'host' the name of the host to get/set data on
-				'append' optional postfix for dynamic DBs
-
-		Returns:
-			uint
-		"""
-
-		# Fetch the record structure
-		dStruct = cls.struct(custom)
-
-		# Generate SQL
-		sSQL = "SELECT MAX(`identifier`)\n" \
-				"FROM `%(db)s`.`%(table)s`" % {
-			"db": dStruct['db'],
-			"table": dStruct['table']
-		}
-
-		# Execute the select
-		iIdentifier = Record_MySQL.Commands.select(
-			dStruct['host'],
-			sSQL,
-			Record_MySQL.ESelect.CELL
-		)
-
-		# If we got nothing
-		if iIdentifier is None:
-			return 1
-
-		# Add 1 and return
-		return iIdentifier + 1
 
 	@classmethod
 	def range(cls, range, clients, custom={}):
