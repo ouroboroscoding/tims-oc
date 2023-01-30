@@ -712,6 +712,10 @@ class User(Record_MySQL.Record):
 									[d['client'] for d in lAccess] or \
 									None
 
+			# Else, admin user
+			else:
+				dUser['access'] = None
+
 			# Store the user in the cache
 			cls._redis.set('user:%s' % _id, JSON.encode(dUser))
 

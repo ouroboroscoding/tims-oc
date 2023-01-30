@@ -222,7 +222,7 @@ class Primary(Services.Service):
 
 		# Fetch the clients using IDs the user has access to
 		lClients = Client.get(
-			dUser['access'] and dUser['access'] or None,
+			dUser['access'],
 			filter={"_archived": False},
 			raw=['_id', 'name']
 		)
