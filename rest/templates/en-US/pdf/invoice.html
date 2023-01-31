@@ -44,7 +44,7 @@
 				<p class="title">Bill To:</p>
 				<p class="name">{{ client['name'] }}</p>
 				<p class="address">
-					{{ client['address'] }}<br />
+					{% if client['address'] %}{{ client['address'] }}<br />{% endif %}
 					{{ client['city'] }}, {{ client['division'] }}, {{ client['country'] }}
 				</p>
 			</div>
