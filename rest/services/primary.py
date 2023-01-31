@@ -115,7 +115,8 @@ class Primary(Services.Service):
 			"items": InvoiceItem.byInvoice(_id)
 		}
 		dTpl['company']['address'] = '%s%s' % (dTpl['company']['address1'], (dTpl['company']['address2'] and dTpl['company']['address2'] or ''))
-		dTpl['client']['address'] = '%s%s' % (dTpl['client']['address1'], (dTpl['client']['address2'] and dTpl['client']['address2'] or ''))
+		if dTpl['client']['address1']:
+			dTpl['client']['address'] = '%s%s' % (dTpl['client']['address1'], (dTpl['client']['address2'] and dTpl['client']['address2'] or ''))
 		dTpl['invoice']['minutes'] = 0
 		dTpl['invoice']['created'] = DateTimeHelper.date(dTpl['invoice']['_created'])
 		dTpl['invoice']['due'] = DateTimeHelper.date(
