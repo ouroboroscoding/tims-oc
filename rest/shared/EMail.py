@@ -12,10 +12,11 @@ __email__		= "chris@ouroboroscoding.com"
 __created__		= "2021-03-16"
 
 # Python imports
+from base64 import b64decode
 import re
 
 # Pip imports
-from RestOC import Conf, SMTP, Templates
+from RestOC import Conf, DictHelper, SMTP, Templates
 
 last_error = ''
 """The last error generated"""
@@ -66,7 +67,7 @@ def error(subject, error):
 		"text": error
 	})
 	if not bRes:
-		print('Failed to send email: %s' % EMail.last_error)
+		print('Failed to send email: %s' % last_error)
 		return False
 
 	# Return OK

@@ -18,6 +18,7 @@ from pprint import pprint
 from time import time
 
 # Pip imports
+import arrow
 from redis import StrictRedis
 from RestOC import Conf, DateTimeHelper, DictHelper, Errors, JSON, \
 					Services, Sesh, StrHelper, Templates
@@ -91,6 +92,135 @@ class Primary(Services.Service):
 					# Find the existing key
 					dKey = Key.filter({"user": user, "type": type}, raw=['_id'], limit=1)
 					return dKey['_id']
+
+	def _generateInvoice(self, range, client):
+		"""Generate Invoice
+
+		Calculates the hours and billable amounts for an invoice
+
+		Arguments:
+			data (dict): The date
+		"""
+
+		# Fetch the client info
+		dClient = Client.get(client, raw=True)
+		if not dClient:
+			raise Services.ResponseException(error=(1001, [client, 'client']))
+
+		# Init the time and prices per project
+		dProjects = {}
+
+		# Fetch all the tasks for the client in the given timeframe
+		lWorks = Work.forInvoice(range[0], range[1], client)
+
+		# Calculate the total elapsed per unique task
+		dTasks = {}
+		for d in lWorks:
+
+			# Get the total seconds
+			iElapsed = d['end'] - d['start']
+
+			# Add it to the existing, or init the task
+			try:
+				dTasks[d['task']]['elapsed'] += iElapsed
+			except KeyError:
+				dTasks[d['task']] = {
+					'project': d['project'],
+					'elapsed': iElapsed
+				}
+
+		# Go through each unique task
+		for d in dTasks.values():
+
+			# Round to the nearest minute
+			iMinutes, iRemainder = divmod(d['elapsed'], 60)
+
+			# If the remaining seconds are anything over 15, round up
+			if iRemainder > 15:
+				iMinutes += 1
+
+			# If the task minimum is 1
+			if dClient['task_minimum'] == 1:
+
+				# Store the total minutes as is
+				iTotalMinutes = iMinutes
+
+			# Else
+			else:
+
+				# Figure out the total blocks
+				iBlocks, iRemainder = divmod(iMinutes, dClient['task_minimum'])
+
+				# If the remainder is greater than the overflow
+				if dClient['task_overflow'] == 0 or iRemainder > dClient['task_overflow']:
+					iBlocks += 1
+
+				# Multiply the blocks by the minimum
+				iTotalMinutes = dClient['task_minimum'] * iBlocks
+
+			# Increase the project or init it
+			try:
+				dProjects[d['project']]['minutes'] += iTotalMinutes
+			except KeyError:
+				dProjects[d['project']] = {
+					'_id': d['project'],
+					'minutes': iTotalMinutes,
+					'price': Decimal('0.00')
+				}
+
+		# Init the subtotal
+		deSubTotal = Decimal('0.00')
+
+		# Go through each project and calculate the amount
+		for sProject in dProjects:
+
+			# Divide the minutes by 60 to get hours
+			deHours = Decimal(dProjects[sProject]['minutes']) / Decimal(60)
+
+			# Get the price
+			dePrice = Decimal(dClient['rate']) * deHours
+
+			# Round up to closest cent
+			dProjects[sProject]['amount'] = dePrice.quantize(Decimal('1.00'), rounding=ROUND_UP)
+
+			# Update the sub-total
+			deSubTotal += dProjects[sProject]['amount']
+
+		# Get the company info
+		dCompany = Company.get(raw=True, limit=1)
+
+		# Init the taxes and total
+		deTotal = Decimal(deSubTotal)
+		lTaxes = []
+
+		# Go through any taxes we have
+		for d in dCompany['taxes']:
+
+			# Generate the percentage as a divisor
+			dePercentage = Decimal(d['percentage']) / Decimal('100')
+
+			# Generate from the subtotal
+			deAmount = (deSubTotal * dePercentage).quantize(Decimal('1.00'))
+
+			# Add the tax to the list
+			lTaxes.append({
+				'name': d['name'],
+				'amount': deAmount
+			})
+
+			# Update the total
+			deTotal += deAmount
+
+		# Return the generated data
+		return {
+			'client': client,
+			'start': range[0],
+			'end': range[1],
+			'subtotal': deSubTotal,
+			'taxes': lTaxes,
+			'total': deTotal,
+			'items': list(dProjects.values())
+		}
 
 	def _generateInvoicePdf(self, _id):
 		"""Generate Invoice PDF
@@ -279,7 +409,16 @@ class Primary(Services.Service):
 		}
 
 		# Generate the templates
-		dTpls = EMail.template('forgot', dTpl, oUser['locale'])
+		dTpls = EMail.template('forgot', dTpl, dUser['locale'])
+
+		# Send the email
+		bRes = EMail.send({
+			"to": dUser['email'],
+			"from": Conf.get(('email', 'from')),
+			"subject": dTpls['subject'],
+			"text": dTpls['text'],
+			"html": dTpls['html']
+		})
 		if not bRes:
 			print('Failed to send email: %s' % EMail.last_error)
 			return Services.Response(False)
@@ -342,7 +481,7 @@ class Primary(Services.Service):
 
 		# Make sure we have at least the new password
 		if 'new_passwd' not in data:
-			return Services.Error(1001, [[f, 'missing']])
+			return Services.Error(1001, [['new_passwd', 'missing']])
 
 		# If the id is passed
 		if '_id' in data and data['_id'] is not None:
@@ -617,8 +756,10 @@ class Primary(Services.Service):
 		# Mark the client as archived
 		oClient['_archived'] = True
 
-		# Return the new ID
-		return Services.Response(sID)
+		# Save the client and return the result
+		return Services.Response(
+			oClient.save()
+		)
 
 	def client_read(self, data, sesh):
 		"""Client read
@@ -891,125 +1032,21 @@ class Primary(Services.Service):
 		# Check rights
 		Rights.verifyOrRaise(sesh['user_id'], 'accounting', data['client'])
 
-		# Fetch the client info
-		dClient = Client.get(data['client'], raw=True)
-		if not dClient:
-			return Services.Response(dClient)
+		# Generate the invoice data
+		dInvoice = self._generateInvoice(
+			[ data['start'], data['end'] ],
+			data['client']
+		)
 
-		# Init the time and prices per project
-		dProjects = {}
+		# Add the identifier
+		dInvoice['identifier'] = StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False)
 
-		# Fetch all the tasks for the client in the given timeframe
-		lWorks = Work.forInvoice(data['start'], data['end'], data['client'])
-
-		# Calculate the total elapsed per unique task
-		dTasks = {}
-		for d in lWorks:
-
-			# Get the total seconds
-			iElapsed = d['end'] - d['start']
-
-			# Add it to the existing, or init the task
-			try:
-				dTasks[d['task']]['elapsed'] += iElapsed
-			except KeyError:
-				dTasks[d['task']] = {
-					"project": d['project'],
-					"elapsed": iElapsed
-				}
-
-		# Go through each unique task
-		for d in dTasks.values():
-
-			# Round to the nearest minute
-			iMinutes, iRemainder = divmod(d['elapsed'], 60)
-
-			# If the remaining seconds are anything over 15, round up
-			if iRemainder > 15:
-				iMinutes += 1
-
-			# If the task minimum is 1
-			if dClient['task_minimum'] == 1:
-
-				# Store the total minutes as is
-				iTotalMinutes = iMinutes
-
-			# Else
-			else:
-
-				# Figure out the total blocks
-				iBlocks, iRemainder = divmod(iMinutes, dClient['task_minimum'])
-
-				# If the remainder is greater than the overflow
-				if dClient['task_overflow'] == 0 or iRemainder > dClient['task_overflow']:
-					iBlocks += 1
-
-				# Multiply the blocks by the minimum
-				iTotalMinutes = dClient['task_minimum'] * iBlocks
-
-			# Increase the project or init it
-			try:
-				dProjects[d['project']]['minutes'] += iTotalMinutes
-			except KeyError:
-				dProjects[d['project']] = {
-					"minutes": iTotalMinutes,
-					"price": Decimal('0.00')
-				}
-
-		# Init the subtotal
-		deSubTotal = Decimal('0.00')
-
-		# Go through each project and calculate the amount
-		for sProject in dProjects:
-
-			# Divide the minutes by 60 to get hours
-			deHours = Decimal(dProjects[sProject]['minutes']) / Decimal(60)
-
-			# Get the price
-			dePrice = Decimal(dClient['rate']) * deHours
-
-			# Round up to closest cent
-			dProjects[sProject]['amount'] = dePrice.quantize(Decimal('1.00'), rounding=ROUND_UP)
-
-			# Update the sub-total
-			deSubTotal += dProjects[sProject]['amount']
-
-		# Get the company info
-		dCompany = Company.get(raw=True, limit=1)
-
-		# Init the taxes and total
-		deTotal = Decimal(deSubTotal);
-		lTaxes = []
-
-		# Go through any taxes we have
-		for d in dCompany['taxes']:
-
-			# Generate the percentage as a divisor
-			dePercentage = Decimal(d['percentage']) / Decimal('100')
-
-			# Generate from the subtotal
-			deAmount = (deSubTotal * dePercentage).quantize(Decimal('1.00'))
-
-			# Add the tax to the list
-			lTaxes.append({
-				"name": d['name'],
-				"amount": deAmount
-			})
-
-			# Update the total
-			deTotal += deAmount
+		# Pop off the projects
+		lProjects = dInvoice.pop('items')
 
 		# Create an instance of the invoice to check for problems
 		try:
-			oInvoice = Invoice({
-				"client": data['client'],
-				"identifier": StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False),
-				"start": data['start'],
-				"end": data['end'],
-				"subtotal": deSubTotal,
-				"taxes": lTaxes,
-				"total": deTotal
-			})
+			oInvoice = Invoice(dInvoice)
 		except ValueError as e:
 			return Services.Error(1001, e.args[0])
 
@@ -1022,15 +1059,15 @@ class Primary(Services.Service):
 				oInvoice['identifier'] = StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False)
 
 		# Go through each project
-		for sProject in dProjects:
+		for d in lProjects:
 
 			# Create an instance of the invoice item to check for problems
 			try:
 				oItem = InvoiceItem({
 					"invoice": sID,
-					"project": sProject,
-					"minutes": dProjects[sProject]['minutes'],
-					"amount": dProjects[sProject]['amount']
+					"project": d['_id'],
+					"minutes": d['minutes'],
+					"amount": d['amount']
 				})
 			except ValueError as e:
 				return Services.Error(1001, e.args[0])
@@ -1165,6 +1202,69 @@ class Primary(Services.Service):
 
 		# Return the URL
 		return Services.Response(sURL)
+
+	def invoicePreview_read(self, data, sesh):
+		"""Invoice Preview read
+
+		Generates the data used to create an invoice and returns it
+
+		Arguments
+			data (dict): The data passed to the request
+			sesh (Sesh._Session): The session associated with the request
+
+		Returns:
+			Services.Response
+		"""
+
+		# Verify the minimum fields
+		try: DictHelper.eval(data, ['client', 'start', 'end'])
+		except ValueError as e: return Services.Response(error=(1001, [[f, 'missing'] for f in e.args]))
+
+		# Check rights
+		Rights.verifyOrRaise(sesh['user_id'], 'accounting', data['client'])
+
+		# Generate the invoice data
+		dInvoice = self._generateInvoice(
+			[ data['start'], data['end'] ],
+			data['client']
+		)
+
+		# Get all the project names
+		dProjects = {
+			dProj['_id']:dProj['name'] for dProj in Project.get([
+				d['_id'] for d in dInvoice['items']
+			], raw=['_id', 'name'])
+		}
+
+		# Add the identifier
+		dInvoice['identifier'] = StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False)
+
+		# Add a created date
+		dInvoice['_created'] = int(arrow.get().timestamp())
+
+		# Convert the decimals to strings
+		dInvoice['subtotal'] = str(dInvoice['subtotal'])
+		dInvoice['total'] = str(dInvoice['total'])
+		dInvoice['minutes'] = 0
+		for d in dInvoice['taxes']:
+			d['amount'] = str(d['amount'])
+		for d in dInvoice['items']:
+			d['amount'] = str(d['amount'])
+			d['projectName'] = dProjects[d['_id']]
+			dInvoice['minutes'] += d['minutes']
+
+		# Add the details section to the invoice
+		dInvoice['details'] = {
+
+			# Fetch the client
+			'client': Client.get(data['client'], raw=True),
+
+			# Fetch the company
+			'company': Company.get(raw=True, limit=1)
+		}
+
+		# Return the invoice data
+		return Services.Response(dInvoice)
 
 	def invoices_read(self, data, sesh):
 		"""Invoices read
@@ -1387,8 +1487,10 @@ class Primary(Services.Service):
 		# Mark the project as archived
 		oProject['_archived'] = True
 
-		# Return the new ID
-		return Services.Response(sID)
+		# Save the project and return the result
+		return Services.Response(
+			oProject.save()
+		)
 
 	def project_read(self, data, sesh):
 		"""Project read
@@ -1620,8 +1722,10 @@ class Primary(Services.Service):
 		# Mark the task as archived
 		oTask['_archived'] = True
 
-		# Return the new ID
-		return Services.Response(sID)
+		# Save the task and return the result
+		return Services.Response(
+			oTask.save()
+		)
 
 	def task_read(self, data, sesh):
 		"""Task read
@@ -1855,8 +1959,10 @@ class Primary(Services.Service):
 		# Mark the user as archived
 		oUser['_archived'] = True
 
-		# Return the new ID
-		return Services.Response(sID)
+		# Save the user and return the result
+		return Services.Response(
+			oUser.save()
+		)
 
 	def user_read(self, data, sesh):
 		"""User read

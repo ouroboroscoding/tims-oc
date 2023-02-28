@@ -45,6 +45,7 @@ REST.Server({
 	# Invoices
 	"/invoice": {"methods": REST.CREATE | REST.READ, "session": True},
 	"/invoice/pdf": {"methods": REST.READ, "session": True},
+	"/invoice/preview": {'methods': REST.READ, 'session': True},
 	"/invoices": {"methods": REST.READ, "session": True},
 
 	# Payments
