@@ -14,10 +14,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import Tree from 'format-oc/Tree';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
 // Format Components
 import { Results } from 'shared/components/Format';

@@ -12,13 +12,13 @@
 import Node from 'format-oc/Node';
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Button from '@material-ui/core/Button';
-import Paper from '@material-ui/core/Paper';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 
 // Shared components
 import { Node as NodeComponent } from 'shared/components/Format';
@@ -64,7 +64,7 @@ export default function Setup(props) {
 	let passwdRef = useRef();
 
 	// Hooks
-	const history = useHistory();
+	const navigate = useNavigate();
 	const location = useLocation();
 
 	// Fetch info effect
@@ -75,7 +75,7 @@ export default function Setup(props) {
 
 		// If we didn't get enough info
 		if(lLocation.length < 2) {
-			history.push('/');
+			navigate('/');
 			return;
 		}
 
@@ -98,7 +98,7 @@ export default function Setup(props) {
 
 				// Redirect in 5 seconds
 				setTimeout(() => {
-					history.push('/')
+					navigate('/')
 				}, 5000);
 			}
 
@@ -163,7 +163,7 @@ export default function Setup(props) {
 				// Fetch the user
 				Rest.read('primary', 'user').done(res => {
 					Events.trigger('signedIn', res.data);
-					history.push('/');
+					navigate('/');
 				});
 			}
 		});

@@ -14,12 +14,12 @@ import React, { useEffect, useState } from 'react';
 import Tree from 'format-oc/Tree';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import IconButton from '@material-ui/core/IconButton';
-import Paper from '@material-ui/core/Paper';
-import Switch from '@material-ui/core/Switch';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Switch from '@mui/material/Switch';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
 // Shared components
 import { Form, Results } from 'shared/components/Format';

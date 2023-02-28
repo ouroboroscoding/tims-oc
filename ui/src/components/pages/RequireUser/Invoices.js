@@ -12,23 +12,26 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 import Tree from 'format-oc/Tree';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Button from '@material-ui/core/Button';
-import FormControl from '@material-ui/core/FormControl';
-import Grid from '@material-ui/core/Grid';
-import IconButton from '@material-ui/core/IconButton';
-import InputLabel from '@material-ui/core/InputLabel';
-import Paper from '@material-ui/core/Paper';
-import Select from '@material-ui/core/Select';
-import TextField from '@material-ui/core/TextField';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
 // Format Components
 import { Results } from 'shared/components/Format';
+
+// Locale components
+import Invoice from 'components/composites/Invoice';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -99,27 +102,11 @@ function Generate(props) {
 
 	// State
 	let [client, clientSet] = useState(props.clients.length ? props.clients[0]._id : null);
+	let [previewData, previewDataSet] = useState(false);
 	let [range, rangeSet] = useState(previousMonth());
 
 	// Get today's date
 	let sToday = iso(new Date(), false);
-
-	// Called when either range value is changed
-	function rangeUpdate(type, value) {
-
-		// Clone the existing range
-		let lRange = clone(range);
-
-		// If we got a start
-		if(type === 'start') {
-			lRange[0] = (new Date(value + ' 00:00:00')).getTime() / 1000
-		} else {
-			lRange[1] = (new Date(value + ' 23:59:59')).getTime() / 1000
-		}
-
-		// Set the new range
-		rangeSet(lRange);
-	}
 
 	// Generate the new invoice
 	function generate() {
@@ -146,6 +133,50 @@ function Generate(props) {
 				props.onSuccess(res.data);
 			}
 		});
+	}
+
+	// Called to preview the invoice info
+	function preview() {
+
+		// Send the request to the server
+		Rest.read('primary', 'invoice/preview', {
+			client: client,
+			start: range[0],
+			end: range[1]
+		}).done(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				Events.trigger('error', Rest.errorMessage(res.error));
+			}
+
+			// If there was a warning (PDF generation)
+			if(res.warning) {
+				Events.trigger('warning', res.warning);
+			}
+
+			// If we got data
+			if(res.data) {
+				previewDataSet(res.data);
+			}
+		});
+	}
+
+	// Called when either range value is changed
+	function rangeUpdate(type, value) {
+
+		// Clone the existing range
+		let lRange = clone(range);
+
+		// If we got a start
+		if(type === 'start') {
+			lRange[0] = (new Date(value + ' 00:00:00')).getTime() / 1000
+		} else {
+			lRange[1] = (new Date(value + ' 23:59:59')).getTime() / 1000
+		}
+
+		// Set the new range
+		rangeSet(lRange);
 	}
 
 	// Render
@@ -202,8 +233,17 @@ function Generate(props) {
 				</Grid>
 				<Box className="actions">
 					<Button variant="contained" color="secondary" onClick={props.onCancel}>Cancel</Button>
+					<Button variant="contained" color="neutral" onClick={preview}>Preview</Button>
 					<Button variant="contained" color="primary" onClick={generate}>Generate</Button>
 				</Box>
+				{previewData &&
+					<React.Fragment>
+						<Invoice value={previewData} />
+						<Box className="actions">
+							<Button variant="contained" color="primary" onClick={() => previewDataSet(false)}>Close Preview</Button>
+						</Box>
+					</React.Fragment>
+				}
 			</Box>
 		</Paper>
 	);
@@ -237,7 +277,7 @@ export default function Invoices(props) {
 	let [invoices, invoicesSet] = useState(false);
 
 	// Hooks
-	let history = useHistory();
+	let navigate = useNavigate();
 
 	// Refs
 	let refStart = useRef();
@@ -330,7 +370,7 @@ export default function Invoices(props) {
 
 	// Called to load invoice
 	function invoiceView(invoice) {
-		history.push('/invoice/' + invoice._id);
+		navigate('/invoice/' + invoice._id);
 	}
 
 	// Converts the start and end dates into timestamps

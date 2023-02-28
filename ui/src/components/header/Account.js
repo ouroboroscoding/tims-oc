@@ -14,10 +14,10 @@ import Tree from 'format-oc/Tree'
 import React, { useRef } from 'react';
 
 // Material UI
-import DialogTitle from '@material-ui/core/DialogTitle';
-import DialogContent from '@material-ui/core/DialogContent';
-import Dialog from '@material-ui/core/Dialog';
-import Divider from '@material-ui/core/Divider';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import Dialog from '@mui/material/Dialog';
+import Divider from '@mui/material/Divider';
 
 // Format Components
 import { Form } from 'shared/components/Format';

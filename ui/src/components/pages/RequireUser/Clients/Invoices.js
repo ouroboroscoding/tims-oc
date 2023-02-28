@@ -12,11 +12,11 @@
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import Tree from 'format-oc/Tree';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 // Shared components
 import { Results } from 'shared/components/Format';
@@ -54,7 +54,7 @@ export default function Invoices(props) {
 	let [results, resultsSet] = useState(false);
 
 	// Hooks
-	let history = useHistory();
+	let navigate = useNavigate();
 
 	// Load effect
 	useEffect(() => {
@@ -102,7 +102,7 @@ export default function Invoices(props) {
 
 	// Called to load invoice
 	function invoiceView(invoice) {
-		history.push('/invoice/' + invoice._id);
+		navigate('/invoice/' + invoice._id);
 	}
 
 	// Render

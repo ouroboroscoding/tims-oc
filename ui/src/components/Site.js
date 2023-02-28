@@ -10,11 +10,11 @@
 
 // NPM modules
 import React, { useEffect, useState } from 'react';
-import { useHistory, Switch, Route } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 
 // Material UI
-import { createTheme, ThemeProvider }  from '@material-ui/core/styles'
+import { createTheme, ThemeProvider }  from '@mui/material/styles'
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -43,6 +43,23 @@ import 'sass/site.scss';
 
 // Create the theme
 const Theme = createTheme({
+	palette: {
+		primary: {
+			dark: '#246c91',
+			light: '#37a3d9',
+			main: '#2f8bb9'
+		},
+		secondary: {
+			dark: '#ad0303',
+			light: '#ed4c4c',
+			main: '#d42828'
+		},
+		neutral: {
+			dark: '#a3a3a3',
+			light: '#dddddd',
+			main: '#c5c5c5'
+		}
+	},
 	typography: {
 		fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif'
 	}
@@ -65,7 +82,7 @@ export default function Site(props) {
 	let [user, userSet] = useState(null);
 
 	// Hooks
-	let history = useHistory();
+	let navigate = useNavigate();
 
 	// load effect
 	useEffect(() => {
@@ -83,7 +100,7 @@ export default function Site(props) {
 		userSet(user);
 	});
 	useEvent('signedOut', () => {
-		history.push('/');
+		navigate('/');
 		userSet(false);
 	});
 
@@ -100,22 +117,22 @@ export default function Site(props) {
 					user={user || false}
 				/>
 				<div id="content" className="flexGrow">
-					<Switch>
-						<Route path="/setup">
+					<Routes>
+						<Route path="/setup/*" element={
 							<Setup mobile={mobile} />
-						</Route>
-						<Route path="/verify">
+						} />
+						<Route path="/verify/*" element={
 							<Verify mobile={mobile} />
-						</Route>
+						} />
 						{user !== null &&
-							<Route path="/">
+							<Route path="/*" element={
 								<RequireUser
 									mobile={mobile}
 									user={user}
 								/>
-							</Route>
+							} />
 						}
-					</Switch>
+					</Routes>
 				</div>
 			</ThemeProvider>
 		</SnackbarProvider>

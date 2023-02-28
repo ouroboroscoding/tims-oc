@@ -11,11 +11,11 @@
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 // Shared communication modules
 import Rest from 'shared/communication/rest';
@@ -42,7 +42,7 @@ export default function Verify(props) {
 	});
 
 	// Hooks
-	const history = useHistory();
+	const navigate = useNavigate();
 	const location = useLocation();
 
 	// Fetch info effect
@@ -54,7 +54,7 @@ export default function Verify(props) {
 		// If we didn't get enough info
 		if(lLocation.length < 2) {
 			Events.trigger('error', 'Invalid URL');
-			history.push('/');
+			navigate('/');
 			return;
 		}
 
@@ -92,7 +92,7 @@ export default function Verify(props) {
 				});
 
 				setTimeout(() => {
-					history.push('/')
+					navigate('/')
 				}, 5000);
 			}
 		});

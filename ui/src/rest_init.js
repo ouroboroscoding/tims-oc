@@ -28,7 +28,7 @@ Rest.init(process.env.REACT_APP_REST_DOMAIN, {
 		LoaderShow();
 	},
 
-	cookie: window.location.host,
+	cookie: process.env.REACT_APP_COOKIE_DOMAIN,
 
 	error: xhr => {
 
