@@ -5,13 +5,14 @@ Defines and methods for checking user rights
 """
 
 __author__		= "Chris Nasr"
-__copyright__	= "OuroborosCoding"
+__copyright__	= "Ouroboros Coding Inc."
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
 __email__		= "chris@ouroboroscoding.com"
 __created__		= "2021-04-07"
 
 # Pip imports
+import body
 from RestOC import Services
 
 # Record imports
@@ -31,9 +32,6 @@ DELETE	= 0x08
 
 ALL		= 0x0F
 """Allowed to CRUD"""
-
-INVALID = 1000
-"""REST invalid rights error code"""
 
 __cache = None
 """The Redis cache instance"""
@@ -100,7 +98,7 @@ def verify(user, type_=None, client=None):
 	# Seems OK
 	return True
 
-def verifyOrRaise(user, type_=None, client=None):
+def verify_or_raise(user, type_=None, client=None):
 	"""Verify Or Raise
 
 	Calls verify method and if it fails an exception of ResponseException is
@@ -122,4 +120,4 @@ def verifyOrRaise(user, type_=None, client=None):
 
 	# Call verify and if it returns false, raise an exception
 	if not verify(user, type_, client):
-		raise Services.ResponseException(error=INVALID)
+		raise Services.ResponseException(error=body.errors.RIGHTS)

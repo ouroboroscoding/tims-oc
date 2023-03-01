@@ -5,20 +5,40 @@ Handles the record structures
 """
 
 __author__		= "Chris Nasr"
-__copyright__	= "OuroborosCoding"
+__copyright__	= "Ouroboros Coding Inc."
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
 __email__		= "ourboroscode@gmail.com"
 __created__		= "2021-04-02"
 
 # Python imports
-import copy
 from hashlib import sha1
 import re
 
 # Pip imports
 from FormatOC import Tree
 from RestOC import Conf, JSON, Record_MySQL, StrHelper
+
+def install():
+	"""Install
+
+	Handles the initial creation of the tables in the DB
+
+	Returns:
+		None
+	"""
+	Access.table_create()
+	Client.table_create()
+	Company.table_create()
+	CompanyTax.table_create()
+	Invoice.table_create()
+	InvoiceItem.table_create()
+	Key.table_create()
+	Payment.table_create()
+	Project.table_create()
+	Task.table_create()
+	User.table_create()
+	Work.table_create()
 
 # Access class
 class Access(Record_MySQL.Record):
@@ -40,10 +60,11 @@ class Access(Record_MySQL.Record):
 			dict
 		"""
 
-		# If we haven loaded the config yet
+		# If we haven't loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/access.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/access.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -71,8 +92,9 @@ class Client(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/client.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/client.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -100,8 +122,9 @@ class Company(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/company.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/company.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -129,8 +152,9 @@ class CompanyTax(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/company_tax.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/company_tax.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -203,8 +227,9 @@ class Invoice(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/invoice.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/invoice.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -319,7 +344,7 @@ class InvoiceItem(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
-	def byInvoice(cls, invoice, custom={}):
+	def by_invoice(cls, invoice, custom={}):
 		"""By Invoice
 
 		Returns all items associated with a specific invoice, including the
@@ -372,8 +397,9 @@ class InvoiceItem(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/invoice_item.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/invoice_item.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -402,8 +428,9 @@ class Key(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/key.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/key.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -474,8 +501,9 @@ class Payment(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/payment.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/payment.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -601,8 +629,9 @@ class Project(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/project.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/project.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -630,8 +659,9 @@ class Task(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/task.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/task.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
@@ -648,8 +678,8 @@ class User(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
-	def cacheClear(cls, _id):
-		"""Cache Clear
+	def clear(cls, _id):
+		"""Clear
 
 		Removes a user from the cache
 
@@ -664,7 +694,7 @@ class User(Record_MySQL.Record):
 		cls._redis.delete('user:%s' % _id)
 
 	@classmethod
-	def cacheGet(cls, _id):
+	def cache_get(cls, _id):
 		"""Cache Get
 
 		Gets a user from the cache, if they can't be found, defaults to fetching
@@ -734,15 +764,16 @@ class User(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/user.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/user.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
 		return cls._conf
 
 	@staticmethod
-	def passwordHash(passwd):
+	def password_hash(passwd):
 		"""Password Hash
 
 		Returns a hashed password with a unique salt
@@ -764,7 +795,7 @@ class User(Record_MySQL.Record):
 		return sSalt[:20] + sHash + sSalt[20:]
 
 	@classmethod
-	def passwordStrength(cls, passwd):
+	def password_strength(cls, passwd):
 		"""Password Strength
 
 		Returns true if a password is secure enough
@@ -788,7 +819,7 @@ class User(Record_MySQL.Record):
 		# Return OK
 		return True
 
-	def passwordValidate(self, passwd):
+	def password_validate(self, passwd):
 		"""Password Validate
 
 		Validates the given password against the current instance
@@ -835,7 +866,7 @@ class Work(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
-	def byUser(cls, user, start, end, custom={}):
+	def by_user(cls, user, start, end, custom={}):
 		"""By User
 
 		Returns all work in a timeframe that are assigned to a specific user
@@ -899,15 +930,16 @@ class Work(Record_MySQL.Record):
 
 		# If we haven loaded the config yet
 		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generateConfig(
-				Tree.fromFile('definitions/work.json')
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/work.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
 		# Return the config
 		return cls._conf
 
 	@classmethod
-	def forInvoice(cls, start, end, client, custom={}):
+	def for_invoice(cls, start, end, client, custom={}):
 		"""For Invoice
 
 		Pulls out data needed to generate an invoice

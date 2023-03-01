@@ -27,7 +27,7 @@
 	},
 
 	"redis": {
-		"primary": {
+		"session": {
 			"host": "localhost",
 			"port": 6379,
 			"db": 0,

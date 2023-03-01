@@ -11,10 +11,7 @@ import os, platform, time
 from RestOC import Conf, Record_MySQL
 
 # Records
-from records import Company, User
-
-# Services
-from services.primary import Primary
+from records import install, Company, User
 
 # Only run if called directly
 if __name__ == "__main__":
@@ -26,33 +23,33 @@ if __name__ == "__main__":
 		Conf.load_merge(sConfOverride)
 
 	# Add hosts
-	Record_MySQL.addHost('primary', Conf.get(("mysql", "hosts", "primary")))
+	Record_MySQL.add_host('primary', Conf.get(('mysql', 'hosts', 'primary')))
 
 	# Add the DB
-	Record_MySQL.dbCreate(Conf.get(("mysql", "primary", "db"), "tims-ouroboros"), 'primary')
+	Record_MySQL.db_create(Conf.get(('mysql', 'primary', 'db'), 'tims-oc'), 'primary')
 
 	# Install
-	Primary.install()
+	install()
 
 	# Install admin user
 	oUser = User({
-		"email": 'admin@localhost',
-		"passwd": User.passwordHash('Admin123'),
-		"name": "Administrator",
-		"type": "admin",
-		"locale": 'en-US',
-		"verified": True
+		'email': 'admin@localhost',
+		'passwd': User.passwordHash('Admin123'),
+		'name': 'Administrator',
+		'type': 'admin',
+		'locale': 'en-US',
+		'verified': True
 	})
 	oUser.create()
 
 	# Add the only company
 	oCompany = Company({
-		"name": "Your Company",
-		"address1": "123 Main Street",
-		"city": "Coolsville",
-		"division": "QC",
-		"country": "CA",
-		"postal_code": "H4G2R3",
-		"taxes": "[]"
+		'name': 'Your Company',
+		'address1': '123 Main Street',
+		'city': 'Coolsville',
+		'division': 'QC',
+		'country': 'CA',
+		'postal_code': 'H4G2R3',
+		'taxes': '[]'
 	})
 	oCompany.create()

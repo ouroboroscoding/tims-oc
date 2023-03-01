@@ -5,7 +5,7 @@ Shared methods used by most REST scripts
 """
 
 __author__		= "Chris Nasr"
-__copyright__	= "OuroborosCoding"
+__copyright__	= "Ouroboros Coding Inc."
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
 __email__		= "chris@ouroboroscoding.com"
@@ -16,8 +16,8 @@ import os
 import platform
 
 # Pip imports
-from RestOC import Conf, Record_Base, Record_MySQL, REST, \
-					Services, Sesh, Templates
+from RestOC import Conf, EMail, Record_Base, Record_MySQL, REST, \
+					Services, Session, Templates
 
 def init(dbs=[], services={}, templates=False):
 	"""Initialise
@@ -40,17 +40,23 @@ def init(dbs=[], services={}, templates=False):
 		Conf.load_merge(sConfOverride)
 
 	# Add the global prepend
-	Record_Base.dbPrepend(Conf.get(("mysql", "prepend"), ''))
+	Record_Base.db_prepend(Conf.get(('mysql', 'prepend'), ''))
 
 	# Go through the list of DBs requested
 	for s in dbs:
-		Record_MySQL.addHost(s, Conf.get(("mysql", "hosts", s)))
+		Record_MySQL.add_host(s, Conf.get(('mysql', 'hosts', s)))
 
-	# Init the Sesh module
-	Sesh.init(Conf.get(("redis", "primary")))
+	# Init email
+	EMail.init(Conf.get('email'))
+
+	# Get redis primary config
+	dRedis = Conf.get(('redis', 'session'))
+
+	# Init the Session module
+	Session.init(dRedis)
 
 	# Create the REST config instance
-	oRestConf = REST.Config(Conf.get("rest"))
+	oRestConf = REST.Config(Conf.get('rest'))
 
 	# Set verbose mode if requested
 	if 'VERBOSE' in os.environ and os.environ['VERBOSE'] == '1':
@@ -64,7 +70,12 @@ def init(dbs=[], services={}, templates=False):
 		dServices[n] = o
 
 	# Register all services
-	Services.register(dServices, oRestConf, Conf.get(('services', 'salt')))
+	Services.register(
+		dServices,
+		oRestConf,
+		Conf.get(('services', 'salt')),
+		Conf.get(('services', 'internal_key_timeout'), 10)
+	)
 
 	# Init Templates
 	if templates:

@@ -5,7 +5,7 @@ Available classes/functions for running crons
 """
 
 __author__		= "Chris Nasr"
-__copyright__	= "OuroborosCoding"
+__copyright__	= "Ouroboros Coding Inc."
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
 __email__		= "chris@ouroboroscoding.com"
