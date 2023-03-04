@@ -12,13 +12,13 @@
 import { LoaderHide, LoaderShow } from 'components/header/Loader';
 
 // Shared communication modules
-import Rest from 'shared/communication/rest';
+import { rest } from '@ouroboros/body';
 
 // Shared generic modules
-import Events from 'shared/generic/events';
+import events from '@ouroboros/events';
 
 // Init the rest services
-Rest.init(process.env.REACT_APP_REST_DOMAIN, {
+rest.init(process.env.REACT_APP_REST_DOMAIN, {
 
 	after: (method, url, data, opts) => {
 		LoaderHide();
@@ -28,16 +28,16 @@ Rest.init(process.env.REACT_APP_REST_DOMAIN, {
 		LoaderShow();
 	},
 
-	cookie: window.location.host,
+	cookie: process.env.REACT_APP_COOKIE_DOMAIN,
 
 	error: xhr => {
 
 		// If we got a 401, let everyone know we signed out
 		if(xhr.status === 401) {
-			Events.trigger('error', 'You have been signed out!');
-			Events.trigger('signedOut');
+			events.get('error').trigger('You have been signed out!');
+			events.get('signedOut').trigger();
 		} else {
-			Events.trigger('error',
+			events.get('error').trigger(
 				'Unable to connect to ' + process.env.REACT_APP_REST_DOMAIN +
 				': ' + xhr.statusText +
 				' (' + xhr.status + ')');
@@ -56,7 +56,7 @@ Rest.init(process.env.REACT_APP_REST_DOMAIN, {
 				case 102:
 
 					// Trigger signout
-					Events.trigger("signout");
+					events.get('signout').trigger();
 					res._handled = true;
 					break;
 
@@ -64,7 +64,7 @@ Rest.init(process.env.REACT_APP_REST_DOMAIN, {
 
 					// Notify the user
 					let sMsg = 'Request to ' + res.error.msg + ' failed. Please contact support';
-					Events.trigger('error', sMsg);
+					events.get('error').trigger(sMsg);
 					console.error(sMsg);
 					res._handled = true;
 					break;

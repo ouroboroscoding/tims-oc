@@ -8,32 +8,32 @@
  * @created 2021-04-17
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { Tree } from '@ouroboros/define';
+import { Form, Results } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+import { afindi, merge, omap } from '@ouroboros/tools';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import Tree from 'format-oc/Tree';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import IconButton from '@material-ui/core/IconButton';
-import Paper from '@material-ui/core/Paper';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
-
-// Shared components
-import { Form, Results } from 'shared/components/Format';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
 // Local components
 import Invoices from './Invoices';
 import Payments from './Payments';
 import Projects from './Projects';
 
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { afindi, clone, omap } from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Load the country and division data
 import Countries from 'data/countries';
@@ -42,13 +42,29 @@ import Divisions from 'data/divisions';
 // Load the client and project definitions
 import ClientDef from 'definitions/client';
 
-// Add the countries and divisions
-let ClientWithOptions = clone(ClientDef);
-ClientWithOptions.country.__react__.options = omap(Countries, (s,k) => [k,s]);
-ClientWithOptions.division.__react__.options = omap(Divisions, (s,k) => [k,s]);
-
 // Create Trees using the definitions
-const ClientTree = new Tree(clone(ClientWithOptions));
+const ClientTree = new Tree(ClientDef, {
+	country: {
+		__ui__: { options: omap(Countries, (s,k) => [k,s]) }
+	},
+	division: {
+		__ui__: { options: omap(Divisions, (s,k) => [k,s]) }
+	}
+});
+
+// Constants
+const GRID_SIZES = {
+	__default__: {xs: 12, sm: 6, xl: 4},
+	name: {xs: 12, lg: 6},
+	attention_of: {xs: 12, lg: 6},
+	address1: {xs: 12, sm: 8, xl: 5},
+	address2: {xs: 12, sm: 4, xl: 3},
+	due: {xs: 12, sm: 6, xl: 3},
+	currency: {xs: 12, sm: 6, xl: 3},
+	rate: {xs: 12, sm: 4, xl: 2},
+	task_minimum: {xs: 12, sm: 4, xl: 2},
+	task_overflow: {xs: 12, sm: 4, xl: 2}
+}
 
 /**
  * Clients
@@ -68,69 +84,124 @@ export default function Clients(props) {
 		create: false,
 		update: false,
 	});
-	let [clients, clientsSet] = useState(false);
+	let [records, recordsSet] = useState(false);
 
 	// Load effect
 	useEffect(() => {
 
-		// Fetch the clients
-		clientsFetch();
+		// If we have a user
+		if(props.user) {
 
-		// Set rights
-		rightsSet({
-			accounting: ['admin', 'accounting'].includes(props.user.type),
-			create: props.user.type === 'admin',
-			projects: ['admin', 'manager'].includes(props.user.type),
-			delete: props.user.type === 'admin'
-		});
+			// Fetch the records
+			rest.read('primary', 'clients').done(res => {
+
+				// If we got an error
+				if(res.error && !res._handled) {
+					events.get('error').trigger(rest.errorMessage(res.error));
+				}
+
+				// If we got data
+				if(res.data) {
+					recordsSet(res.data);
+				}
+			});
+
+			// Set rights
+			rightsSet({
+				accounting: ['admin', 'accounting'].includes(props.user.type),
+				create: props.user.type === 'admin',
+				projects: ['admin', 'manager'].includes(props.user.type),
+				delete: props.user.type === 'admin'
+			});
+		} else {
+			recordsSet(false);
+			rightsSet({
+				accounting: false,
+				create: false,
+				projects: false,
+				delete: false
+			});
+		}
 
 	}, [props.user]);
 
-	// Called when an existing client is archived
-	function clientArchived(client) {
-		let i = afindi(clients, '_id', client._id);
-		if(i > -1) {
-			let lClients = clone(clients);
-			lClients[i]._archived = 1;
-			clientsSet(lClients);
-		}
-	}
+	// Called when the create form is submitted
+	function createSubmit(client) {
 
-	// Called when a new client is created
-	function clientCreated(client) {
-		let lClients = clone(clients);
-		lClients.unshift(client);
-		clientsSet(lClients);
-		createSet(false);
-	}
+		// Send the data
+		return bridge('create', 'primary', 'client', client, data => {
+			if(data) {
 
-	// Fetch the current clients
-	function clientsFetch() {
+				// Sucess
+				events.get('success').trigger('Client created');
 
-		// Make the request to the server
-		Rest.read('primary', 'clients').done(res => {
-
-			// If we got an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				// Add the client to the records
+				let lClients = clone(records);
+				client._id = data;
+				client._archived = false;
+				lClients.unshift(client);
+				recordsSet(lClients);
+				createSet(false);
 			}
-
-			// If we got data
-			if(res.data) {
-				clientsSet(res.data);
-			}
+		}, {
+			'1101': [['name', 'Already being used']]
 		});
 	}
 
-	// Called when a client has been updated
-	function clientUpdated(client) {
-		let i = afindi(clients, '_id', client._id);
-		if(i > -1) {
-			let lClients = clone(clients);
-			lClients[i] = client;
-			clientsSet(lClients);
-		}
-	};
+	// Called when the delete icon is clicked
+	function deleteClick(_id) {
+
+		// Delete the client
+		rest.delete('primary', 'client', {
+			_id: _id
+		}).then(res => {
+
+			if(res.data) {
+
+				// Success
+				events.get('success').trigger('Client archived');
+
+				// Remove it from the records
+				let i = afindi(records, '_id', _id);
+				if(i > -1) {
+					let lClients = clone(records);
+					lClients[i]._archived = 1;
+					recordsSet(lClients);
+				}
+			}
+
+			// Else, failed
+			else {
+				events.get('error').trigger('Client failed to be deleted. Is it already archived?')
+			}
+		})
+	}
+
+	// Called when the update form is submitted
+	function updateSubmit(client, key) {
+
+		// Add the ID to the client
+		client._id = key;
+
+		// Send the data
+		return bridge('update', 'primary', 'client', client, data => {
+			if(data) {
+
+				// Success
+				events.get('success').trigger('Client updated');
+
+				// Update the records
+				let i = afindi(records, '_id', key);
+				if(i > -1) {
+					let lClients = clone(records);
+					merge(lClients[i], client);
+					recordsSet(lClients);
+				}
+			}
+		}, {
+			'1101': [['name', 'Already being used']]
+		});
+	}
 
 	// Result actions
 	let oResultActions = [];
@@ -138,7 +209,8 @@ export default function Clients(props) {
 		oResultActions.push({
 			tooltip: 'View Invoices',
 			icon: 'fa-solid fa-file-invoice-dollar',
-			component: Invoices
+			component: Invoices,
+			props: { rights: rights }
 		});
 		oResultActions.push({
 			tooltip: 'View Payments',
@@ -172,13 +244,9 @@ export default function Clients(props) {
 			{create &&
 				<Paper>
 					<Form
-						cancel={ev => createSet(false)}
-						errors={{
-							"2004": "Name already in use"
-						}}
-						noun="client"
-						service="primary"
-						success={clientCreated}
+						gridSizes={GRID_SIZES}
+						onCancel={ev => createSet(false)}
+						onSubmit={createSubmit}
 						title="Create Client"
 						tree={ClientTree}
 						type="create"
@@ -188,22 +256,21 @@ export default function Clients(props) {
 					/>
 				</Paper>
 			}
-			{clients === false ?
+			{records === false ?
 				<Typography>Loading...</Typography>
 			:
 				<React.Fragment>
-					{clients.length === 0 ?
+					{records.length === 0 ?
 						<Typography>No clients found</Typography>
 					:
 						<Results
 							actions={oResultActions}
-							data={clients}
-							noun="client"
+							data={records}
+							gridSizes={GRID_SIZES}
+							onDelete={rights.delete ? deleteClick : false}
+							onUpdate={rights.accounting ? updateSubmit : false}
 							orderBy="name"
-							remove={rights.delete ? clientArchived : false}
-							service="primary"
 							tree={ClientTree}
-							update={rights.accounting ? clientUpdated : false}
 						/>
 					}
 				</React.Fragment>

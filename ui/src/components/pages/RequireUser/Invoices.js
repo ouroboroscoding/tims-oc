@@ -8,46 +8,45 @@
  * @created 2021-04-25
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { Tree } from '@ouroboros/define';
+import { Results } from '@ouroboros/define-mui';
+import { increment, iso } from '@ouroboros/dates';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
-import Tree from 'format-oc/Tree';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Button from '@material-ui/core/Button';
-import FormControl from '@material-ui/core/FormControl';
-import Grid from '@material-ui/core/Grid';
-import IconButton from '@material-ui/core/IconButton';
-import InputLabel from '@material-ui/core/InputLabel';
-import Paper from '@material-ui/core/Paper';
-import Select from '@material-ui/core/Select';
-import TextField from '@material-ui/core/TextField';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
-// Format Components
-import { Results } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import { increment, iso } from 'shared/generic/dates';
-import Events from 'shared/generic/events';
-import { clone } from 'shared/generic/tools';
+// Locale components
+import Invoice from 'components/composites/Invoice';
 
 // Load the invoice definition
 import InvoiceDef from 'definitions/invoice';
-let InvoiceClone = clone(InvoiceDef)
-InvoiceClone.__react__ = {
-	results: ['_created', 'clientName', 'identifier', 'start', 'end', 'total']
-};
-InvoiceClone.clientName = {__type__: 'string', __react__: {title: 'Client'}}
 
 // Create the Tree using the definition
-const InvoiceTree = new Tree(InvoiceClone);
+const InvoiceTree = new Tree(InvoiceDef, {
+	__ui__: {
+		results: ['_created', 'clientName', 'identifier', 'start', 'end', 'total']
+	},
+	clientName: { __type__: 'string', __ui__: { title: 'Client' }}
+});
 
 /**
  * Previous Month
@@ -99,10 +98,65 @@ function Generate(props) {
 
 	// State
 	let [client, clientSet] = useState(props.clients.length ? props.clients[0]._id : null);
+	let [previewData, previewDataSet] = useState(false);
 	let [range, rangeSet] = useState(previousMonth());
 
 	// Get today's date
 	let sToday = iso(new Date(), false);
+
+	// Generate the new invoice
+	function generate() {
+
+		// Send the request to the server
+		rest.create('primary', 'invoice', {
+			client: client,
+			start: range[0],
+			end: range[1]
+		}).done(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				events.get('error').trigger(rest.errorMessage(res.error));
+			}
+
+			// If there was a warning (PDF generation)
+			if(res.warning) {
+				events.get('warning').trigger(res.warning);
+			}
+
+			// If we got data
+			if(res.data) {
+				props.onSuccess(res.data);
+			}
+		});
+	}
+
+	// Called to preview the invoice info
+	function preview() {
+
+		// Send the request to the server
+		rest.read('primary', 'invoice/preview', {
+			client: client,
+			start: range[0],
+			end: range[1]
+		}).done(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				events.get('error').trigger(rest.errorMessage(res.error));
+			}
+
+			// If there was a warning (PDF generation)
+			if(res.warning) {
+				events.get('warning').trigger(res.warning);
+			}
+
+			// If we got data
+			if(res.data) {
+				previewDataSet(res.data);
+			}
+		});
+	}
 
 	// Called when either range value is changed
 	function rangeUpdate(type, value) {
@@ -119,33 +173,6 @@ function Generate(props) {
 
 		// Set the new range
 		rangeSet(lRange);
-	}
-
-	// Generate the new invoice
-	function generate() {
-
-		// Send the request to the server
-		Rest.create('primary', 'invoice', {
-			client: client,
-			start: range[0],
-			end: range[1]
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
-			}
-
-			// If there was a warning (PDF generation)
-			if(res.warning) {
-				Events.trigger('warning', res.warning);
-			}
-
-			// If we got data
-			if(res.data) {
-				props.onSuccess(res.data);
-			}
-		});
 	}
 
 	// Render
@@ -202,8 +229,17 @@ function Generate(props) {
 				</Grid>
 				<Box className="actions">
 					<Button variant="contained" color="secondary" onClick={props.onCancel}>Cancel</Button>
+					<Button variant="contained" color="neutral" onClick={preview}>Preview</Button>
 					<Button variant="contained" color="primary" onClick={generate}>Generate</Button>
 				</Box>
+				{previewData &&
+					<React.Fragment>
+						<Invoice value={previewData} />
+						<Box className="actions">
+							<Button variant="contained" color="primary" onClick={() => previewDataSet(false)}>Close Preview</Button>
+						</Box>
+					</React.Fragment>
+				}
 			</Box>
 		</Paper>
 	);
@@ -237,7 +273,7 @@ export default function Invoices(props) {
 	let [invoices, invoicesSet] = useState(false);
 
 	// Hooks
-	let history = useHistory();
+	let navigate = useNavigate();
 
 	// Refs
 	let refStart = useRef();
@@ -265,35 +301,33 @@ export default function Invoices(props) {
 
 	// Range effect
 	useEffect(() => {
+
 		// If we have a range
 		if(range) {
-			fetch();
+
+			// Make the request to the server
+			rest.read('primary', 'invoices', {
+				range: range
+			}).done(res => {
+
+				// If there's an error
+				if(res.error && !res._handled) {
+					events.get('error').trigger(rest.errorMessage(res.error));
+				}
+
+				// If we got data
+				if(res.data) {
+					invoicesSet(res.data);
+				}
+			});
 		}
-	// eslint-disable-next-line
 	}, [range]);
-
-	// Fetch the invoices
-	function fetch() {
-
-		// Make the request to the server
-		Rest.read('primary', 'invoices', {
-			range: range
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
-			}
-
-			// If we got data
-			if(res.data) {
-				invoicesSet(res.data);
-			}
-		});
-	}
 
 	// Called when a new invoice is generated
 	function invoiceGenerated(invoice) {
+
+		// Success
+		events.get('success').trigger('Invoice generated')
 
 		// Hide the form
 		generateSet(false);
@@ -308,16 +342,16 @@ export default function Invoices(props) {
 	function invoicePdf(invoice) {
 
 		// Tell the server to generate and return the link
-		Rest.read('primary', 'invoice/pdf', {
+		rest.read('primary', 'invoice/pdf', {
 			_id: invoice._id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2003) {
-					Events.trigger('error', 'No such invoice');
+				if(res.error.code === 1100) {
+					events.get('error').trigger('No such invoice');
 				} else {
-					Events.trigger('error', Rest.errorMessage(res.error));
+					events.get('error').trigger(rest.errorMessage(res.error));
 				}
 			}
 
@@ -330,7 +364,7 @@ export default function Invoices(props) {
 
 	// Called to load invoice
 	function invoiceView(invoice) {
-		history.push('/invoice/' + invoice._id);
+		navigate('/invoice/' + invoice._id);
 	}
 
 	// Converts the start and end dates into timestamps
@@ -425,12 +459,8 @@ export default function Invoices(props) {
 								total: value => '$' + value.total
 							}}
 							data={invoices}
-							noun=""
 							orderBy="_created"
-							remove={false}
-							service=""
 							tree={InvoiceTree}
-							update={false}
 						/>
 					}
 				</React.Fragment>

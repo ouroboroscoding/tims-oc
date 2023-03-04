@@ -8,44 +8,40 @@
  * @created 2021-04-17
  */
 
+// Ouroboros modules
+import { Form } from '@ouroboros/define-mui';
+import { rest } from '@ouroboros/body';
+import { safeLocalStorage } from '@ouroboros/browser';
+import clone from '@ouroboros/clone';
+import { iso } from '@ouroboros/dates';
+import events from '@ouroboros/events';
+import { afindi, afindo } from '@ouroboros/tools';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
-import Tree from 'format-oc/Tree';
+import { Tree } from '@ouroboros/define';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Button from '@material-ui/core/Button';
-import FormControl from '@material-ui/core/FormControl';
-import IconButton from '@material-ui/core/IconButton';
-import InputLabel from '@material-ui/core/InputLabel';
-import Paper from '@material-ui/core/Paper';
-import Select from '@material-ui/core/Select';
-import TextField from '@material-ui/core/TextField';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
-// Shared components
-import { Form } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import { iso } from 'shared/generic/dates';
-import Events from 'shared/generic/events';
-import {
-	afindi,
-	afindo,
-	clone,
-	safeLocalStorage
-} from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Load the task and project definitions
 import TaskDef from 'definitions/task';
 
 // Create Trees using the definitions
-const TaskTree = new Tree(clone(TaskDef));
+const TaskTree = new Tree(TaskDef);
 
 /**
  * Store Last Used
@@ -62,7 +58,7 @@ const TaskTree = new Tree(clone(TaskDef));
 function storeLastUsed(which, value) {
 
 	// Get the existing values
-	let sLastUsed = safeLocalStorage('work_last_' + which, false);
+	let sLastUsed = safeLocalStorage.string('work_last_' + which, false);
 
 	// If the value changed
 	if(sLastUsed !== value) {
@@ -86,11 +82,11 @@ function storeLastUsed(which, value) {
 export default function Work(props) {
 
 	// State
-	let [client, clientSet] = useState(safeLocalStorage('work_last_client', props.clients[0] ? props.clients[0]._id : false));
+	let [client, clientSet] = useState(safeLocalStorage.string('work_last_client', props.clients[0] ? props.clients[0]._id : false));
 	let [create, createSet] = useState(false);
-	let [project, projectSet] = useState(safeLocalStorage('work_last_project', false));
+	let [project, projectSet] = useState(safeLocalStorage.string('work_last_project', false));
 	let [projects, projectsSet] = useState({});
-	let [task, taskSet] = useState(safeLocalStorage('work_last_task', false));
+	let [task, taskSet] = useState(safeLocalStorage.string('work_last_task', false));
 	let [tasks, tasksSet] = useState({});
 	let [work, workSet] = useState(null);
 
@@ -100,19 +96,25 @@ export default function Work(props) {
 	// User effect
 	useEffect(() => {
 
-		// Request from the server if there's any existing open work
-		Rest.read('primary', 'account/work').done(res => {
+		// If we have a user
+		if(props.user) {
 
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
-			}
+			// Request from the server if there's any existing open work
+			rest.read('primary', 'account/work').done(res => {
 
-			// If there's data
-			if('data' in res) {
-				workSet(res.data);
-			}
-		});
+				// If there's an error
+				if(res.error && !res._handled) {
+					events.get('error').trigger(rest.errorMessage(res.error));
+				}
+
+				// If there's data
+				if('data' in res) {
+					workSet(res.data);
+				}
+			});
+		} else {
+			workSet(null);
+		}
 
 	}, [props.user]);
 
@@ -129,13 +131,13 @@ export default function Work(props) {
 			if(!projects[client]) {
 
 				// Make the request to the serve
-				Rest.read('primary', 'projects', {
+				props.user && rest.read('primary', 'projects', {
 					client: client
 				}).done(res => {
 
 					// If there's an error
 					if(res.error && !res._handled) {
-						Events.trigger('error', Rest.errorMessage(res.error));
+						events.get('error').trigger(rest.errorMessage(res.error));
 					}
 
 					// If there's data
@@ -186,13 +188,13 @@ export default function Work(props) {
 			if(!tasks[project]) {
 
 				// Make the request to the serve
-				Rest.read('primary', 'tasks', {
+				props.user && rest.read('primary', 'tasks', {
 					project: project
 				}).done(res => {
 
 					// If there's an error
 					if(res.error && !res._handled) {
-						Events.trigger('error', Rest.errorMessage(res.error));
+						events.get('error').trigger(rest.errorMessage(res.error));
 					}
 
 					// If there's data
@@ -242,33 +244,47 @@ export default function Work(props) {
 
 	}, [task]);
 
-	// Called when a new task is created
-	function taskCreated(task) {
+	// Called when the task form is submitted
+	function taskSubmit(task) {
 
-		// Clone the current tasks and push this task to the current project
-		let lTasks = clone(tasks);
-		lTasks[project].push(task);
-		tasksSet(lTasks);
+		// Add the project to the task
+		task.project = project;
 
-		// Set the current selected task to this one
-		taskSet(task._id);
+		// Send the task to the server
+		return bridge('create', 'primary', 'task', task, data => {
 
-		// Hide the create form
-		createSet(false);
+			// Success
+			events.get('success').trigger('Task created');
+
+			// Clone the current tasks and push this task to the current project
+			let lTasks = clone(tasks);
+			task._id = data;
+			lTasks[project].push(task);
+			tasksSet(lTasks);
+
+			// Set the current selected task to this one
+			taskSet(data._id);
+
+			// Hide the create form
+			createSet(false);
+
+		}, {
+			'1104': [['name', 'Already in use']]
+		});
 	}
 
 	// End the work
 	function workEnd() {
 
 		// Tell the server to end the current work
-		Rest.update('primary', 'work/end', {
+		rest.update('primary', 'work/end', {
 			_id: work._id,
 			description: descrRef.current.value.trim()
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If there's data
@@ -296,11 +312,11 @@ export default function Work(props) {
 		}
 
 		// Tell the server to start a work
-		Rest.create('primary', 'work/start', oData).done(res => {
+		rest.create('primary', 'work/start', oData).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If we got data
@@ -348,6 +364,7 @@ export default function Work(props) {
 							inputRef={descrRef}
 							label="Description"
 							placeholder="Description"
+							variant="standard"
 						/>
 					</Box>
 					<Box className="actions">
@@ -361,7 +378,7 @@ export default function Work(props) {
 					</Box>
 					<Box className="form">
 						<Box className="field">
-							<FormControl>
+							<FormControl variant="standard">
 								<InputLabel>Client</InputLabel>
 								<Select
 									label="Select Client"
@@ -386,7 +403,7 @@ export default function Work(props) {
 										:
 											<React.Fragment>
 												<Box className="field">
-													<FormControl>
+													<FormControl variant="standard">
 														<InputLabel>Project</InputLabel>
 														<Select
 															label="Select Project"
@@ -409,7 +426,7 @@ export default function Work(props) {
 																{tasks[project].length === 0 ?
 																	<Typography>No tasks associated with project</Typography>
 																:
-																	<FormControl>
+																	<FormControl variant="standard">
 																		<InputLabel>Task</InputLabel>
 																		<Select
 																			label="Select Task"
@@ -434,17 +451,9 @@ export default function Work(props) {
 														</Box>
 														{create ?
 															<Form
-																beforeSubmit={values => {
-																	values.project = project;
-																	return values;
-																}}
-																cancel={ev => createSet(false)}
-																errors={{
-																	"2004": "Name already in use"
-																}}
-																noun="task"
-																service="primary"
-																success={taskCreated}
+																gridSizes={{__default__: {xs: 12}}}
+																onCancel={ev => createSet(false)}
+																onSubmit={taskSubmit}
 																title="Create Task"
 																tree={TaskTree}
 																type="create"
@@ -457,6 +466,7 @@ export default function Work(props) {
 																			inputRef={descrRef}
 																			label="Description"
 																			placeholder="Description"
+																			variant="standard"
 																		/>
 																	</Box>
 																	<Box className="actions">

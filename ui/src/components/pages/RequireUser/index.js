@@ -8,14 +8,18 @@
  * @created 2021-04-16
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import { Switch, Route } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 // Dialog components
 import SignIn from 'components/dialogs/SignIn';
@@ -29,12 +33,6 @@ import Payments from './Payments';
 import Tasks from './Tasks';
 import Work from './Work';
 import Users from './Users';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
 
 /**
  * Require User
@@ -64,11 +62,11 @@ export default function RequireUser(props) {
 	function clientsFetch() {
 
 		// Make the request to the server
-		Rest.read('primary', 'account/clients').done(res => {
+		rest.read('primary', 'account/clients').done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If we got data
@@ -90,52 +88,50 @@ export default function RequireUser(props) {
 
 	// Render
 	return (
-		<Switch>
-			<Route exact path="/clients">
-				<Clients
-					{...props}
-				/>
-			</Route>
-			<Route path="/invoice/:_id" children={
+		<Routes>
+			<Route exact path="/clients" element={
+				<Clients {...props} />
+			} />
+			<Route path="/invoice/:_id" element={
 				<Invoice {...props} />
-			}/>
-			<Route exact path="/invoices">
+			} />
+			<Route exact path="/invoices" element={
 				<Invoices
 					clients={clients}
 					{...props}
 				/>
-			</Route>
-			<Route exact path="/payments">
+			} />
+			<Route exact path="/payments" element={
 				<Payments
 					clients={clients}
 					{...props}
 				/>
-			</Route>
-			<Route exact path="/users">
+			} />
+			<Route exact path="/users" element={
 				<Users
 					clients={clients}
 					{...props}
 				/>
-			</Route>
-			<Route exact path="/tasks">
+			} />
+			<Route exact path="/tasks" element={
 				<Tasks
 					clients={clients}
 					{...props}
 				/>
-			</Route>
-			<Route exact path="/work">
+			} />
+			<Route exact path="/work" element={
 				<Work
 					clients={clients}
 					{...props}
 				/>
-			</Route>
-			<Route exact path="/">
+			} />
+			<Route exact path="/" element={
 				<Home
 					clients={clients}
 					{...props}
 				/>
-			</Route>
-		</Switch>
+			} />
+		</Routes>
 	);
 }
 

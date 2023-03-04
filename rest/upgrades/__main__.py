@@ -5,7 +5,7 @@ Handles running upgrade scripts
 """
 
 __author__		= "Chris Nasr"
-__copyright__	= "OuroborosCoding"
+__copyright__	= "Ouroboros Coding Inc."
 __version__		= "1.0.0"
 __maintainer__	= "Chris Nasr"
 __email__		= "chris@ouroboroscoding.com"
@@ -38,8 +38,8 @@ if os.path.isfile(sConfOverride):
 	Conf.load_merge(sConfOverride)
 
 # Add the global prepend and primary host to mysql
-Record_Base.dbPrepend(Conf.get(("mysql", "prepend"), ''))
-Record_MySQL.addHost('primary', Conf.get(("mysql", "hosts", "primary")))
+Record_Base.db_prepend(Conf.get(("mysql", "prepend"), ''))
+Record_MySQL.add_host('primary', Conf.get(("mysql", "hosts", "primary")))
 
 # Register all services
 Services.register(

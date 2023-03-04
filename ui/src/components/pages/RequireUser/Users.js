@@ -8,34 +8,42 @@
  * @created 2021-04-15
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { Tree } from '@ouroboros/define';
+import { Form, Results } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+import { afindi, merge } from '@ouroboros/tools';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import Tree from 'format-oc/Tree';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import IconButton from '@material-ui/core/IconButton';
-import Paper from '@material-ui/core/Paper';
-import Switch from '@material-ui/core/Switch';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Switch from '@mui/material/Switch';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
-// Shared components
-import { Form, Results } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { afindi, clone } from 'shared/generic/tools';
+// Locale modules
+import { bridge } from 'rest_to_define.js';
 
 // Load the user definition
 import UserDef from 'definitions/user';
 
 // Create the Tree using the definition
-const UserTree = new Tree(clone(UserDef));
+const UserTree = new Tree(UserDef, {
+	name: { __ui__: { title: 'Full Name' } }
+});
+
+// Constants
+const GRID_SIZES = {
+	__default__: {xs: 12, md: 6, xl: 3},
+	verified: {xs: 12}
+}
 
 /**
  * Client
@@ -120,13 +128,13 @@ function Clients(props) {
 	function fetch() {
 
 		// Make the request to the server
-		Rest.read('primary', 'user/access', {
+		rest.read('primary', 'user/access', {
 			_id: props.value._id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error))
+				events.get('error').trigger(rest.errorMessage(res.error))
 			}
 
 			// If there's data
@@ -140,14 +148,14 @@ function Clients(props) {
 	function add(client) {
 
 		// Call the server
-		Rest.create('primary', 'user/access', {
+		rest.create('primary', 'user/access', {
 			user: props.value._id,
 			client: client
 		}).done(res => {
 
 			// If we got an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If we got data
@@ -166,14 +174,14 @@ function Clients(props) {
 	function remove(client) {
 
 		// Call the server
-		Rest.delete('primary', 'user/access', {
+		rest.delete('primary', 'user/access', {
 			user: props.value._id,
 			client: client
 		}).done(res => {
 
 			// If we got an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If we got data
@@ -242,13 +250,24 @@ export default function Users(props) {
 		update: false,
 		delete: false
 	})
-	let [users, usersSet] = useState(false);
+	let [records, recordsSet] = useState(false);
 
 	// Load effect
 	useEffect(() => {
 
 		// Fetch the users
-		usersFetch();
+		rest.read('primary', 'users').done(res => {
+
+			// If we got an error
+			if(res.error && !res._handled) {
+				events.get('error').trigger(rest.errorMessage(res.error));
+			}
+
+			// If we got data
+			if(res.data) {
+				recordsSet(res.data);
+			}
+		});
 
 		// Set Rights
 		rightsSet({
@@ -259,59 +278,84 @@ export default function Users(props) {
 
 	}, [props.user]);
 
-	// Called when a new user is created
-	function userCreated(user) {
+	// Called when the create form is submitted
+	function createSubmit(user) {
 
-		// Clone the current users
-		let lUsers = clone(users);
+		// Add the url to the user
+		user.url = 'https://' + window.location.host + '/setup/{key}';
 
-		// Add the user to the top
-		lUsers.unshift(user);
+		// Send the user to the server
+		return bridge('create', 'primary', 'user', user, data => {
 
-		// Set the new users
-		usersSet(lUsers);
+			// If we got data
+			if(data) {
 
-		// Hide the form
-		inviteSet(false);
+				// Success
+				events.get('success').trigger('User created');
+
+				// Hide the form
+				inviteSet(false);
+
+				// Add the user to the front of the records
+				let lRecords = clone(records);
+				lRecords.unshift(user);
+				recordsSet(lRecords);
+			}
+		}, {
+			'1101': [['email', 'Already in use']]
+		}
+);
 	}
 
-	// Fetch the current users
-	function usersFetch() {
+	// Called when the delete icon is clicked
+	function deleteClick(key) {
 
-		// Make the request to the server
-		Rest.read('primary', 'users').done(res => {
+		// Delete the user from the server
+		rest.delete('primary', 'user', {
+			_id: key
+		}).done(res => {
 
-			// If we got an error
+			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If we got data
 			if(res.data) {
-				usersSet(res.data);
+
+				// Remove the user from the records
+				let i = afindi(records, '_id', key);
+				if(i > -1) {
+					let lRecords = clone(records);
+					lRecords[i]._archived = 1;
+					recordsSet(lRecords);
+				}
 			}
 		});
 	}
 
-	// Called when a user has been archived
-	function userArchived(user) {
-		let i = afindi(users, '_id', user._id);
-		if(i > -1) {
-			let lUsers = clone(users);
-			lUsers[i]._archived = 1;
-			usersSet(lUsers);
-		}
-	}
+	// Called when the update form is submitted
+	function updateSubmit(user, key) {
 
-	// Called when a user has been updated
-	function userUpdated(user) {
-		let i = afindi(users, '_id', user._id);
-		if(i > -1) {
-			let lUsers = clone(users);
-			lUsers[i] = user;
-			usersSet(lUsers);
-		}
-	};
+		// Add the ID to the user
+		user._id = key;
+
+		// Send the user update to the server
+		return bridge('update', 'primary', 'user', user, data => {
+
+			// If we got data
+			if(data) {
+
+				// Update the user in the records
+				let i = afindi(records, '_id', key);
+				if(i > -1) {
+					let lRecords = clone(records);
+					merge(lRecords[i], user);
+					recordsSet(lRecords);
+				}
+			}
+		})
+	}
 
 	// Render
 	return (
@@ -331,17 +375,9 @@ export default function Users(props) {
 			{invite &&
 				<Paper>
 					<Form
-						beforeSubmit={data => {
-							data.url = 'https://' + window.location.host + '/setup/{key}';
-							return data;
-						}}
-						cancel={ev => inviteSet(false)}
-						errors={{
-							"2004": "E-mail address already in use"
-						}}
-						noun="user"
-						service="primary"
-						success={userCreated}
+						gridSizes={GRID_SIZES}
+						onCancel={ev => inviteSet(false)}
+						onSubmit={createSubmit}
 						title="Invite User"
 						tree={UserTree}
 						type="create"
@@ -351,11 +387,11 @@ export default function Users(props) {
 					/>
 				</Paper>
 			}
-			{users === false ?
+			{records === false ?
 				<Typography>Loading...</Typography>
 			:
 				<React.Fragment>
-					{users.length === 0 ?
+					{records.length === 0 ?
 						<Typography>No users found</Typography>
 					:
 						<Results
@@ -365,13 +401,12 @@ export default function Users(props) {
 								component: Clients,
 								props: {clients: props.clients, rights: rights}
 							}]}
-							data={users}
-							noun="user"
+							data={records}
+							gridSizes={GRID_SIZES}
+							onDelete={props.user.type === 'admin' ? deleteClick : false}
+							onUpdate={['admin', 'manager'].includes(props.user.type) ? updateSubmit : false}
 							orderBy="email"
-							remove={props.user.type === 'admin' ? userArchived : false}
-							service="primary"
 							tree={UserTree}
-							update={['admin', 'manager'].includes(props.user.type) ? userUpdated : false}
 						/>
 					}
 				</React.Fragment>

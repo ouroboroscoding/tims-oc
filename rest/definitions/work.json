@@ -1,5 +1,5 @@
 {
-	"__mysql__": {
+	"__sql__": {
 		"auto_primary": "UUID()",
 		"create": [	"_created", "_updated", "project", "user", "start", "end",
 					"description"],

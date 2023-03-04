@@ -8,35 +8,30 @@
  * @created 2022-05-01
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import { Tree } from '@ouroboros/define';
+import { Results } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import Tree from 'format-oc/Tree';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Typography from '@material-ui/core/Typography';
-
-// Shared components
-import { Results } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { clone } from 'shared/generic/tools';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 // Load the client and invoice definitions
 import InvoiceDef from 'definitions/invoice';
-let InvoiceClone = clone(InvoiceDef)
-InvoiceClone.__react__ = {
-	results: ['_created', 'identifier', 'start', 'end', 'total']
-};
 
 // Create the Tree using the definition
-const InvoiceTree = new Tree(InvoiceClone);
+const InvoiceTree = new Tree(InvoiceDef, {
+	__ui__: {
+		results: ['_created', 'identifier', 'start', 'end', 'total']
+	}
+});
 
 /**
  * Invoices
@@ -54,19 +49,19 @@ export default function Invoices(props) {
 	let [results, resultsSet] = useState(false);
 
 	// Hooks
-	let history = useHistory();
+	let navigate = useNavigate();
 
 	// Load effect
 	useEffect(() => {
 
 		// Make the request to the server
-		Rest.read('primary', 'invoices', {
+		rest.read('primary', 'invoices', {
 			client: props.value._id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error))
+				events.get('error').trigger(rest.errorMessage(res.error))
 			}
 
 			// If there's data
@@ -80,16 +75,16 @@ export default function Invoices(props) {
 	function invoicePdf(invoice) {
 
 		// Tell the server to generate and return the link
-		Rest.read('primary', 'invoice/pdf', {
+		rest.read('primary', 'invoice/pdf', {
 			_id: invoice._id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2003) {
-					Events.trigger('error', 'No such invoice');
+				if(res.error.code === 1100) {
+					events.get('error').trigger('No such invoice');
 				} else {
-					Events.trigger('error', Rest.errorMessage(res.error));
+					events.get('error').trigger(rest.errorMessage(res.error));
 				}
 			}
 
@@ -102,7 +97,7 @@ export default function Invoices(props) {
 
 	// Called to load invoice
 	function invoiceView(invoice) {
-		history.push('/invoice/' + invoice._id);
+		navigate('/invoice/' + invoice._id);
 	}
 
 	// Render
@@ -129,12 +124,8 @@ export default function Invoices(props) {
 								callback: invoicePdf
 							}]}
 							data={results}
-							noun="invoice"
 							orderBy="_created"
-							remove={false}
-							service="primary"
 							tree={InvoiceTree}
-							update={false}
 						/>
 					}
 				</React.Fragment>

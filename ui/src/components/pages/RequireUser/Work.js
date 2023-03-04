@@ -8,44 +8,40 @@
  * @created 2021-04-24
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { Tree } from '@ouroboros/define';
+import { Results } from '@ouroboros/define-mui';
+import { increment, iso, elapsed } from '@ouroboros/dates';
+import events from '@ouroboros/events';
+import { afindi, merge } from '@ouroboros/tools';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
-import Tree from 'format-oc/Tree';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
-// Format Components
-import { Results } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import { increment, iso, elapsed } from 'shared/generic/dates';
-import Events from 'shared/generic/events';
-import { afindi, clone } from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Definitions
 import WorkDef from 'definitions/work';
 
-// Clone the definition and add the extra fields
-let WorkFull = clone(WorkDef);
-WorkFull.__react__ = {
-	update: ['start', 'end', 'description']
-}
-WorkFull.clientName = {__type__: 'string', __react__: {title: 'Client'}};
-WorkFull.projectName = {__type__: 'string', __react__: {title: 'Project'}};
-WorkFull.taskName = {__type__: 'string', __react__: {title: 'Task'}};
-WorkFull.userName = {__type__: 'string', __react__: {title: 'Employee'}};
-WorkFull.elapsed = {__type__: 'uint', __react__: {type: 'time_elapsed'}};
-
 // Create the tree
-const WorkTree = new Tree(WorkFull);
+const WorkTree = new Tree(WorkDef, {
+	__ui__: { update: ['start', 'end', 'description'] },
+	clientName: {__type__: 'string', __ui__: { title: 'Client' } },
+	projectName: {__type__: 'string', __ui__: { title: 'Project' } },
+	taskName: {__type__: 'string', __ui__: { title: 'Task' } },
+	userName: {__type__: 'string', __ui__: { title: 'Employee' } },
+	elapsed: {__type__: 'uint', __ui__: { type: 'time_elapsed' } }
+});
 
 /**
  * Work
@@ -64,7 +60,7 @@ export default function Work(props) {
 	let [fields, fieldsSet] = useState([])
 	let [noun, nounSet] = useState(null);
 	let [range, rangeSet] = useState(null);
-	let [results, resultsSet] = useState(false);
+	let [records, recordsSet] = useState(false);
 
 	// Refs
 	let refStart = useRef();
@@ -118,31 +114,23 @@ export default function Work(props) {
 	useEffect(() => {
 		// If we have a noun and a range
 		if(noun && range) {
-			fetch();
+			rest.read('primary', noun, {
+				start: range[0],
+				end: range[1]
+			}).done(res => {
+
+				// If there's an error
+				if(res.error && !res._handled) {
+					events.get('error').trigger(rest.errorMessage(res.error));
+				}
+
+				// If we got data
+				if(res.data) {
+					recordsSet(res.data);
+				}
+			});
 		}
-	// eslint-disable-next-line
 	}, [noun, range]);
-
-	// Fetch the work records
-	function fetch() {
-
-		// Make the request to the server
-		Rest.read('primary', noun, {
-			start: range[0],
-			end: range[1]
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
-			}
-
-			// If we got data
-			if(res.data) {
-				resultsSet(res.data);
-			}
-		});
-	}
 
 	// Converts the start and end dates into timestamps
 	function rangeUpdate() {
@@ -152,36 +140,64 @@ export default function Work(props) {
 		]);
 	}
 
-	// Called when a record is removed
-	function removed(_id) {
+	// Called when the delete icon is clicked
+	function deleteClick(key) {
 
-		// Find the record
-		let i = afindi(results, '_id', _id);
+		// Delete it from the server
+		rest.delete('primary', 'work', {
+			__id: key
+		}).done(res => {
 
-		// If it's found, remove it from the list of results
-		if(i > -1) {
-			resultsSet(value => {
-				value.splice(i, 1);
-				return clone(value);
-			});
-		}
+			// If there's an error
+			if(res.error && !res._handled) {
+				events.get('error').trigger(rest.errorMessage(res.error));
+			}
+
+			// If it was deleted
+			if(res.data) {
+
+				// Success
+				events.get('success').trigger('Work deleted');
+
+				// Remove it from the records
+				let i = afindi(records, '_id', key);
+				if(i > -1) {
+					recordsSet(value => {
+						value.splice(i, 1);
+						return clone(value);
+					});
+				}
+			}
+		});
 	}
 
-	// Called when a record is updated
-	function updated(record) {
+	// Called when the update form is submitted
+	function updateSubmit(work, key) {
 
-		// Find the record
-		let i = afindi(results, '_id', record._id);
+		// Add the ID to the work
+		work._id = key;
 
-		// If it's found, update it in the list of results
-		if(i > -1) {
-			resultsSet(value => {
-				record.start = parseInt(record.start);
-				record.end = parseInt(record.end);
-				results[i] = record;
-				return clone(value);
-			});
-		}
+		// Send the update to the server
+		return bridge('update', 'primary', 'work', work, data => {
+			if(data) {
+
+				// Success
+				events.get('success').trigger('Work updated');
+
+				// Find the record
+				let i = afindi(records, '_id', work._id);
+
+				// If it's found, update it in the list of records
+				if(i > -1) {
+					recordsSet(value => {
+						const lRecords = clone(records);
+						merge(lRecords[i], work);
+						lRecords[i].elapsed = lRecords[i].end - lRecords[i].start;
+						return lRecords;
+					});
+				}
+			}
+		});
 	}
 
 	// Generate today date
@@ -228,24 +244,22 @@ export default function Work(props) {
 				>Fetch</Button>
 			</Box>
 			<br />
-			{results &&
-				<Box className="results">
-					{results.length === 0 ?
-						<Typography>No results</Typography>
+			{records &&
+				<Box className="records">
+					{records.length === 0 ?
+						<Typography>No records</Typography>
 					:
 						<Results
 							custom={{
 								elapsed: row => elapsed(row.elapsed, {show_zero_minutes: true})
 							}}
-							data={results}
+							data={records}
 							fields={fields}
-							noun="work"
+							onDelete={remove ? deleteClick : false}
+							onUpdate={remove ? updateSubmit : false}
 							orderBy="start"
-							remove={remove ? removed : false}
-							service="primary"
 							totals={true}
 							tree={WorkTree}
-							update={remove ? updated : false}
 						/>
 					}
 				</Box>
