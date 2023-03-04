@@ -8,10 +8,17 @@
  * @created 2022-05-01
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { timestamp } from '@ouroboros/dates';
+import { Tree } from '@ouroboros/define';
+import { Form, Results } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import Tree from 'format-oc/Tree';
 
 // Material UI
 import Box from '@mui/material/Box';
@@ -20,21 +27,14 @@ import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-// Shared components
-import { Form, Results } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { clone } from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Load the client and payment definitions
 import PaymentDef from 'definitions/payment';
 
 // Create the Tree using the definition
-const PaymentTree = new Tree(clone(PaymentDef));
+const PaymentTree = new Tree(PaymentDef);
 
 /**
  * Payments
@@ -56,13 +56,13 @@ export default function Payments(props) {
 	useEffect(() => {
 
 		// Make the request to the server
-		Rest.read('primary', 'payments', {
+		rest.read('primary', 'payments', {
 			client: props.value._id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error))
+				events.get('error').trigger(rest.errorMessage(res.error))
 			}
 
 			// If there's data
@@ -72,20 +72,31 @@ export default function Payments(props) {
 		});
 	}, [props.value._id]);
 
-	// Called when a new payment is created
-	function paymentCreated(payment) {
+	// Called when the create form is submitted
+	function createSubmit(payment) {
 
-		// Clone the current payments
-		let lResults = clone(results);
+		// Add the client to the payment
+		payment.client = props.value._id;
 
-		// Add the payment to the top
-		lResults.unshift(payment);
+		// Create the payment in the server
+		return bridge('create', 'primary', 'payment', payment, data => {
+			if(data) {
 
-		// Set the new payments
-		resultsSet(lResults);
+				// Success
+				events.get('success').trigger('Payment added');
 
-		// Hide the form
-		createSet(false);
+				// Hide the form
+				createSet(false);
+
+				// Clone the current payments, add the payment to the top, and set the
+				//	new payments
+				const lResults = clone(results);
+				payment._id = data;
+				payment._created = timestamp();
+				lResults.unshift(payment);
+				resultsSet(lResults);
+			}
+		});
 	}
 
 	// Render
@@ -104,14 +115,9 @@ export default function Payments(props) {
 			{create &&
 				<Paper>
 					<Form
-						beforeSubmit={data => {
-							data.client = props.value._id;
-							return data;
-						}}
-						cancel={ev => createSet(false)}
-						noun="payment"
-						service="primary"
-						success={paymentCreated}
+						gridSizes={{__default__: {xs: 12, md: 6}}}
+						onCancel={ev => createSet(false)}
+						onSubmit={createSubmit}
 						title="Add Payment"
 						tree={PaymentTree}
 						type="create"
@@ -127,12 +133,8 @@ export default function Payments(props) {
 					:
 						<Results
 							data={results}
-							noun="payment"
 							orderBy="_created"
-							remove={false}
-							service="primary"
 							tree={PaymentTree}
-							update={false}
 						/>
 					}
 				</React.Fragment>

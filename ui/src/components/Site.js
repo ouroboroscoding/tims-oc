@@ -8,6 +8,10 @@
  * @created 2021-04-02
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import React, { useEffect, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
@@ -16,14 +20,7 @@ import { SnackbarProvider } from 'notistack';
 // Material UI
 import { createTheme, ThemeProvider }  from '@mui/material/styles'
 
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-
 // Shared hooks
-import { useEvent } from 'shared/hooks/event';
 import { useResize } from 'shared/hooks/resize';
 
 // Site components
@@ -86,23 +83,30 @@ export default function Site(props) {
 
 	// load effect
 	useEffect(() => {
-		if(Rest.session()) {
-			Rest.read('primary', 'user').done(res => {
-				Events.trigger('signedIn', res.data);
+
+		// Subscribe to signed in/out events
+		const oSignedIn = events.get('signedIn').subscribe(userSet);
+		const oSignedOut = events.get('signedOut').subscribe(() => {
+			navigate('/');
+			userSet(false)
+		});
+
+		// If we have a session
+		if(rest.session()) {
+			rest.read('primary', 'user').done(res => {
+				events.get('signedIn').trigger(res.data);
 			});
 		} else {
 			userSet(false);
 		}
-	}, []);
 
-	// Sign In/Out hooks
-	useEvent('signedIn', user => {
-		userSet(user);
-	});
-	useEvent('signedOut', () => {
-		navigate('/');
-		userSet(false);
-	});
+		// Unmount
+		return () => {
+			// Unsubscribe from signed in/out events
+			oSignedIn.unsubscribe();
+			oSignedOut.unsubscribe();
+		}
+	}, [navigate]);
 
 	// Resize hooks
 	useResize(() => mobileSet(document.documentElement.clientWidth < 600 ? true : false));

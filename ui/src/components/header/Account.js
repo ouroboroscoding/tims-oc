@@ -8,9 +8,14 @@
  * @created 2021-04-11
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import { Tree } from '@ouroboros/define'
+import { Form } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
-import Tree from 'format-oc/Tree'
 import React, { useRef } from 'react';
 
 // Material UI
@@ -19,27 +24,18 @@ import DialogContent from '@mui/material/DialogContent';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
 
-// Format Components
-import { Form } from 'shared/components/Format';
-
-// Shared communications modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { clone } from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Definitions
 import PassDef from 'definitions/password';
 import UserDef from 'definitions/user';
 
 // Generate the Trees
-const PassTree = new Tree(clone(PassDef));
-const UserTree = new Tree(clone(UserDef));
-
-// Override the react values
-UserTree.special('react', {
-	update: ['email', 'name']
+const PassTree = new Tree(PassDef);
+const UserTree = new Tree(UserDef, {
+	__ui__: { update: ['email', 'name'] },
+	name: { __ui__: { title: 'Your Name' } }
 });
 
 /**
@@ -57,27 +53,39 @@ export default function Account(props) {
 	// Refs
 	let passForm = useRef();
 
-	// Password check
-	function passwordCheck(values) {
-		if(values.new_passwd !== values.confirm_passwd) {
-			Events.trigger('error', 'Passwords don\'t match');
-			return false;
+	// Called when the password form is submitted
+	function passwordSubmit(passwd, key) {
+
+		// If the passwords don't match
+		if(passwd.new_passwd !== passwd.confirm_passwd) {
+			return [['confirm_passwd', 'Passwords don\'t match']];
 		}
-		delete values._id;
-		return values;
+
+		// Submit the changes
+		return bridge('update', 'primary', 'user/passwd', passwd, data => {
+			if(data) {
+				passForm.current.reset();
+				events.get('success').trigger('Password updated!');
+			}
+		}, {
+			2102: [['new_passd', 'Not strong enough']]
+		});
 	}
 
-	// Password success
-	function passwordSuccess() {
-		passForm.current.value = {
-			passwd: '', new_passwd: '', confirm_passwd: ''
-		};
-	}
+	// Called when the user form is submitted
+	function userSubmit(user, key) {
 
-	// Update success
-	function updateSuccess(user) {
-		Rest.read('primary', 'user').done(res => {
-			Events.trigger('signedIn', res.data);
+		// Add the URL to the user data
+		user.url = 'https://' + window.location.host + '/verify/{locale}/{key}';
+
+		// Submit the changes
+		return bridge('update', 'primary', 'user', user, data => {
+			if(data) {
+				rest.read('primary', 'user').done(res => {
+					events.get('signedIn').trigger(res.data);
+				});
+				events.get('success').trigger('Account details updated');
+			}
 		});
 	}
 
@@ -92,13 +100,8 @@ export default function Account(props) {
 			<DialogTitle id="confirmation-dialog-title">Account Details</DialogTitle>
 			<DialogContent dividers>
 				<Form
-					beforeSubmit={values => {
-						values.url = 'https://' + window.location.host + '/verify/{locale}/{key}';
-						return values;
-					}}
-					noun="user"
-					service="primary"
-					success={updateSuccess}
+					gridSizes={{__default__: {xs:12, md: 6}}}
+					onSubmit={userSubmit}
 					tree={UserTree}
 					type="update"
 					value={props.user}
@@ -107,12 +110,12 @@ export default function Account(props) {
 				<Divider />
 				<br />
 				<Form
-					beforeSubmit={passwordCheck}
-					errors={{2102: "Password not strong enough"}}
-					noun="user/passwd"
+					gridSizes={{
+						__default__: {xs:12, md: 6, },
+						passwd: {xs: 12}
+					}}
+					onSubmit={passwordSubmit}
 					ref={passForm}
-					success={passwordSuccess}
-					service="primary"
 					tree={PassTree}
 					type="update"
 				/>

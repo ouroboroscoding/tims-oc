@@ -8,10 +8,18 @@
  * @created 2021-04-25
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { increment, iso, timestamp } from '@ouroboros/dates';
+import { Tree } from '@ouroboros/define';
+import { Form, Results, Options } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+import { afindo } from '@ouroboros/tools';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
-import Tree from 'format-oc/Tree';
 
 // Material UI
 import Box from '@mui/material/Box';
@@ -22,33 +30,37 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-// Format Components
-import { Form, Results } from 'shared/components/Format';
-import { SelectData } from 'shared/components/Format/Shared';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import { increment, iso } from 'shared/generic/dates';
-import Events from 'shared/generic/events';
-import { clone } from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Load the payment definition
 import PaymentDef from 'definitions/payment';
-let PaymentClone = clone(PaymentDef)
-PaymentClone.__react__ = {
-	create: ['client', 'transaction', 'amount'],
-	results: ['_created', 'clientName', 'transaction', 'amount']
-};
-PaymentClone.client.__react__ = {
-	options: new SelectData('primary', 'clients', '_id', 'name'),
-	type: 'select'
-}
-PaymentClone.clientName = {__type__: 'string', __react__: {title: 'Client'}}
+
+// Create the dynamic clients options
+const ClientOptions = new Options.Fetch(() => {
+	return new Promise(resolve => {
+		rest.read('primary', 'clients').done(res => {
+			if(res.data) {
+				resolve(res.data);
+			}
+		});
+	});
+});
 
 // Create the Tree using the definition
-const PaymentTree = new Tree(PaymentClone);
+const PaymentTree = new Tree(PaymentDef, {
+	__ui__: {
+		create: ['client', 'transaction', 'amount'],
+		results: ['_created', 'clientName', 'transaction', 'amount']
+	},
+	client: {
+		__ui__: {
+			options: ClientOptions,
+			type: 'select'
+		}
+	},
+	clientName: { __type__: 'string', __ui__: { title: 'Client' } }
+});
 
 /**
  * Payments
@@ -92,47 +104,63 @@ export default function Payments(props) {
 			oEnd.getTime() / 1000
 		]);
 
-	}, [props.user])
+	}, [props.user]);
 
 	// Range effect
 	useEffect(() => {
+
 		// If we have a range
 		if(range) {
-			fetch();
+
+			// Make the request to the server
+			rest.read('primary', 'payments', {
+				range: range
+			}).done(res => {
+
+				// If there's an error
+				if(res.error && !res._handled) {
+					events.get('error').trigger(rest.errorMessage(res.error));
+				}
+
+				// If we got data
+				if(res.data) {
+					paymentsSet(res.data);
+				}
+			});
 		}
-	// eslint-disable-next-line
 	}, [range]);
 
-	// Fetch the payments
-	function fetch() {
+	// Called when the payment form is submitted
+	function paymentSubmit(payment) {
 
-		// Make the request to the server
-		Rest.read('primary', 'payments', {
-			range: range
-		}).done(res => {
+		// Send the payment to the server
+		return bridge('create', 'primary', 'payment', payment, data => {
+			if(data) {
 
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				// Success
+				events.get('success').trigger('Payment added');
+
+				// Hide the form
+				createSet(false);
+
+				// Add the ID and created
+				payment._id = data;
+				payment._created = timestamp();
+
+				// Find the client name
+				const lClient = afindo(ClientOptions.get(), 0, payment.client);
+				if(lClient) {
+					payment.clientName = lClient[1];
+				}
+
+				// Add it to the top of the results
+				let lPayments = clone(payments);
+				lPayments.unshift(payment);
+				paymentsSet(lPayments);
 			}
-
-			// If we got data
-			if(res.data) {
-				paymentsSet(res.data);
-			}
+		}, {
+			'1101': [['transaction', 'Already added']]
 		});
-	}
-
-	// Called when a new payment is created
-	function paymentCreated(payment) {
-
-		// Hide the form
-		createSet(false);
-
-		// Add it to the top of the results
-		let lPayments = clone(payments);
-		lPayments.unshift(payment);
-		paymentsSet(lPayments);
 	}
 
 	// Converts the start and end dates into timestamps
@@ -199,10 +227,9 @@ export default function Payments(props) {
 			{create &&
 				<Paper>
 					<Form
-						cancel={ev => createSet(false)}
-						noun="payment"
-						service="primary"
-						success={paymentCreated}
+						gridSizes={{__default__: {xs: 12, md: 4}}}
+						onCancel={ev => createSet(false)}
+						onSubmit={paymentSubmit}
 						title="Add Payment"
 						tree={PaymentTree}
 						type="create"
@@ -222,12 +249,8 @@ export default function Payments(props) {
 								amount: value => '$' + value.amount
 							}}
 							data={payments}
-							noun=""
 							orderBy="_created"
-							remove={false}
-							service=""
 							tree={PaymentTree}
-							update={false}
 						/>
 					}
 				</React.Fragment>

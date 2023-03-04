@@ -8,6 +8,10 @@
  * @created 2021-04-13
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import React, { useRef, useState } from 'react';
 
@@ -20,12 +24,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
 
 /**
  * Sign In
@@ -58,9 +56,9 @@ export default function Signin(props) {
 	function signin() {
 
 		// Call the server
-		Rest.create('primary', 'signin', {
-			"email": emailRef.current.value,
-			"passwd": passRef.current.value
+		rest.create('primary', 'signin', {
+			email: emailRef.current.value,
+			passwd: passRef.current.value
 		}, {session: false}).done(res => {
 
 			// If there's an error
@@ -75,10 +73,10 @@ export default function Signin(props) {
 						errorsSet(errors);
 						break;
 					case 2100:
-						Events.trigger('error', 'E-mail or password invalid');
+						events.get('error').trigger('E-mail or password invalid');
 						break;
 					default:
-						Events.trigger('error', Rest.errorMessage(res.error));
+						events.get('error').trigger(rest.errorMessage(res.error));
 						break;
 				}
 			}
@@ -87,11 +85,11 @@ export default function Signin(props) {
 			if(res.data) {
 
 				// Set the session
-				Rest.session(res.data);
+				rest.session(res.data);
 
 				// Fetch the user
-				Rest.read('primary', 'user').done(res => {
-					Events.trigger('signedIn', res.data);
+				rest.read('primary', 'user').done(res => {
+					events.get('signedIn').trigger(res.data);
 				});
 			}
 		});
@@ -113,6 +111,7 @@ export default function Signin(props) {
 					label="E-Mail"
 					onKeyPress={keyPressed}
 					type="text"
+					variant="standard"
 				/>
 				<TextField
 					error={errors.passwd ? true : false}
@@ -121,6 +120,7 @@ export default function Signin(props) {
 					label="Password"
 					onKeyPress={keyPressed}
 					type="password"
+					variant="standard"
 				/>
 			</DialogContent>
 			<DialogActions>

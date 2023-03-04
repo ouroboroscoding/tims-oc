@@ -8,6 +8,10 @@
  * @created 2021-04-11
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
@@ -24,11 +28,8 @@ import Account from './Account';
 import Loader from './Loader';
 import Menu from './Menu';
 
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
+// Local modules
+import { useWidth } from 'shared/hooks/mui';
 
 /**
  * Header
@@ -39,8 +40,11 @@ import Events from 'shared/generic/events';
 export default function Header(props) {
 
 	// State
-	let [account, accountSet] = useState(false);
-	let [menu, menuSet] = useState(false);
+	const [account, accountSet] = useState(false);
+	const [menu, menuSet] = useState(false);
+
+	// Hooks
+	const width = useWidth();
 
 	// Hide menu
 	function menuHide() {
@@ -51,24 +55,24 @@ export default function Header(props) {
 	function signout(ev) {
 
 		// Call the signout
-		Rest.create('primary', 'signout', {}).done(res => {
+		rest.create('primary', 'signout').done(res => {
 
 			// If there's an error or warning
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 			if(res.warning) {
-				Events.trigger('warning', JSON.stringify(res.warning));
+				events.get('warning').trigger(JSON.stringify(res.warning));
 			}
 
 			// If there's data
 			if(res.data) {
 
 				// Reset the session
-				Rest.session(null);
+				rest.session(null);
 
 				// Trigger the signedOut event
-				Events.trigger('signedOut');
+				events.get('signedOut').trigger();
 			}
 		});
 	}
@@ -87,6 +91,9 @@ export default function Header(props) {
 						<Link to="/" onClick={menuHide}>{props.mobile ? process.env.REACT_APP_SITENAME_SHORT : process.env.REACT_APP_SITENAME}</Link>
 					</Typography>
 				</Box>
+				{process.env.NODE_ENV === 'development' &&
+					<Box className="flexStatic"><Typography>{width}</Typography></Box>
+				}
 				<Box id="loader" className="flexGrow">
 					<Loader />
 				</Box>

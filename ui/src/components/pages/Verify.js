@@ -8,6 +8,10 @@
  * @created 2021-03-07
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
@@ -16,12 +20,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 // Material UI
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
 
 /**
  * Verify
@@ -53,7 +51,7 @@ export default function Verify(props) {
 
 		// If we didn't get enough info
 		if(lLocation.length < 2) {
-			Events.trigger('error', 'Invalid URL');
+			events.get('error').trigger('Invalid URL');
 			navigate('/');
 			return;
 		}
@@ -65,13 +63,13 @@ export default function Verify(props) {
 		});
 
 		// Send it to the service
-		Rest.update('primary', 'account/verify', {
+		rest.update('primary', 'account/verify', {
 			key: lLocation[2]
 		}, {session: false}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2003) {
+				if(res.error.code === 1100) {
 					msgSet({
 						type: 'error',
 						content: 'Can not verify, key is invalid. Please make sure you copied the URL correctly. Contact support if you continue to have issues.'

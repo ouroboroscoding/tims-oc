@@ -8,6 +8,10 @@
  * @created 2022-05-01
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
@@ -16,12 +20,6 @@ import React, { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
 
 /**
  * Owe
@@ -43,11 +41,11 @@ export default function Owe(props) {
 	useEffect(() => {
 
 		// Request from the server how much they owe
-		Rest.read('primary', 'client/owes').done(res => {
+		rest.read('primary', 'client/owes').done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If there's data

@@ -8,6 +8,10 @@
  * @created 2021-04-16
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
@@ -29,12 +33,6 @@ import Payments from './Payments';
 import Tasks from './Tasks';
 import Work from './Work';
 import Users from './Users';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
 
 /**
  * Require User
@@ -64,11 +62,11 @@ export default function RequireUser(props) {
 	function clientsFetch() {
 
 		// Make the request to the server
-		Rest.read('primary', 'account/clients').done(res => {
+		rest.read('primary', 'account/clients').done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If we got data

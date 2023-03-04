@@ -8,8 +8,13 @@
  * @created 2021-04-16
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import { Node } from '@ouroboros/define';
+import { DefineNode } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+
 // NPM modules
-import Node from 'format-oc/Node';
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -20,28 +25,17 @@ import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 
-// Shared components
-import { Node as NodeComponent } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { clone } from 'shared/generic/tools';
-
-
 // Get the user definition
 import UserDef from 'definitions/user';
 
-// Make a copy of the passwd node
-let ConfirmDef = clone(UserDef['passwd']);
-ConfirmDef.__react__.title = 'Confirm Password';
-
 // Create the name and password nodes
-const ConfirmNode = new Node(ConfirmDef);
-const NameNode = new Node(clone(UserDef['name']));
-const PasswdNode = new Node(clone(UserDef['passwd']));
+const ConfirmNode = new Node(UserDef['passwd'], {
+	__ui__: { title: 'Confirm Password' }
+});
+const NameNode = new Node(UserDef['name'], {
+	__ui__: { title: 'Your Name' }
+});
+const PasswdNode = new Node(UserDef['passwd']);
 
 /**
  * Setup
@@ -80,20 +74,20 @@ export default function Setup(props) {
 		}
 
 		// Send it to the service
-		Rest.read('primary', 'account/setup', {
+		rest.read('primary', 'account/setup', {
 			key: lLocation[1]
 		}, {session: false}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2003) {
+				if(res.error.code === 1100) {
 					if(res.error.msg === 'key') {
-						Events.trigger('error', 'Invalid key')
+						events.get('error').trigger('Invalid key')
 					} else if(res.error.msg === 'user') {
-						Events.trigger('error', 'User no longer exists')
+						events.get('error').trigger('User no longer exists')
 					}
 				} else {
-					Events.trigger('error', Rest.errorMessage(res.error));
+					events.get('error').trigger(rest.errorMessage(res.error));
 				}
 
 				// Redirect in 5 seconds
@@ -130,7 +124,7 @@ export default function Setup(props) {
 		}
 
 		// Send the info to the server
-		Rest.update('primary', 'account/setup', {
+		rest.update('primary', 'account/setup', {
 			key: user.key,
 			name: nameRef.current.value.trim(),
 			passwd: passwdRef.current.value
@@ -146,8 +140,8 @@ export default function Setup(props) {
 						passwdRef.current.error(res.error.msg['passwd'])
 					}
 				}
-				else if(res.error.code === 2003) {
-					Events.trigger('error', 'Setup key invalid');
+				else if(res.error.code === 1100) {
+					events.get('error').trigger('Setup key invalid');
 				}
 				else if(res.error.code === 2102) {
 					passwdRef.current.error('Password not strong enough');
@@ -158,11 +152,11 @@ export default function Setup(props) {
 			if(res.data) {
 
 				// Set the session
-				Rest.session(res.data);
+				rest.session(res.data);
 
 				// Fetch the user
-				Rest.read('primary', 'user').done(res => {
-					Events.trigger('signedIn', res.data);
+				rest.read('primary', 'user').done(res => {
+					events.get('signedIn').trigger(res.data);
 					navigate('/');
 				});
 			}
@@ -172,13 +166,11 @@ export default function Setup(props) {
 	// Render
 	return (
 		<Box id="setup" className="singlePage">
-			{user === false &&
+			{(user === false &&
 				<Typography>Loading...</Typography>
-			}
-			{user === null &&
+			) || (user === null &&
 				<Typography className="error">Invalid setup link.</Typography>
-			}
-			{user &&
+			) || (user &&
 				<Box className="container sm">
 					<Paper>
 						<Box className="pageHeader">
@@ -191,7 +183,7 @@ export default function Setup(props) {
 						</Typography>
 						<Box className="form">
 							<Box className="field">
-								<NodeComponent
+								<DefineNode
 									ref={nameRef}
 									name="name"
 									node={NameNode}
@@ -201,7 +193,7 @@ export default function Setup(props) {
 								/>
 							</Box>
 							<Box className="field">
-								<NodeComponent
+								<DefineNode
 									ref={passwdRef}
 									name="passwd"
 									node={PasswdNode}
@@ -210,7 +202,7 @@ export default function Setup(props) {
 								/>
 							</Box>
 							<Box className="field">
-								<NodeComponent
+								<DefineNode
 									ref={confirmRef}
 									name="confirm"
 									node={ConfirmNode}
@@ -219,12 +211,12 @@ export default function Setup(props) {
 								/>
 							</Box>
 							<Box className="actions">
-								<Button onClick={submit} variant="outlined">Submit</Button>
+								<Button onClick={submit} variant="contained">Submit</Button>
 							</Box>
 						</Box>
 					</Paper>
 				</Box>
-			}
+			)}
 		</Box>
 	);
 }

@@ -8,6 +8,10 @@
  * @created 2021-04-25
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
@@ -19,12 +23,6 @@ import Typography from '@mui/material/Typography';
 
 // Local components
 import InvoiceComposite from 'components/composites/Invoice';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
 
 /**
  * Invoice
@@ -48,18 +46,18 @@ export default function Invoice(props) {
 	useEffect(() => {
 
 		// Get the invoice data from the server
-		Rest.read('primary', 'invoice', {
+		rest.read('primary', 'invoice', {
 			_id: _id,
 			details: true
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2003) {
-					Events.trigger('error', 'No such invoice');
+				if(res.error.code === 1100) {
+					events.get('error').trigger('No such invoice');
 					invoiceSet(null);
 				} else {
-					Events.trigger('error', Rest.errorMessage(res.error));
+					events.get('error').trigger(rest.errorMessage(res.error));
 				}
 			}
 
@@ -75,16 +73,16 @@ export default function Invoice(props) {
 	function pdf() {
 
 		// Tell the server to generate and return the link
-		Rest.read('primary', 'invoice/pdf', {
+		rest.read('primary', 'invoice/pdf', {
 			_id: _id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2003) {
-					Events.trigger('error', 'No such invoice');
+				if(res.error.code === 1100) {
+					events.get('error').trigger('No such invoice');
 				} else {
-					Events.trigger('error', Rest.errorMessage(res.error));
+					events.get('error').trigger(rest.errorMessage(res.error));
 				}
 			}
 

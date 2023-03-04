@@ -8,6 +8,9 @@
  * @created 2023-02-28
  */
 
+// Ouroboros modules
+import { increment, iso, elapsed } from '@ouroboros/dates';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -23,9 +26,6 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-
-// Shared generic modules
-import { increment, iso, elapsed } from 'shared/generic/dates';
 
 /**
  * Invoice

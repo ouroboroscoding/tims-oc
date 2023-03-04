@@ -8,10 +8,17 @@
  * @created 2021-04-17
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { Tree } from '@ouroboros/define';
+import { Form, Results } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+import { afindi, merge } from '@ouroboros/tools';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import Tree from 'format-oc/Tree';
 
 // Material UI
 import Box from '@mui/material/Box';
@@ -20,21 +27,14 @@ import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-// Shared components
-import { Form, Results } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { afindi, clone } from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Load the client and project definitions
 import ProjectDef from 'definitions/project';
 
 // Create Trees using the definitions
-const ProjectTree = new Tree(clone(ProjectDef));
+const ProjectTree = new Tree(ProjectDef);
 
 /**
  * Projects
@@ -56,48 +56,13 @@ export default function Projects(props) {
 	useEffect(() => {
 
 		// Fetch the projects
-		projectsFetch();
-
-	// eslint-disable-next-line
-	}, [props.value._id]);
-
-	// Called when a new project is created
-	function projectCreated(project) {
-
-		// Clone the current projects
-		let lResults = clone(results);
-
-		// Add the project to the top
-		lResults.unshift(project);
-
-		// Set the new projects
-		resultsSet(lResults);
-
-		// Hide the form
-		createSet(false);
-	}
-
-	// Called when a project has been archived
-	function projectArchived(project) {
-		let i = afindi(results, '_id', project._id);
-		if(i > -1) {
-			let lResults = clone(results);
-			lResults[i]._archived = 1;
-			resultsSet(lResults);
-		}
-	};
-
-	// Fetch the projects associated with the user
-	function projectsFetch() {
-
-		// Make the request to the server
-		Rest.read('primary', 'projects', {
+		rest.read('primary', 'projects', {
 			client: props.value._id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error))
+				events.get('error').trigger(rest.errorMessage(res.error))
 			}
 
 			// If there's data
@@ -105,17 +70,94 @@ export default function Projects(props) {
 				resultsSet(res.data);
 			}
 		});
+
+	// eslint-disable-next-line
+	}, [props.value._id]);
+
+	// Called when the create form is submitted
+	function createSubmit(project) {
+
+		// Add the client to the project
+		project.client = props.value._id;
+
+		// Create the project on the server
+		return bridge('create', 'primary', 'project', project, data => {
+			if(data) {
+
+				// Success
+				events.get('success').trigger('Project created');
+
+				// Hide the form
+				createSet(false);
+
+				// Clone the current projects, add the project to the top, and set the
+				//	new projects
+				const lResults = clone(results);
+				project._id = data;
+				project._archived = false;
+				lResults.unshift(project);
+				resultsSet(lResults);
+			}
+		}, {
+			'1101': [['name', 'Already in use']]
+		});
 	}
 
-	// Called when a project has been updated
-	function projectUpdated(project) {
-		let i = afindi(results, '_id', project._id);
-		if(i > -1) {
-			let lResults = clone(results);
-			lResults[i] = project;
-			resultsSet(lResults);
-		}
-	};
+	// Called when the delete key is clicked
+	function deleteClick(key) {
+
+		// Delete the project on the server
+		rest.delete('primary', 'project', {
+			_id: key
+		}).then(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				events.get('error').trigger(rest.errorMessage(res.error));
+			}
+
+			// Else if we got success
+			if(res.data) {
+
+				// Success
+				events.get('success').trigger('Project deleted');
+
+				// Remove it from the results
+				let i = afindi(results, '_id', key);
+				if(i > -1) {
+					let lResults = clone(results);
+					lResults[i]._archived = 1;
+					resultsSet(lResults);
+				}
+			}
+		});
+	}
+
+	// Called when the update form is submitted
+	function updateSubmit(project, key) {
+
+		// Add the ID to the project
+		project._id = key;
+
+		// Send the update to the server
+		return bridge('update', 'primary', 'project', project, data => {
+			if(data) {
+
+				// Success
+				events.get('success').trigger('Project updated');
+
+				// Update the results
+				let i = afindi(results, '_id', key);
+				if(i > -1) {
+					let lResults = clone(results);
+					merge(lResults[i], project);
+					resultsSet(lResults);
+				}
+			}
+		}, {
+			'1101': [['name', 'Already in use']]
+		});
+	}
 
 	// Render
 	return (
@@ -133,17 +175,9 @@ export default function Projects(props) {
 			{create &&
 				<Paper>
 					<Form
-						beforeSubmit={data => {
-							data.client = props.value._id;
-							return data;
-						}}
-						cancel={ev => createSet(false)}
-						errors={{
-							"2004": "Name already in use"
-						}}
-						noun="project"
-						service="primary"
-						success={projectCreated}
+						gridSizes={{__default__: {xs: 12, md: 6}}}
+						onCancel={ev => createSet(false)}
+						onSubmit={createSubmit}
 						title="Add Project"
 						tree={ProjectTree}
 						type="create"
@@ -159,12 +193,10 @@ export default function Projects(props) {
 					:
 						<Results
 							data={results}
-							noun="project"
 							orderBy="name"
-							remove={props.rights ? projectArchived : false}
-							service="primary"
+							onDelete={props.rights ? deleteClick : false}
+							onUpdate={props.rights ? updateSubmit : false}
 							tree={ProjectTree}
-							update={props.rights ? projectUpdated : false}
 						/>
 					}
 				</React.Fragment>

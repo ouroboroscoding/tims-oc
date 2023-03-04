@@ -8,10 +8,17 @@
  * @created 2021-04-25
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { Tree } from '@ouroboros/define';
+import { Results } from '@ouroboros/define-mui';
+import { increment, iso } from '@ouroboros/dates';
+import events from '@ouroboros/events';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
-import Tree from 'format-oc/Tree';
 import { useNavigate } from 'react-router-dom';
 
 // Material UI
@@ -27,30 +34,19 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-// Format Components
-import { Results } from 'shared/components/Format';
-
 // Locale components
 import Invoice from 'components/composites/Invoice';
 
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import { increment, iso } from 'shared/generic/dates';
-import Events from 'shared/generic/events';
-import { clone } from 'shared/generic/tools';
-
 // Load the invoice definition
 import InvoiceDef from 'definitions/invoice';
-let InvoiceClone = clone(InvoiceDef)
-InvoiceClone.__react__ = {
-	results: ['_created', 'clientName', 'identifier', 'start', 'end', 'total']
-};
-InvoiceClone.clientName = {__type__: 'string', __react__: {title: 'Client'}}
 
 // Create the Tree using the definition
-const InvoiceTree = new Tree(InvoiceClone);
+const InvoiceTree = new Tree(InvoiceDef, {
+	__ui__: {
+		results: ['_created', 'clientName', 'identifier', 'start', 'end', 'total']
+	},
+	clientName: { __type__: 'string', __ui__: { title: 'Client' }}
+});
 
 /**
  * Previous Month
@@ -112,7 +108,7 @@ function Generate(props) {
 	function generate() {
 
 		// Send the request to the server
-		Rest.create('primary', 'invoice', {
+		rest.create('primary', 'invoice', {
 			client: client,
 			start: range[0],
 			end: range[1]
@@ -120,12 +116,12 @@ function Generate(props) {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If there was a warning (PDF generation)
 			if(res.warning) {
-				Events.trigger('warning', res.warning);
+				events.get('warning').trigger(res.warning);
 			}
 
 			// If we got data
@@ -139,7 +135,7 @@ function Generate(props) {
 	function preview() {
 
 		// Send the request to the server
-		Rest.read('primary', 'invoice/preview', {
+		rest.read('primary', 'invoice/preview', {
 			client: client,
 			start: range[0],
 			end: range[1]
@@ -147,12 +143,12 @@ function Generate(props) {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
+				events.get('error').trigger(rest.errorMessage(res.error));
 			}
 
 			// If there was a warning (PDF generation)
 			if(res.warning) {
-				Events.trigger('warning', res.warning);
+				events.get('warning').trigger(res.warning);
 			}
 
 			// If we got data
@@ -305,35 +301,33 @@ export default function Invoices(props) {
 
 	// Range effect
 	useEffect(() => {
+
 		// If we have a range
 		if(range) {
-			fetch();
+
+			// Make the request to the server
+			rest.read('primary', 'invoices', {
+				range: range
+			}).done(res => {
+
+				// If there's an error
+				if(res.error && !res._handled) {
+					events.get('error').trigger(rest.errorMessage(res.error));
+				}
+
+				// If we got data
+				if(res.data) {
+					invoicesSet(res.data);
+				}
+			});
 		}
-	// eslint-disable-next-line
 	}, [range]);
-
-	// Fetch the invoices
-	function fetch() {
-
-		// Make the request to the server
-		Rest.read('primary', 'invoices', {
-			range: range
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				Events.trigger('error', Rest.errorMessage(res.error));
-			}
-
-			// If we got data
-			if(res.data) {
-				invoicesSet(res.data);
-			}
-		});
-	}
 
 	// Called when a new invoice is generated
 	function invoiceGenerated(invoice) {
+
+		// Success
+		events.get('success').trigger('Invoice generated')
 
 		// Hide the form
 		generateSet(false);
@@ -348,16 +342,16 @@ export default function Invoices(props) {
 	function invoicePdf(invoice) {
 
 		// Tell the server to generate and return the link
-		Rest.read('primary', 'invoice/pdf', {
+		rest.read('primary', 'invoice/pdf', {
 			_id: invoice._id
 		}).done(res => {
 
 			// If there's an error
 			if(res.error && !res._handled) {
-				if(res.error.code === 2003) {
-					Events.trigger('error', 'No such invoice');
+				if(res.error.code === 1100) {
+					events.get('error').trigger('No such invoice');
 				} else {
-					Events.trigger('error', Rest.errorMessage(res.error));
+					events.get('error').trigger(rest.errorMessage(res.error));
 				}
 			}
 
@@ -465,12 +459,8 @@ export default function Invoices(props) {
 								total: value => '$' + value.total
 							}}
 							data={invoices}
-							noun=""
 							orderBy="_created"
-							remove={false}
-							service=""
 							tree={InvoiceTree}
-							update={false}
 						/>
 					}
 				</React.Fragment>

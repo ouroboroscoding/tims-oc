@@ -8,14 +8,11 @@
  * @created 2020-05-08
  */
 
+// Ouroboros modules
+import events from '@ouroboros/events';
+
 // NPM modules
-import React, { useState } from 'react';
-
-// Shared generic modules
-import Events from  'shared/generic/events';
-
-// Shared hooks
-import { useEvent } from 'shared/hooks/event';
+import React, { useEffect, useState } from 'react';
 
 // Local variables
 let _count = 1;
@@ -26,8 +23,11 @@ export default function Loader(props) {
 	// State
 	let [visible, visibleSet] = useState(_count !== 0);
 
-	// Hooks
-	useEvent('Loader', show => visibleSet(show));
+	// Load effect
+	useEffect(() => {
+		const oLoader = events.get('Loader').subscribe(visibleSet);
+		return () => oLoader.unsubscribe();
+	}, []);
 
 	// Render
 	return <img src="/images/loading.gif" alt="ajax" style={{display: visible ? 'inline' : 'none'}} />
@@ -40,7 +40,7 @@ export function LoaderHide() {
 
 	// If this is the last one
 	if(_count === 0) {
-		Events.trigger('Loader', false);
+		events.get('Loader').trigger(false);
 	}
 }
 
@@ -51,6 +51,6 @@ export function LoaderShow() {
 
 	// If this is the first one
 	if(_count === 1) {
-		Events.trigger('Loader', true);
+		events.get('Loader').trigger(true);
 	}
 }
