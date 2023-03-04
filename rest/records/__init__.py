@@ -205,7 +205,7 @@ class Invoice(Record_MySQL.Record):
 				"ORDER BY `i`.`_created` DESC" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
-			"client": cls.processValue(dStruct, 'client', client)
+			"client": cls.process_value(dStruct, 'client', client)
 		}
 
 		# Execute and return the select
@@ -263,7 +263,7 @@ class Invoice(Record_MySQL.Record):
 
 		# If we have clients
 		if clients:
-			lWhere.append('`i`.`client` %s' % cls.processValue(dStruct, 'client', clients))
+			lWhere.append('`i`.`client` %s' % cls.process_value(dStruct, 'client', clients))
 
 		# Generate SQL
 		sSQL = "SELECT\n" \
@@ -316,7 +316,7 @@ class Invoice(Record_MySQL.Record):
 				"WHERE `client` %(client)s\n" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
-			"client": cls.processValue(dStruct, 'client', clients)
+			"client": cls.process_value(dStruct, 'client', clients)
 		}
 
 		# Get the total
@@ -479,7 +479,7 @@ class Payment(Record_MySQL.Record):
 				"ORDER BY `i`.`_created` DESC" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
-			"client": cls.processValue(dStruct, 'client', client)
+			"client": cls.process_value(dStruct, 'client', client)
 		}
 
 		# Execute and return the select
@@ -537,7 +537,7 @@ class Payment(Record_MySQL.Record):
 
 		# If we have clients
 		if clients:
-			lWhere.append('`i`.`client` %s' % cls.processValue(dStruct, 'client', clients))
+			lWhere.append('`i`.`client` %s' % cls.process_value(dStruct, 'client', clients))
 
 		# Generate SQL
 		sSQL = "SELECT\n" \
@@ -590,7 +590,7 @@ class Payment(Record_MySQL.Record):
 				"WHERE `client` %(client)s\n" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
-			"client": cls.processValue(dStruct, 'client', clients)
+			"client": cls.process_value(dStruct, 'client', clients)
 		}
 
 		# Get the total
@@ -832,7 +832,7 @@ class User(Record_MySQL.Record):
 		"""
 
 		# Get the password from the record
-		sPasswd = self.fieldGet('passwd')
+		sPasswd = self.field_get('passwd')
 
 		# Split the password
 		sSalt = sPasswd[:20] + sPasswd[60:]
@@ -1086,8 +1086,6 @@ class Work(Record_MySQL.Record):
 			"table": dStruct['table'],
 			"where": '\nAND'.join(lWhere)
 		}
-
-		print(sSQL)
 
 		# Execute and return the select
 		return Record_MySQL.Commands.select(

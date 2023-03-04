@@ -1,5 +1,5 @@
 {
-	"__mysql__": {
+	"__sql__": {
 		"auto_primary": "UUID()",
 		"create": [	"_created", "_updated", "_archived", "project", "name", "description"],
 		"db": "tims-ouroboros",
@@ -10,7 +10,7 @@
 		"table": "task"
 	},
 
-	"__react__": {
+	"__ui__": {
 		"create": ["name", "description"],
 		"results": ["_created", "_updated", "name", "description", "_archived"],
 		"update": ["name", "description"]
@@ -39,7 +39,7 @@
 		"__type__":"bool",
 		"__optional__":true,
 		"__sql__":{"opts": "not null default 0"},
-		"__react__":{"title":"Archived"}
+		"__ui__":{"title":"Archived"}
 	},
 
 	"project": {

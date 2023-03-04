@@ -1,5 +1,5 @@
 {
-	"__mysql__": {
+	"__sql__": {
 		"auto_primary": false,
 		"create": ["_created", "_updated", "user", "type"],
 		"db": "tims-ouroboros",

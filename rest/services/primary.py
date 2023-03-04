@@ -249,12 +249,12 @@ class Primary(Services.Service):
 		dTpl['invoice']['minutes'] = 0
 		dTpl['invoice']['created'] = DateTimeHelper.date(dTpl['invoice']['_created'])
 		dTpl['invoice']['due'] = DateTimeHelper.date(
-			DateTimeHelper.dateInc(dTpl['client']['due'], dTpl['invoice']['_created'])
+			DateTimeHelper.date_increment(dTpl['client']['due'], dTpl['invoice']['_created'])
 		)
 		for d in dTpl['items']:
 			dTpl['invoice']['minutes'] += d['minutes']
-			d['elapsedTime'] = DateTimeHelper.timeElapsed(d['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
-		dTpl['invoice']['elapsedTime'] = DateTimeHelper.timeElapsed(dTpl['invoice']['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
+			d['elapsedTime'] = DateTimeHelper.time_elapsed(d['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
+		dTpl['invoice']['elapsedTime'] = DateTimeHelper.time_elapsed(dTpl['invoice']['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
 
 		# Generate the PDF
 		sPDF = Templates.generate('pdf/invoice.html', dTpl, 'en-US', pdf=True)
@@ -392,7 +392,11 @@ class Primary(Services.Service):
 		}
 
 		# Generate the templates
-		dTpls = EMail.template('forgot', dTpl, dUser['locale'])
+		dTpls = {
+			'subject': Templates.generate('email/subject/forgot', dTpl, dUser['locale']),
+			'text': Templates.generate('email/text/forgot', dTpl, dUser['locale']),
+			'html': Templates.generate('email/html/forgot', dTpl, dUser['locale'])
+		}
 
 		# Send the email
 		bRes = EMail.send({
@@ -1096,7 +1100,7 @@ class Primary(Services.Service):
 		Rights.verify_or_raise(req['session']['user_id'], 'accounting', req['data']['client'])
 
 		# Delete the items
-		InvoiceItem.deleteGet(req['data']['_id'], 'invoice')
+		InvoiceItem.delete_get(req['data']['_id'], 'invoice')
 
 		# Delete the invoice and return the result
 		return Services.Response(
@@ -1178,7 +1182,7 @@ class Primary(Services.Service):
 		Rights.verify_or_raise(req['session']['user_id'], ['client', 'accounting'], dInvoice['client'])
 
 		# Generate the temporary URL
-		sURL = self.s3.url(
+		sURL = self.s3.presigned_url(
 			_INVOICE_S3_KEY % {
 				'client': dInvoice['client'],
 				'invoice': req['data']['_id']
@@ -1342,7 +1346,10 @@ class Primary(Services.Service):
 			return Services.Error(body.errors.DATA_FIELDS, e.args[0])
 
 		# Create the record
-		sID = oPayment.create()
+		try:
+			sID = oPayment.create()
+		except DuplicateException as e:
+			return Services.Error(body.errors.DB_DUPLICATE)
 
 		# Return the new ID
 		return Services.Response(sID)
@@ -1440,7 +1447,7 @@ class Primary(Services.Service):
 		try:
 			sID = oProject.create()
 		except DuplicateException:
-			return Services.Error(2004)
+			return Services.Error(body.errors.DB_DUPLICATE)
 
 		# Return the new ID
 		return Services.Response(sID)
@@ -1671,7 +1678,7 @@ class Primary(Services.Service):
 		try:
 			sID = oTask.create()
 		except DuplicateException:
-			return Services.Error(2004)
+			return Services.Error(body.errors.DB_DUPLICATE)
 
 		# Return the new ID
 		return Services.Response(sID)
@@ -1788,9 +1795,12 @@ class Primary(Services.Service):
 			return Services.Error(body.errors.DATA_FIELDS, lErrors)
 
 		# Save the record and return the result
-		return Services.Response(
-			oTask.save()
-		)
+		try:
+			return Services.Response(oTask.save())
+
+		# Name is a duplicate
+		except DuplicateException:
+			return Services.Error(body.errors.DB_DUPLICATE)
 
 	def tasks_read(self, req):
 		"""Tasks read
@@ -1886,7 +1896,7 @@ class Primary(Services.Service):
 		try:
 			sID = oUser.create()
 		except DuplicateException:
-			return Services.Error(2004)
+			return Services.Error(body.errors.DB_DUPLICATE)
 
 		# Create key
 		sKey = self._create_key(sID, 'setup')
@@ -1902,7 +1912,11 @@ class Primary(Services.Service):
 		}
 
 		# Generate the templates
-		dTpls = EMail.template('setup', dTpl, req['data']['locale'])
+		dTpls = {
+			'subject': Templates.generate('email/subject/setup', dTpl, req['data']['locale']),
+			'text': Templates.generate('email/text/setup', dTpl, req['data']['locale']),
+			'html': Templates.generate('email/html/setup', dTpl, req['data']['locale'])
+		}
 
 		# Send the email
 		bRes = EMail.send({
@@ -1965,7 +1979,7 @@ class Primary(Services.Service):
 		"""
 
 		# If the ID is passed
-		if '_id' in req['data']:
+		try:
 
 			# And the user is not the logged in user
 			if req['data']['_id'] != req['session']['user_id']:
@@ -1974,8 +1988,8 @@ class Primary(Services.Service):
 				Rights.verify_or_raise(req['session']['user_id'], 'manager')
 
 		# Else, just lookup the logged in user
-		else:
-			req['data']['_id'] = req['session']['user_id']
+		except KeyError as e:
+			req['data'] = { '_id': req['session']['user_id'] }
 
 		# Fetch from the cache
 		dUser = User.cache_get(req['data']['_id'])
@@ -2068,7 +2082,11 @@ class Primary(Services.Service):
 			}
 
 			# Generate the templates
-			dTpls = EMail.template('email_change', dTpl, oUser['locale'])
+			dTpls = {
+				'subject': Templates.generate('email/subject/email_change', dTpl, oUser['locale']),
+				'text': Templates.generate('email/text/email_change', dTpl, oUser['locale']),
+				'html': Templates.generate('email/html/email_change', dTpl, oUser['locale'])
+			}
 
 			# Send the email
 			bRes = EMail.send({
@@ -2090,7 +2108,7 @@ class Primary(Services.Service):
 		# Return the result
 		return Services.Response(bRes)
 
-	def userPasswd_update(self, req):
+	def user_passwd_update(self, req):
 		"""User Password update
 
 		Changes the password associated with a user
@@ -2145,7 +2163,7 @@ class Primary(Services.Service):
 		# Return OK
 		return Services.Response(True)
 
-	def userAccess_create(self, req):
+	def user_access_create(self, req):
 		"""User Access create
 
 		Adds a client access to an existing user
@@ -2186,7 +2204,7 @@ class Primary(Services.Service):
 		# Return OK
 		return Services.Response(True)
 
-	def userAccess_delete(self, req):
+	def user_access_delete(self, req):
 		"""User Access delete
 
 		Removes a client access from an existing user
@@ -2240,7 +2258,7 @@ class Primary(Services.Service):
 		# Return OK
 		return Services.Response(True)
 
-	def userAccess_read(self, req):
+	def user_access_read(self, req):
 		"""User Access read
 
 		Fetches the client access for the given user
@@ -2289,7 +2307,7 @@ class Primary(Services.Service):
 			)
 		)
 
-	def workStart_create(self, req):
+	def work_start_create(self, req):
 		"""Work Start
 
 		Handles starting new work, which just stores the start timestamp
@@ -2326,11 +2344,11 @@ class Primary(Services.Service):
 		# Create an instance to verify the fields
 		try:
 			oWork = Work({
-				"project": req['data']['project'],
-				"task": req['data']['task'],
-				"user": req['session']['user_id'],
-				"start": int(time()),
-				"description": ('description' in req['data'] and req['data']['description'] or '')
+				'project': req['data']['project'],
+				'task': req['data']['task'],
+				'user': req['session']['user_id'],
+				'start': int(time()),
+				'description': ('description' in req['data'] and req['data']['description'] or '')
 			})
 		except ValueError as e:
 			return Services.Error(body.errors.DATA_FIELDS, e.args[0])
@@ -2339,15 +2357,15 @@ class Primary(Services.Service):
 		try:
 			sID = oWork.create()
 		except DuplicateException:
-			return Services.Error(2004)
+			return Services.Error(body.errors.DB_DUPLICATE)
 
 		# Return the new ID and start time
 		return Services.Response({
-			"_id": sID,
-			"start": oWork['start']
+			'_id': sID,
+			'start': oWork['start']
 		})
 
-	def workEnd_update(self, req):
+	def work_end_update(self, req):
 		"""Work End
 
 		Handles ending an existing work record

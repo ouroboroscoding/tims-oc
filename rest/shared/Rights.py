@@ -53,7 +53,7 @@ def verify(user, type_=None, client=None):
 
 	# If we got a string, fetch the user from the cache
 	if isinstance(user, str):
-		dUser = User.cacheGet(user)
+		dUser = User.cache_get(user)
 
 	# Else, use the user passed
 	else:

@@ -46,6 +46,11 @@ def init(dbs=[], services={}, templates=False):
 	for s in dbs:
 		Record_MySQL.add_host(s, Conf.get(('mysql', 'hosts', s)))
 
+	# Set the timestamp timezone
+	Record_MySQL.timestamp_timezone(
+		Conf.get(('mysql', 'timestamp_timezone'), '+00:00')
+	)
+
 	# Init email
 	EMail.init(Conf.get('email'))
 
