@@ -1,5 +1,5 @@
 {
-	"__mysql__": {
+	"__sql__": {
 		"auto_primary": "UUID()",
 		"create": ["_created", "_updated", "client", "identifier",
 					"start", "end", "subtotal", "taxes", "total"],
@@ -22,7 +22,7 @@
 	"_created": {
 		"__type__":"timestamp",
 		"__optional__":true,
-		"__react__":{"title":"Created"},
+		"__ui__":{"title":"Created"},
 		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
 	},
 
@@ -38,7 +38,7 @@
 
 	"identifier": {
 		"__type__":"string",
-		"__react__":{"title":"Invoice #"},
+		"__ui__":{"title":"Invoice #"},
 		"__sql__": {
 			"type": "char(6)"
 		}
@@ -46,12 +46,12 @@
 
 	"start": {
 		"__type__":"timestamp",
-		"__react__":{"title":"From"}
+		"__ui__":{"title":"From"}
 	},
 
 	"end": {
 		"__type__":"timestamp",
-		"__react__":{"title":"To"}
+		"__ui__":{"title":"To"}
 	},
 
 	"subtotal": {

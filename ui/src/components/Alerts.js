@@ -8,13 +8,22 @@
  * @created 2021-04-13
  */
 
+// Ouroboros modules
+import events from '@ouroboros/events';
+
 // NPM modules
 import React from 'react';
 import { withSnackbar } from 'notistack';
 
-// Shared generic modules
-import Events from 'shared/generic/events';
-
+/**
+ * Library Writes Are Often Idiots
+ *
+ * It should not be necessary to implement this this way
+ *
+ * @name LibraryWritersAreOftenIdiots
+ * @access private
+ * @extends React.Component
+ */
 class LibraryWritersAreOftenIdiots extends React.Component {
 
 	constructor(props) {
@@ -32,21 +41,21 @@ class LibraryWritersAreOftenIdiots extends React.Component {
 	componentDidMount() {
 
 		// Track any popup events
-		Events.subscribe('error', this.error);
-		Events.subscribe('info', this.popup);
-		Events.subscribe('popup', this.popup);
-		Events.subscribe('success', this.success);
-		Events.subscribe('warning', this.warning);
+		events.get('error').subscribe(this.error);
+		events.get('info').subscribe(this.popup);
+		events.get('popup').subscribe(this.popup);
+		events.get('success').subscribe(this.success);
+		events.get('warning').subscribe(this.warning);
 	}
 
 	componentWillUnmount() {
 
 		// Stop tracking any popup events
-		Events.unsubscribe('error', this.error);
-		Events.unsubscribe('info', this.popup);
-		Events.unsubscribe('popup', this.popup);
-		Events.unsubscribe('success', this.success);
-		Events.unsubscribe('warning', this.warning);
+		events.get('error').unsubscribe(this.error);
+		events.get('info').unsubscribe(this.popup);
+		events.get('popup').unsubscribe(this.popup);
+		events.get('success').unsubscribe(this.success);
+		events.get('warning').unsubscribe(this.warning);
 	}
 
 	error(msg) {

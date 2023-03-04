@@ -8,37 +8,38 @@
  * @created 2022-02-14
  */
 
+// Ouroboros modules
+import { rest } from '@ouroboros/body';
+import clone from '@ouroboros/clone';
+import { timestamp } from '@ouroboros/dates';
+import { Tree } from '@ouroboros/define';
+import { Form, Results } from '@ouroboros/define-mui';
+import events from '@ouroboros/events';
+import { afindi, merge } from '@ouroboros/tools';
+
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import Tree from 'format-oc/Tree';
 
 // Material UI
-import Box from '@material-ui/core/Box';
-import Grid from '@material-ui/core/Grid';
-import IconButton from '@material-ui/core/IconButton';
-import FormControl from '@material-ui/core/FormControl';
-import InputLabel from '@material-ui/core/InputLabel';
-import Paper from '@material-ui/core/Paper';
-import Select from '@material-ui/core/Select';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
-// Shared components
-import { Form, Results } from 'shared/components/Format';
-
-// Shared communication modules
-import Rest from 'shared/communication/rest';
-
-// Shared generic modules
-import Events from 'shared/generic/events';
-import { afindi, clone } from 'shared/generic/tools';
+// Local modules
+import { bridge } from 'rest_to_define.js';
 
 // Load the task and project definitions
 import TaskDef from 'definitions/task';
 
 // Create Trees using the definitions
-const TaskTree = new Tree(clone(TaskDef));
+const TaskTree = new Tree(TaskDef);
 
 /**
  * Tasks
@@ -78,13 +79,13 @@ export default function Tasks(props) {
 			if(!projects[client]) {
 
 				// Make the request to the serve
-				Rest.read('primary', 'projects', {
+				rest.read('primary', 'projects', {
 					client: client
 				}).done(res => {
 
 					// If there's an error
 					if(res.error && !res._handled) {
-						Events.trigger('error', Rest.errorMessage(res.error));
+						events.get('error').trigger(rest.errorMessage(res.error));
 					}
 
 					// If there's data
@@ -120,13 +121,13 @@ export default function Tasks(props) {
 		if(project) {
 
 			// Fetch the tasks
-			Rest.read('primary', 'tasks', {
+			rest.read('primary', 'tasks', {
 				project: project
 			}).done(res => {
 
 				// If we got an error
 				if(res.error && !res._handled) {
-					Events.trigger('error', Rest.errorMessage(res.error));
+					events.get('error').trigger(rest.errorMessage(res.error));
 				}
 
 				// If we got data
@@ -138,46 +139,108 @@ export default function Tasks(props) {
 
 	}, [project]);
 
-	// Called when a task has been updated
-	function taskArchived(task) {
-		let i = afindi(tasks, '_id', task._id);
-		if(i > -1) {
-			let lTasks = clone(tasks);
-			lTasks.splice(i, 1);
-			tasksSet(lTasks);
-		}
-	};
+	// Called when the create form is submitted
+	function createSubmit(task) {
 
-	// Called when a new task is created
-	function taskCreated(task) {
-		let lTasks = clone(tasks);
-		task._created = Date.now()/1000;
-		task._updated = Date.now()/1000;
-		task._archived = false;
-		lTasks.unshift(task);
-		tasksSet(lTasks);
-		createSet(false);
+		// Add the project to the task
+		task.project = project;
+
+		// Create the task on the server
+		return bridge('create', 'primary', 'task', task, data => {
+			if(data) {
+
+				// Success
+				events.get('success').trigger('Task created');
+
+				// Add the ID and other fields generated on the server
+				task._id = data;
+				task._created = timestamp();
+				task._updated = timestamp();
+				task._archived = false;
+
+				// Add the task to the records
+				let lTasks = clone(tasks);
+				lTasks.unshift(task);
+				tasksSet(lTasks);
+				createSet(false);
+			}
+		}, {
+			'1101': [['name', 'Already in use']]
+		});
 	}
 
-	// Called when a task has been updated
-	function taskUpdated(task) {
-		let i = afindi(tasks, '_id', task._id);
-		if(i > -1) {
-			let lTasks = clone(tasks);
-			task._updated = Date.now()/1000;
-			lTasks[i] = task;
-			tasksSet(lTasks);
-		}
-	};
+	// Called when the delete button is clicked
+	function deleteClick(key) {
+
+		// Delete the task from the server
+		rest.delete('primary', 'task', {
+			_id: key
+		}).then(res => {
+
+			// If there's an error
+			if(res.error && !res._handled) {
+				events.get('error').trigger(rest.error(res.error));
+			}
+
+			// If we were successful
+			if(res.data) {
+
+				// Success
+				events.get('success').trigger('Task deleted');
+
+				// Remove the task from the records
+				let i = afindi(tasks, '_id', key);
+				if(i > -1) {
+					let lTasks = clone(tasks);
+					lTasks.splice(i, 1);
+					tasksSet(lTasks);
+				}
+			}
+		});
+	}
+
+	// Called when the update form is submitted
+	function updateSubmit(task, key) {
+
+		// Add the ID to the task
+		task._id = key;
+
+		// Send the update to the server
+		return bridge('update', 'primary', 'task', task, data => {
+			if(data) {
+
+				// Success
+				events.get('success').trigger('Task updated');
+
+				// Update the records
+				let i = afindi(tasks, '_id', task._id);
+				if(i > -1) {
+					let lTasks = clone(tasks);
+					task._updated = timestamp();
+					merge(lTasks[i], task);
+					tasksSet(lTasks);
+				}
+			}
+		}, {
+			'1101': [['name', 'Already in use']]
+		})
+	}
 
 	// Render
 	return (
 		<Box id="tasks" className="singlePage">
 			<Box className="pageHeader flexColumns">
 				<Typography className="flexGrow">Tasks</Typography>
+				{(rights && project) &&
+					<Tooltip title="Create Task">
+						<IconButton onClick={ev => createSet(b => !b)}>
+							<i className={'fas fa-plus-circle ' + (create ? 'open' : 'close')} />
+						</IconButton>
+					</Tooltip>
+				}
 			</Box>
 			<Grid container spacing={2}>
-				<Grid item xs={12} md={6} lg={4} xl={3} className="field">
+				<Grid item xs={12} md={6} className="field">
 					<FormControl>
 						<InputLabel>Client</InputLabel>
 						<Select
@@ -193,7 +256,7 @@ export default function Tasks(props) {
 				</Grid>
 				{client &&
 					<React.Fragment>
-						<Grid item xs={12} md={6} lg={4} xl={3} className="field">
+						<Grid item xs={12} md={6} className="field">
 							{!projects[client] ?
 								<Typography>Loading...</Typography>
 							:
@@ -217,32 +280,15 @@ export default function Tasks(props) {
 								</React.Fragment>
 							}
 						</Grid>
-						{(rights && project) &&
-							<Grid item xs={12} md={6} lg={4} xl={3} className="actions">
-								<Tooltip title="Create Task">
-									<IconButton onClick={ev => createSet(b => !b)}>
-										<i className={'fas fa-plus-circle ' + (create ? 'open' : 'close')} />
-									</IconButton>
-								</Tooltip>
-							</Grid>
-						}
 					</React.Fragment>
 				}
 			</Grid>
 			{create &&
 				<Paper>
 					<Form
-						beforeSubmit={values => {
-							values.project = project;
-							return values;
-						}}
-						cancel={ev => createSet(false)}
-						errors={{
-							"2004": "Name already in use"
-						}}
-						noun="task"
-						service="primary"
-						success={taskCreated}
+						gridSizes={{__default__: {xs: 12, md: 6}}}
+						onCancel={ev => createSet(false)}
+						onSubmit={createSubmit}
 						title="Create Task"
 						tree={TaskTree}
 						type="create"
@@ -259,12 +305,11 @@ export default function Tasks(props) {
 					:
 						<Results
 							data={tasks}
-							noun="task"
+							gridSizes={{__default__: {xs: 12, md: 6}}}
+							onDelete={rights ? deleteClick : false}
+							onUpdate={rights ? updateSubmit : false}
 							orderBy="name"
-							remove={rights ? taskArchived : false}
-							service="primary"
 							tree={TaskTree}
-							update={rights ? taskUpdated : false}
 						/>
 					}
 				</React.Fragment>

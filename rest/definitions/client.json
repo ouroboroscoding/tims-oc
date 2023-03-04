@@ -1,5 +1,5 @@
 {
-	"__mysql__": {
+	"__sql__": {
 		"auto_primary": "UUID()",
 		"create": [
 			"_created", "_updated", "_archived", "name", "attention_of",
@@ -14,7 +14,7 @@
 		"table": "client"
 	},
 
-	"__react__": {
+	"__ui__": {
 		"create": ["name", "attention_of", "address1", "address2", "city",
 					"division", "country", "postal_code", "due",
 					 "currency", "rate", "task_minimum", "task_overflow"],
@@ -47,7 +47,7 @@
 		"__type__":"bool",
 		"__optional__":true,
 		"__sql__":{"opts": "not null default 0"},
-		"__react__":{"title":"Archived"}
+		"__ui__":{"title":"Archived"}
 	},
 
 	"name": {
@@ -59,21 +59,21 @@
 		"__type__":"string",
 		"__maximum__":63,
 		"__optional__":true,
-		"__react__":{"title":"Attention Of"}
+		"__ui__":{"title":"Attention Of"}
 	},
 
 	"address1": {
 		"__type__":"string",
 		"__maximum__":127,
 		"__optional__":true,
-		"__react__":{"title":"Address"}
+		"__ui__":{"title":"Address"}
 	},
 
 	"address2": {
 		"__type__":"string",
 		"__maximum__":31,
 		"__optional__":true,
-		"__react__":{"title":"Office/Suite/Apt"}
+		"__ui__":{"title":"Office/Suite/Apt"}
 	},
 
 	"city": {
@@ -84,13 +84,13 @@
 	"division": {
 		"__type__":"string",
 		"__maximum__":2,
-		"__react__":{"title":"Province / State", "type":"select", "options":[]}
+		"__ui__":{"title":"Province / State", "type":"select", "options":[]}
 	},
 
 	"country": {
 		"__type__":"string",
 		"__maximum__":2,
-		"__react__":{"type":"select", "options":[]}
+		"__ui__":{"type":"select", "options":[]}
 	},
 
 	"postal_code": {
@@ -98,38 +98,38 @@
 		"__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$",
 		"__optional__":true,
 		"__sql__":{"type":"varchar(10)"},
-		"__react__":{"title":"Postal/Zip Code"}
+		"__ui__":{"title":"Postal/Zip Code"}
 	},
 
 	"due": {
 		"__type__": "uint",
 		"__maximum__": 65535,
 		"__sql__":{"type":"smallint unsigned"},
-		"__react__": {"title": "Days before invoices are due"}
+		"__ui__": {"title": "Days before invoices are due"}
 	},
 
 	"currency": {
 		"__type__": "string",
 		"__options__": ["CAD", "USD"],
-		"__react__": {"type":"select", "options":[["CAD", "Canadian Dollars"], ["USD", "U.S. Dollars"]]}
+		"__ui__": {"type":"select", "options":[["CAD", "Canadian Dollars"], ["USD", "U.S. Dollars"]]}
 	},
 
 	"rate": {
 		"__type__":"price",
-		"__react__":{"title":"Hourly Rate"}
+		"__ui__":{"title":"Hourly Rate"}
 	},
 
 	"task_minimum": {
 		"__type__":"uint",
 		"__minimum__":1,
 		"__maximum__":60,
-		"__react__":{"title":"Task Minimum Minutes","default":15}
+		"__ui__":{"title":"Task Minimum Minutes","default":15}
 	},
 
 	"task_overflow": {
 		"__type__":"uint",
 		"__maximum__":59,
 		"__optional__":true,
-		"__react__":{"title":"Task Overflow Minutes","default":0}
+		"__ui__":{"title":"Task Overflow Minutes","default":0}
 	}
 }

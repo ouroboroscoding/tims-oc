@@ -1,5 +1,5 @@
 {
-	"__mysql__": {
+	"__sql__": {
 		"auto_primary": "UUID()",
 		"create": ["_created", "user", "client"],
 		"db": "tims-ouroboros",

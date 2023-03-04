@@ -1,5 +1,5 @@
 {
-	"__mysql__": {
+	"__sql__": {
 		"auto_primary": "UUID()",
 		"create": ["_created", "client", "transaction", "amount"],
 		"db": "tims-ouroboros",
@@ -11,7 +11,7 @@
 		"table": "payment"
 	},
 
-	"__react__": {
+	"__ui__": {
 		"create": ["transaction", "amount"],
 		"results": ["_created", "transaction", "amount"]
 	},
@@ -26,7 +26,7 @@
 	"_created": {
 		"__type__":"timestamp",
 		"__optional__":true,
-		"__react__":{"title":"Created"},
+		"__ui__":{"title":"Created"},
 		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
 	},
 
@@ -37,7 +37,7 @@
 	"transaction": {
 		"__type__":"string",
 		"__maximum__": 127,
-		"__react__":{"title":"Transaction ID"}
+		"__ui__":{"title":"Transaction ID"}
 	},
 
 	"amount": {

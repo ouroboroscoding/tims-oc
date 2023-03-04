@@ -11,22 +11,26 @@
 	"205": "SERVICE_NO_SUCH_NOUN",
 	"206": "SERVICE_INTERNAL_KEY",
 	"207": "SERVICE_CRASHED",
+	"208": "SERVICE_DATA",
+	"209": "SERVICE_SESSION",
 
 	"_": "Common Errors",
 	"1000": "No rights",
 	"1001": "Invalid data",
-	"1002": "Invalid image",
+	"1002": "No session",
 
 	"_": "DB Errors",
-	"2000": "Failed to create record",
-	"2001": "Failed to update record",
-	"2002": "Failed to delete record",
-	"2003": "Failed to find record",
-	"2004": "Duplicate record",
+	"1100": "DB no record found",
+	"1101": "DB Duplicate record",
+	"1102": "DB create failed",
+	"1103": "DB delete failed",
+	"1104": "DB update failed",
+	"1105": "DB key in use",
+	"1106": "DB archived",
 
 	"_": "Client Errors",
 	"2100": "Invalid email/pass",
-	"2101": "Invalid verification",
+	"2101": "",
 	"2102": "Password strength",
 	"2103": "Can't start multiple tasks"
 }
