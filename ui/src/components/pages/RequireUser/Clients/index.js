@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { Tree } from '@ouroboros/define';
 import { Form, Results } from '@ouroboros/define-mui';
@@ -93,17 +93,14 @@ export default function Clients(props) {
 		if(props.user) {
 
 			// Fetch the records
-			rest.read('primary', 'clients').done(res => {
-
-				// If we got an error
-				if(res.error && !res._handled) {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
+			body.read('primary', 'clients').then(data => {
 
 				// If we got data
-				if(res.data) {
-					recordsSet(res.data);
+				if(data) {
+					recordsSet(data);
 				}
+			}, error => {
+				events.get('error').trigger(error);
 			});
 
 			// Set rights
@@ -152,11 +149,11 @@ export default function Clients(props) {
 	function deleteClick(_id) {
 
 		// Delete the client
-		rest.delete('primary', 'client', {
+		body.delete('primary', 'client', {
 			_id: _id
-		}).then(res => {
+		}).then(data => {
 
-			if(res.data) {
+			if(data) {
 
 				// Success
 				events.get('success').trigger('Client archived');

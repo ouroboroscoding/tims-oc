@@ -9,7 +9,9 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
+import { cookies } from '@ouroboros/browser';
+import { Results } from '@ouroboros/define-mui';
 import events from '@ouroboros/events';
 
 // NPM modules
@@ -32,8 +34,8 @@ import RequireUser from 'components/pages/RequireUser';
 import Setup from 'components/pages/Setup';
 import Verify from 'components/pages/Verify';
 
-// Rest init
-import 'rest_init';
+// Body init
+import 'body_init';
 
 // CSS
 import 'sass/site.scss';
@@ -60,6 +62,11 @@ const Theme = createTheme({
 	typography: {
 		fontFamily: 'Montserrat, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif'
 	}
+});
+
+// Add default onCopyKey methods to Results
+Results.setOnCopyKey(() => {
+	events.get('success').trigger('Record ID copied to clipboard!');
 });
 
 /**
@@ -91,10 +98,12 @@ export default function Site(props) {
 			userSet(false)
 		});
 
-		// If we have a session
-		if(rest.session()) {
-			rest.read('primary', 'user').done(res => {
-				events.get('signedIn').trigger(res.data);
+		// If we have a session cookie, set it on the body
+		const session_cookie = cookies.get('_session');
+		if(session_cookie) {
+			body.session(session_cookie);
+			body.read('primary', 'user').then(data => {
+				events.get('signedIn').trigger(data);
 			});
 		} else {
 			userSet(false);

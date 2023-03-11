@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
 // NPM modules
@@ -41,17 +41,10 @@ export default function Owe(props) {
 	useEffect(() => {
 
 		// Request from the server how much they owe
-		rest.read('primary', 'client/owes').done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
-
-			// If there's data
-			if('data' in res) {
-				owesSet(res.data);
-			}
+		body.read('primary', 'client/owes').then(data => {
+			owesSet(data);
+		}, error => {
+			events.get('error').trigger(error);
 		});
 
 	}, [props.user]);

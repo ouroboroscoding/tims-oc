@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { Tree } from '@ouroboros/define';
 import { Form, Results } from '@ouroboros/define-mui';
@@ -56,19 +56,16 @@ export default function Projects(props) {
 	useEffect(() => {
 
 		// Fetch the projects
-		rest.read('primary', 'projects', {
+		body.read('primary', 'projects', {
 			client: props.value._id
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error))
-			}
+		}).then(data => {
 
 			// If there's data
-			if(res.data) {
-				resultsSet(res.data);
+			if(data) {
+				resultsSet(data);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 
 	// eslint-disable-next-line
@@ -107,17 +104,12 @@ export default function Projects(props) {
 	function deleteClick(key) {
 
 		// Delete the project on the server
-		rest.delete('primary', 'project', {
+		body.delete('primary', 'project', {
 			_id: key
-		}).then(res => {
+		}).then(data => {
 
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
-
-			// Else if we got success
-			if(res.data) {
+			// If we got success
+			if(data) {
 
 				// Success
 				events.get('success').trigger('Project deleted');
@@ -130,6 +122,8 @@ export default function Projects(props) {
 					resultsSet(lResults);
 				}
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 

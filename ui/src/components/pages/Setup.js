@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import { Node } from '@ouroboros/define';
 import { DefineNode } from '@ouroboros/define-mui';
 import events from '@ouroboros/events';
@@ -74,37 +74,34 @@ export default function Setup(props) {
 		}
 
 		// Send it to the service
-		rest.read('primary', 'account/setup', {
+		body.read('primary', 'account/setup', {
 			key: lLocation[1]
-		}, {session: false}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				if(res.error.code === 1100) {
-					if(res.error.msg === 'key') {
-						events.get('error').trigger('Invalid key')
-					} else if(res.error.msg === 'user') {
-						events.get('error').trigger('User no longer exists')
-					}
-				} else {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
-
-				// Redirect in 5 seconds
-				setTimeout(() => {
-					navigate('/')
-				}, 5000);
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
+			if(data) {
 
 				// Add the key to the data
-				res.data.key = lLocation[1];
+				data.key = lLocation[1];
 
 				// Store the data
-				userSet(res.data);
+				userSet(data);
 			}
+		}, error => {
+			if(error.code === 1100) {
+				if(error.msg === 'key') {
+					events.get('error').trigger('Invalid key')
+				} else if(error.msg === 'user') {
+					events.get('error').trigger('User no longer exists')
+				}
+			} else {
+				events.get('error').trigger(error);
+			}
+
+			// Redirect in 5 seconds
+			setTimeout(() => {
+				navigate('/')
+			}, 5000);
 		});
 
 	// eslint-disable-next-line
@@ -124,41 +121,38 @@ export default function Setup(props) {
 		}
 
 		// Send the info to the server
-		rest.update('primary', 'account/setup', {
+		body.update('primary', 'account/setup', {
 			key: user.key,
 			name: nameRef.current.value.trim(),
 			passwd: passwdRef.current.value
-		}, {session: false}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				if(res.error.code === 1001) {
-					if('name' in res.error.msg) {
-						nameRef.current.error(res.error.msg['name'])
-					}
-					if('passwd' in res.error.msg) {
-						passwdRef.current.error(res.error.msg['passwd'])
-					}
-				}
-				else if(res.error.code === 1100) {
-					events.get('error').trigger('Setup key invalid');
-				}
-				else if(res.error.code === 2102) {
-					passwdRef.current.error('Password not strong enough');
-				}
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
+			if(data) {
 
 				// Set the session
-				rest.session(res.data);
+				body.session(data);
 
 				// Fetch the user
-				rest.read('primary', 'user').done(res => {
-					events.get('signedIn').trigger(res.data);
+				body.read('primary', 'user').then(data => {
+					events.get('signedIn').trigger(data);
 					navigate('/');
 				});
+			}
+		}, error => {
+			if(error.code === 1001) {
+				if('name' in error.msg) {
+					nameRef.current.error(error.msg['name'])
+				}
+				if('passwd' in error.msg) {
+					passwdRef.current.error(error.msg['passwd'])
+				}
+			}
+			else if(error.code === 1100) {
+				events.get('error').trigger('Setup key invalid');
+			}
+			else if(error.code === 2102) {
+				passwdRef.current.error('Password not strong enough');
 			}
 		});
 	}

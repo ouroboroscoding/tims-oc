@@ -9,13 +9,14 @@
  */
 
 // Ouroboros modules
+import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
 // NPM modules
 import React, { useEffect, useState } from 'react';
 
 // Local variables
-let _count = 1;
+let _count = 0;
 
 // Loader component
 export default function Loader(props) {
@@ -33,18 +34,8 @@ export default function Loader(props) {
 	return <img src="/images/loading.gif" alt="ajax" style={{display: visible ? 'inline' : 'none'}} />
 }
 
-export function LoaderHide() {
-
-	// Decrement the count
-	_count--;
-
-	// If this is the last one
-	if(_count === 0) {
-		events.get('Loader').trigger(false);
-	}
-}
-
-export function LoaderShow() {
+// Track body requests
+body.onRequesting(info => {
 
 	// Increment the count
 	_count++;
@@ -53,4 +44,19 @@ export function LoaderShow() {
 	if(_count === 1) {
 		events.get('Loader').trigger(true);
 	}
-}
+});
+body.onRequested(info => {
+
+	// Decrement the count
+	_count--;
+
+	// If it's less than 0
+	if(_count < 0) {
+		_count = 0;
+	}
+
+	// If this is the last one
+	if(_count === 0) {
+		events.get('Loader').trigger(false);
+	}
+});
