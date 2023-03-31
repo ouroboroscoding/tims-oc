@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { Tree } from '@ouroboros/define';
 import { Form, Results } from '@ouroboros/define-mui';
@@ -128,19 +128,16 @@ function Clients(props) {
 	function fetch() {
 
 		// Make the request to the server
-		rest.read('primary', 'user/access', {
+		body.read('primary', 'user/access', {
 			_id: props.value._id
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error))
-			}
+		}).then(data => {
 
 			// If there's data
-			if(res.data) {
-				resultsSet(res.data);
+			if(data) {
+				resultsSet(data);
 			}
+		}, error => {
+			events.get('error').trigger(error)
 		});
 	}
 
@@ -148,18 +145,13 @@ function Clients(props) {
 	function add(client) {
 
 		// Call the server
-		rest.create('primary', 'user/access', {
+		body.create('primary', 'user/access', {
 			user: props.value._id,
 			client: client
-		}).done(res => {
-
-			// If we got an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
+			if(data) {
 				let i = afindi(results, 'client', client);
 				if(i === -1) {
 					let lResults = clone(results);
@@ -167,6 +159,8 @@ function Clients(props) {
 					resultsSet(lResults);
 				}
 			}
+		}, error => {
+				events.get('error').trigger(error);
 		});
 	}
 
@@ -174,18 +168,13 @@ function Clients(props) {
 	function remove(client) {
 
 		// Call the server
-		rest.delete('primary', 'user/access', {
+		body.delete('primary', 'user/access', {
 			user: props.value._id,
 			client: client
-		}).done(res => {
-
-			// If we got an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
+			if(data) {
 				let i = afindi(results, 'client', client);
 				if(i > -1) {
 					let lResults = clone(results);
@@ -193,6 +182,8 @@ function Clients(props) {
 					resultsSet(lResults);
 				}
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	};
 
@@ -256,17 +247,14 @@ export default function Users(props) {
 	useEffect(() => {
 
 		// Fetch the users
-		rest.read('primary', 'users').done(res => {
-
-			// If we got an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		body.read('primary', 'users').then(data => {
 
 			// If we got data
-			if(res.data) {
-				recordsSet(res.data);
+			if(data) {
+				recordsSet(data);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 
 		// Set Rights
@@ -311,17 +299,12 @@ export default function Users(props) {
 	function deleteClick(key) {
 
 		// Delete the user from the server
-		rest.delete('primary', 'user', {
+		body.delete('primary', 'user', {
 			_id: key
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
+			if(data) {
 
 				// Remove the user from the records
 				let i = afindi(records, '_id', key);
@@ -331,6 +314,8 @@ export default function Users(props) {
 					recordsSet(lRecords);
 				}
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 

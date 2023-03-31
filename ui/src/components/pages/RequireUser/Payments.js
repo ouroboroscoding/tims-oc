@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { increment, iso, timestamp } from '@ouroboros/dates';
 import { Tree } from '@ouroboros/define';
@@ -39,9 +39,9 @@ import PaymentDef from 'definitions/payment';
 // Create the dynamic clients options
 const ClientOptions = new Options.Fetch(() => {
 	return new Promise(resolve => {
-		rest.read('primary', 'clients').done(res => {
-			if(res.data) {
-				resolve(res.data);
+		body.read('primary', 'clients').then(data => {
+			if(data) {
+				resolve(data);
 			}
 		});
 	});
@@ -113,19 +113,16 @@ export default function Payments(props) {
 		if(range) {
 
 			// Make the request to the server
-			rest.read('primary', 'payments', {
+			body.read('primary', 'payments', {
 				range: range
-			}).done(res => {
-
-				// If there's an error
-				if(res.error && !res._handled) {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
+			}).then(data => {
 
 				// If we got data
-				if(res.data) {
-					paymentsSet(res.data);
+				if(data) {
+					paymentsSet(data);
 				}
+			}, error => {
+				events.get('error').trigger(error);
 			});
 		}
 	}, [range]);

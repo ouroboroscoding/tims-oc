@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { Tree } from '@ouroboros/define';
 import { Results } from '@ouroboros/define-mui';
@@ -108,26 +108,18 @@ function Generate(props) {
 	function generate() {
 
 		// Send the request to the server
-		rest.create('primary', 'invoice', {
+		body.create('primary', 'invoice', {
 			client: client,
 			start: range[0],
 			end: range[1]
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
-
-			// If there was a warning (PDF generation)
-			if(res.warning) {
-				events.get('warning').trigger(res.warning);
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
-				props.onSuccess(res.data);
+			if(data) {
+				props.onSuccess(data);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 
@@ -135,26 +127,18 @@ function Generate(props) {
 	function preview() {
 
 		// Send the request to the server
-		rest.read('primary', 'invoice/preview', {
+		body.read('primary', 'invoice/preview', {
 			client: client,
 			start: range[0],
 			end: range[1]
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
-
-			// If there was a warning (PDF generation)
-			if(res.warning) {
-				events.get('warning').trigger(res.warning);
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
-				previewDataSet(res.data);
+			if(data) {
+				previewDataSet(data);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 
@@ -306,19 +290,16 @@ export default function Invoices(props) {
 		if(range) {
 
 			// Make the request to the server
-			rest.read('primary', 'invoices', {
+			body.read('primary', 'invoices', {
 				range: range
-			}).done(res => {
-
-				// If there's an error
-				if(res.error && !res._handled) {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
+			}).then(data => {
 
 				// If we got data
-				if(res.data) {
-					invoicesSet(res.data);
+				if(data) {
+					invoicesSet(data);
 				}
+			}, error => {
+				events.get('error').trigger(error);
 			});
 		}
 	}, [range]);
@@ -342,22 +323,19 @@ export default function Invoices(props) {
 	function invoicePdf(invoice) {
 
 		// Tell the server to generate and return the link
-		rest.read('primary', 'invoice/pdf', {
+		body.read('primary', 'invoice/pdf', {
 			_id: invoice._id
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				if(res.error.code === 1100) {
-					events.get('error').trigger('No such invoice');
-				} else {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
-			}
+		}).then(data => {
 
 			// If we got data
-			if(res.data) {
-				window.open(res.data, '_blank');
+			if(data) {
+				window.open(data, '_blank');
+			}
+		}, error => {
+			if(error.code === 1100) {
+				events.get('error').trigger('No such invoice');
+			} else {
+				events.get('error').trigger(error);
 			}
 		});
 	}

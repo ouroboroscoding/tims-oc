@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { Tree } from '@ouroboros/define';
 import { Results } from '@ouroboros/define-mui';
@@ -114,20 +114,17 @@ export default function Work(props) {
 	useEffect(() => {
 		// If we have a noun and a range
 		if(noun && range) {
-			rest.read('primary', noun, {
+			body.read('primary', noun, {
 				start: range[0],
 				end: range[1]
-			}).done(res => {
-
-				// If there's an error
-				if(res.error && !res._handled) {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
+			}).then(data => {
 
 				// If we got data
-				if(res.data) {
-					recordsSet(res.data);
+				if(data) {
+					recordsSet(data);
 				}
+			}, error => {
+				events.get('error').trigger(error);
 			});
 		}
 	}, [noun, range]);
@@ -144,17 +141,12 @@ export default function Work(props) {
 	function deleteClick(key) {
 
 		// Delete it from the server
-		rest.delete('primary', 'work', {
+		body.delete('primary', 'work', {
 			__id: key
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		}).then(data => {
 
 			// If it was deleted
-			if(res.data) {
+			if(data) {
 
 				// Success
 				events.get('success').trigger('Work deleted');
@@ -168,6 +160,8 @@ export default function Work(props) {
 					});
 				}
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 

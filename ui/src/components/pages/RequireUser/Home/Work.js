@@ -9,11 +9,11 @@
  */
 
 // Ouroboros modules
-import { Form } from '@ouroboros/define-mui';
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import { safeLocalStorage } from '@ouroboros/browser';
 import clone from '@ouroboros/clone';
 import { iso } from '@ouroboros/dates';
+import { Form } from '@ouroboros/define-mui';
 import events from '@ouroboros/events';
 import { afindi, afindo } from '@ouroboros/tools';
 
@@ -100,17 +100,10 @@ export default function Work(props) {
 		if(props.user) {
 
 			// Request from the server if there's any existing open work
-			rest.read('primary', 'account/work').done(res => {
-
-				// If there's an error
-				if(res.error && !res._handled) {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
-
-				// If there's data
-				if('data' in res) {
-					workSet(res.data);
-				}
+			body.read('primary', 'account/work').then(data => {
+				workSet(data);
+			}, error => {
+				events.get('error').trigger(error);
 			});
 		} else {
 			workSet(null);
@@ -131,32 +124,29 @@ export default function Work(props) {
 			if(!projects[client]) {
 
 				// Make the request to the serve
-				props.user && rest.read('primary', 'projects', {
+				props.user && body.read('primary', 'projects', {
 					client: client
-				}).done(res => {
-
-					// If there's an error
-					if(res.error && !res._handled) {
-						events.get('error').trigger(rest.errorMessage(res.error));
-					}
+				}).then(data => {
 
 					// If there's data
-					if(res.data) {
+					if(data) {
 
 						// Make sure we have the latest projects and update it
 						projectsSet(val => {
-							val[client] = res.data;
+							val[client] = data;
 							return clone(val);
 						});
 
 						// If the project is not already valid
-						if(afindi(res.data, '_id', project) === -1) {
+						if(afindi(data, '_id', project) === -1) {
 
 							// Set the project based on available ones for the
 							//	client
-							projectSet(res.data[0] ? res.data[0]._id : false);
+							projectSet(data[0] ? data[0]._id : false);
 						}
 					}
+				}, error => {
+					events.get('error').trigger(error);
 				});
 			}
 
@@ -188,32 +178,29 @@ export default function Work(props) {
 			if(!tasks[project]) {
 
 				// Make the request to the serve
-				props.user && rest.read('primary', 'tasks', {
+				props.user && body.read('primary', 'tasks', {
 					project: project
-				}).done(res => {
-
-					// If there's an error
-					if(res.error && !res._handled) {
-						events.get('error').trigger(rest.errorMessage(res.error));
-					}
+				}).then(data => {
 
 					// If there's data
-					if(res.data) {
+					if(data) {
 
 						// Make sure we have the latest tasks and update it
 						tasksSet(val => {
-							val[project] = res.data;
+							val[project] = data;
 							return clone(val);
 						});
 
 						// If the task is not already valid
-						if(afindi(res.data, '_id', task) === -1) {
+						if(afindi(data, '_id', task) === -1) {
 
 							// Set the task based on available ones for the
 							//	project
-							taskSet(res.data[0] ? res.data[0]._id : false);
+							taskSet(data[0] ? data[0]._id : false);
 						}
 					}
+				}, error => {
+					events.get('error').trigger(error);
 				});
 			}
 
@@ -277,22 +264,19 @@ export default function Work(props) {
 	function workEnd() {
 
 		// Tell the server to end the current work
-		rest.update('primary', 'work/end', {
+		body.update('primary', 'work/end', {
 			_id: work._id,
 			description: descrRef.current.value.trim()
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		}).then(data => {
 
 			// If there's data
-			if(res.data) {
+			if(data) {
 
 				// Clear the work
 				workSet(null);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 
@@ -312,15 +296,10 @@ export default function Work(props) {
 		}
 
 		// Tell the server to start a work
-		rest.create('primary', 'work/start', oData).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		body.create('primary', 'work/start', oData).then(data => {
 
 			// If we got data
-			if(res.data) {
+			if(data) {
 
 				// Find the client, project, and task
 				let oClient = afindo(props.clients, '_id', client);
@@ -328,17 +307,19 @@ export default function Work(props) {
 				let oTask = afindo(tasks[project], '_id', task);
 
 				// Add them to the work
-				res.data.client = client;
-				res.data.clientName = oClient.name;
-				res.data.project = project;
-				res.data.projectName = oProject.name;
-				res.data.task = task;
-				res.data.taskName = oTask.name;
-				res.data.description = sDescription;
+				data.client = client;
+				data.clientName = oClient.name;
+				data.project = project;
+				data.projectName = oProject.name;
+				data.task = task;
+				data.taskName = oTask.name;
+				data.description = sDescription;
 
 				// Store the work
-				workSet(res.data);
+				workSet(data);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 

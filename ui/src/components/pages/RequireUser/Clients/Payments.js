@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { timestamp } from '@ouroboros/dates';
 import { Tree } from '@ouroboros/define';
@@ -56,19 +56,16 @@ export default function Payments(props) {
 	useEffect(() => {
 
 		// Make the request to the server
-		rest.read('primary', 'payments', {
+		body.read('primary', 'payments', {
 			client: props.value._id
-		}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error))
-			}
+		}).then(data => {
 
 			// If there's data
-			if(res.data) {
-				resultsSet(res.data);
+			if(data) {
+				resultsSet(data);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}, [props.value._id]);
 

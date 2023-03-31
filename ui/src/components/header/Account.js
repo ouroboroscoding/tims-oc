@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import { Tree } from '@ouroboros/define'
 import { Form } from '@ouroboros/define-mui';
 import events from '@ouroboros/events';
@@ -81,8 +81,8 @@ export default function Account(props) {
 		// Submit the changes
 		return bridge('update', 'primary', 'user', user, data => {
 			if(data) {
-				rest.read('primary', 'user').done(res => {
-					events.get('signedIn').trigger(res.data);
+				body.read('primary', 'user').then(data => {
+					events.get('signedIn').trigger(data);
 				});
 				events.get('success').trigger('Account details updated');
 			}
