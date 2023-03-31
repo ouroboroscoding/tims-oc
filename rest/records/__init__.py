@@ -32,6 +32,7 @@ def install():
 	Company.table_create()
 	CompanyTax.table_create()
 	Invoice.table_create()
+	InvoiceAdditional.table_create()
 	InvoiceItem.table_create()
 	Key.table_create()
 	Payment.table_create()
@@ -333,11 +334,41 @@ class Invoice(Record_MySQL.Record):
 		# Return the total
 		return sTotal
 
+# InvoiceAdditional class
+class InvoiceAdditional(Record_MySQL.Record):
+	"""Invoice Additional
+
+	Represents a client invoice item that is not associated with time
+	"""
+
+	_conf = None
+	"""Configuration"""
+
+	@classmethod
+	def config(cls):
+		"""Config
+
+		Returns the configuration data associated with the record type
+
+		Returns:
+			dict
+		"""
+
+		# If we haven loaded the config yet
+		if not cls._conf:
+			cls._conf = Record_MySQL.Record.generate_config(
+				Tree.fromFile('definitions/invoice_additional.json'),
+				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
+			)
+
+		# Return the config
+		return cls._conf
+
 # InvoiceItem class
 class InvoiceItem(Record_MySQL.Record):
-	"""InvoiceItem
+	"""Invoice Item
 
-	Represents a client invoice
+	Represents a client invoice item associated with a project / time
 	"""
 
 	_conf = None
@@ -404,7 +435,6 @@ class InvoiceItem(Record_MySQL.Record):
 
 		# Return the config
 		return cls._conf
-
 
 # Key class
 class Key(Record_MySQL.Record):

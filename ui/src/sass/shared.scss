@@ -43,8 +43,16 @@ i.fas, i.far {
 	cursor: pointer;
 }
 
+i.fas.blue, i.far.blue {
+	color: $cBlue;
+}
+
 i.fas.open, i.far.open {
 	color: #28c128;
+}
+
+i.fas.red, i.far.red {
+	color: $cRed;
 }
 
 i.fas:hover, i.far:hover {
