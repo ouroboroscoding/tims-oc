@@ -65,9 +65,9 @@ export default function Invoice(props) {
 			<Box className="details flexColumns">
 				<Box className="client flexGrow">
 					<Typography className="title">Bill To:</Typography>
-					<Typography className="name">{props.value.details.client.name}</Typography>
-					<Typography className="address">
-						{props.value.details.client.address &&
+					<Typography className="name">
+						{props.value.details.client.name}<br />
+						{props.value.details.client.address1 &&
 							<React.Fragment>
 								{props.value.details.client.address1 + (props.value.details.client.address2 || '')}<br />
 							</React.Fragment>
@@ -98,6 +98,13 @@ export default function Invoice(props) {
 							<TableCell className="project">{o.projectName}</TableCell>
 							<TableCell className="hours">{elapsed(o.minutes*60, {show_seconds: false, show_zero_hours: true})}</TableCell>
 							<TableCell className="amount">${o.amount}</TableCell>
+						</TableRow>
+					)}
+					{props.value.additional && props.value.additional.map((o,i) =>
+						<TableRow key={o._id} className={(i+props.value.items.length)%2 === 0 ? 'even' : 'odd'}>
+							<TableCell className="project">{o.text}</TableCell>
+							<TableCell className="hours">&nbsp;</TableCell>
+							<TableCell className="amount">${o.type === 'discount' && '-'}{o.amount}</TableCell>
 						</TableRow>
 					)}
 				</TableBody>
@@ -137,6 +144,7 @@ Invoice.propTypes = {
 	]),
 	value: PropTypes.shape({
 		_created: PropTypes.number.isRequired,
+		additional: PropTypes.arrayOf(PropTypes.object),
 		details: PropTypes.exact({
 			client: PropTypes.object.isRequired,
 			company: PropTypes.object.isRequired

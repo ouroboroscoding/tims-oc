@@ -15,8 +15,8 @@
 			.items tr {outline: 0;vertical-align: middle;}
 			.items td, .items th {padding: 16px;}
 			.items thead th {background-color: #484848;color: white;font-size: 1rem;font-weight: bold;}
-			.items tbody tr:nth-child(even) {background-color: #ffffff;}
-			.items tbody tr:nth-child(odd) {background-color: #efefef;}
+			.items tbody tr:nth-child(even) {background-color: #efefef;}
+			.items tbody tr:nth-child(odd) {background-color: #ffffff;}
 			.items tfoot tr {font-size: 1.1rem;text-align: right;}
 			.items .project {width: 80%;}
 			.items .hours, .items .amount {width: 10%;text-align: right;}
@@ -69,6 +69,13 @@
 						<td class="project">{{ item['projectName'] }}</td>
 						<td class="hours">{{ item['elapsedTime'] }}</td>
 						<td class="amount">${{ item['amount'] }}</td>
+					</tr>
+				{% endfor %}
+				{% for line in additional %}
+					<tr>
+						<td class="project">{{ line['text'] }}</td>
+						<td class="hours">&nbsp;</td>
+						<td class="amount">${% if line['type'] == 'discount' %}-{% endif %}{{ line['amount'] }}</td>
 					</tr>
 				{% endfor %}
 			</tbody>

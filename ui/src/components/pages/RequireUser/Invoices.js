@@ -11,15 +11,17 @@
 // Ouroboros modules
 import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
-import { Tree } from '@ouroboros/define';
-import { Results } from '@ouroboros/define-mui';
+import { Node, Tree } from '@ouroboros/define';
+import { DefineNode, Results } from '@ouroboros/define-mui';
 import { increment, iso } from '@ouroboros/dates';
 import events from '@ouroboros/events';
+import { afindi } from '@ouroboros/tools';
 
 // NPM modules
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { v4 as uuid } from 'uuid';
 
 // Material UI
 import Box from '@mui/material/Box';
@@ -39,6 +41,7 @@ import Invoice from 'components/composites/Invoice';
 
 // Load the invoice definition
 import InvoiceDef from 'definitions/invoice';
+import InvoiceAdditionalDef from 'definitions/invoice_additional';
 
 // Create the Tree using the definition
 const InvoiceTree = new Tree(InvoiceDef, {
@@ -47,6 +50,7 @@ const InvoiceTree = new Tree(InvoiceDef, {
 	},
 	clientName: { __type__: 'string', __ui__: { title: 'Client' }}
 });
+const AdditionalAmount = new Node(InvoiceAdditionalDef.amount);
 
 /**
  * Previous Month
@@ -97,9 +101,10 @@ function previousMonth() {
 function Generate(props) {
 
 	// State
-	let [client, clientSet] = useState(props.clients.length ? props.clients[0]._id : null);
-	let [previewData, previewDataSet] = useState(false);
-	let [range, rangeSet] = useState(previousMonth());
+	const [client, clientSet] = useState(props.clients.length ? props.clients[0]._id : null);
+	const [lines, linesSet] = useState([]);
+	const [previewData, previewDataSet] = useState(false);
+	const [range, rangeSet] = useState(previousMonth());
 
 	// Get today's date
 	let sToday = iso(new Date(), false);
@@ -107,12 +112,28 @@ function Generate(props) {
 	// Generate the new invoice
 	function generate() {
 
-		// Send the request to the server
-		body.create('primary', 'invoice', {
+		// Init data
+		const oData = {
 			client: client,
 			start: range[0],
 			end: range[1]
-		}).then(data => {
+		};
+
+		// Add additional lines if necessary
+		if(lines.length) {
+			const lAdditional = [];
+			for(const o of lines) {
+				lAdditional.push({
+					text: o.text,
+					type: o.type,
+					amount: o.amount
+				});
+			}
+			oData.additional = lAdditional;
+		}
+
+		// Send the request to the server
+		body.create('primary', 'invoice', oData).then(data => {
 
 			// If we got data
 			if(data) {
@@ -123,15 +144,73 @@ function Generate(props) {
 		});
 	}
 
+	// Called to add a new custom line to the invoice
+	function lineAdd() {
+		linesSet(val => {
+			const lLines = clone(val);
+			lLines.push({
+				_id: uuid(),
+				amount: '0.00',
+				text: '',
+				type: 'cost'
+			});
+			return lLines;
+		});
+	}
+
+	// Called when any field on a line changes
+	function lineChange(_id, field, value) {
+		linesSet(val => {
+			const i = afindi(val, '_id', _id);
+			if(i > -1) {
+				const lLines = clone(val);
+				lLines[i][field] = value;
+				return lLines;
+			} else {
+				return val;
+			}
+		});
+	}
+
+	// Called to remove a line
+	function lineRemove(_id) {
+		linesSet(val => {
+			const i = afindi(val, '_id', _id);
+			if(i > -1) {
+				const lLines = clone(val);
+				lLines.splice(i, 1);
+				return lLines;
+			} else {
+				return val;
+			}
+		});
+	}
+
 	// Called to preview the invoice info
 	function preview() {
 
-		// Send the request to the server
-		body.read('primary', 'invoice/preview', {
+		// Init data
+		const oData = {
 			client: client,
 			start: range[0],
 			end: range[1]
-		}).then(data => {
+		};
+
+		// Add additional lines if necessary
+		if(lines.length) {
+			const lAdditional = [];
+			for(const o of lines) {
+				lAdditional.push({
+					text: o.text,
+					type: o.type,
+					amount: o.amount
+				});
+			}
+			oData.additional = lAdditional;
+		}
+
+		// Send the request to the server
+		body.read('primary', 'invoice/preview', oData).then(data => {
 
 			// If we got data
 			if(data) {
@@ -209,6 +288,68 @@ function Generate(props) {
 							variant="outlined"
 							value={iso(range[1], false)}
 						/>
+					</Grid>
+					{lines.map((o, i) =>
+						<Grid item xs={12} key={o._id}>
+							<Box className="flexColumns">
+								<Box className="flexGrow">
+									<Grid container spacing={2}>
+										<Grid item xs={12} md={6} className="field">
+											<TextField
+												InputLabelProps={{ shrink: true }}
+												inputProps={{
+													maxLength: 255
+												}}
+												label="Text"
+												onChange={ev => lineChange(o._id, 'text', ev.target.value)}
+												type="text"
+												variant="outlined"
+												value={o.text}
+											/>
+										</Grid>
+										<Grid item xs={12} md={3} className="field">
+											<FormControl variant="outlined">
+												<InputLabel>Type</InputLabel>
+												<Select
+													label="Type"
+													native
+													onChange={ev => lineChange(o._id, 'type', ev.target.value)}
+													value={o.type}
+												>
+													<option value="cost">Cost</option>
+													<option value="discount">Discount</option>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item xs={12} md={3} className="field">
+											<DefineNode
+												name="amount"
+												node={AdditionalAmount}
+												onChange={val => lineChange(o._id, 'amount', val)}
+												type="create"
+												value={o.amount}
+											/>
+										</Grid>
+									</Grid>
+								</Box>
+								<Box className="flexStatic">
+									<Tooltip title="Add Line">
+										<IconButton onClick={ev => lineRemove(o._id)}>
+											<i className="fas fa-trash-alt red" />
+										</IconButton>
+									</Tooltip>
+								</Box>
+							</Box>
+						</Grid>
+					)}
+					<Grid item xs={12}>
+						<Box className="actions">
+							<Tooltip title="Add Line">
+								<IconButton onClick={lineAdd}>
+									<i className="fas fa-plus-circle blue" />
+								</IconButton>
+							</Tooltip>
+						</Box>
 					</Grid>
 				</Grid>
 				<Box className="actions">

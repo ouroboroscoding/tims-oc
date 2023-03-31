@@ -26,8 +26,8 @@ from RestOC import Conf, DateTimeHelper, DictHelper, EMail, Services, Session, \
 from RestOC.Record_MySQL import DuplicateException
 
 # Record imports
-from records import Access, Client, Company, Invoice, InvoiceItem, Key, \
-					Payment, Project, Task, User, Work
+from records import Access, Client, Company, Invoice, InvoiceAdditional, \
+					InvoiceItem, Key, Payment, Project, Task, User, Work
 
 # Shared imports
 from shared import Rights
@@ -92,13 +92,15 @@ class Primary(Services.Service):
 					dKey = Key.filter({'user': user, 'type': type}, raw=['_id'], limit=1)
 					return dKey['_id']
 
-	def _generate_invoice(self, range, client):
+	def _generate_invoice(self, range, client, additional):
 		"""Generate Invoice
 
 		Calculates the hours and billable amounts for an invoice
 
 		Arguments:
-			data (dict): The date
+			range (list): The start and end date of task to fetch for the client
+			client (str): The ID of the client
+			additional (list): Additional lines associated with the invoice
 		"""
 
 		# Fetch the client info
@@ -185,6 +187,13 @@ class Primary(Services.Service):
 			# Update the sub-total
 			deSubTotal += dProjects[sProject]['amount']
 
+		# Go through each additional and add/subtract from the subtotal
+		for d in additional:
+			if d['type'] == 'cost':
+				deSubTotal += Decimal(d['amount'])
+			else:
+				deSubTotal -= Decimal(d['amount'])
+
 		# Get the company info
 		dCompany = Company.get(raw=True, limit=1)
 
@@ -218,6 +227,7 @@ class Primary(Services.Service):
 			'subtotal': deSubTotal,
 			'taxes': lTaxes,
 			'total': deTotal,
+			'additional': additional,
 			'items': list(dProjects.values())
 		}
 
@@ -241,6 +251,9 @@ class Primary(Services.Service):
 			'company': Company.get(raw=True, limit=1),
 			'client': Client.get(dInvoice['client'], raw=True),
 			'invoice': dInvoice,
+			'additional': InvoiceAdditional.filter({
+				'invoice': _id
+			}, raw=['text', 'type', 'amount']),
 			'items': InvoiceItem.by_invoice(_id)
 		}
 		dTpl['company']['address'] = '%s%s' % (dTpl['company']['address1'], (dTpl['company']['address2'] and dTpl['company']['address2'] or ''))
@@ -1025,8 +1038,32 @@ class Primary(Services.Service):
 		# Generate the invoice data
 		dInvoice = self._generate_invoice(
 			[ req['data']['start'], req['data']['end'] ],
-			req['data']['client']
+			req['data']['client'],
+			'additional' in req['data'] and req['data']['additional'] or []
 		)
+
+		# If we have any additional lines
+		lAdditionals = None
+		if 'additional' in dInvoice:
+
+			# Pop off the data
+			lAdditionals = dInvoice.pop('additional')
+
+			# Init the list of instances
+			lAddRecords = []
+
+			# Go through each additional
+			for d in lAdditionals:
+
+				# Add an empty invoice ID to the additional
+				d['invoice'] = body.constants.EMPTY_UUID
+
+				# Create an instance of the invoice additional to check for
+				#	problems
+				try:
+					lAddRecords.append(InvoiceAdditional(d))
+				except ValueError as e:
+					return Services.Error(body.errors.DATA_FIELDS, [['additional.%s' % l[0], l[1]] for l in e.args[0]])
 
 		# Add the identifier
 		dInvoice['identifier'] = StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False)
@@ -1054,16 +1091,23 @@ class Primary(Services.Service):
 			# Create an instance of the invoice item to check for problems
 			try:
 				oItem = InvoiceItem({
-					"invoice": sID,
-					"project": d['_id'],
-					"minutes": d['minutes'],
-					"amount": d['amount']
+					'invoice': sID,
+					'project': d['_id'],
+					'minutes': d['minutes'],
+					'amount': d['amount']
 				})
 			except ValueError as e:
 				return Services.Error(body.errors.DATA_FIELDS, e.args[0])
 
 			# Create the item
 			oItem.create()
+
+		# If we have any additionals, go through each one, set the invoice ID,
+		#	then create the record
+		if lAddRecords:
+			for o in lAddRecords:
+				o['invoice'] = sID
+				o.create()
 
 		# Generate the PDF
 		mWarning = self._generate_invoice_pdf(sID)
@@ -1134,6 +1178,11 @@ class Primary(Services.Service):
 
 		# Find all the items associated and add them to the invoice
 		dInvoice['items'] = InvoiceItem.by_invoice(req['data']['_id'])
+
+		# Find all the additional lines associated and add them to the invoice
+		dInvoice['additional'] = InvoiceAdditional.filter({
+			'invoice': req['data']['_id']
+		}, raw=['_id', 'text', 'type', 'amount'])
 
 		# Generate the total
 		dInvoice['minutes'] = 0
@@ -1216,7 +1265,8 @@ class Primary(Services.Service):
 		# Generate the invoice data
 		dInvoice = self._generate_invoice(
 			[ req['data']['start'], req['data']['end'] ],
-			req['data']['client']
+			req['data']['client'],
+			'additional' in req['data'] and req['data']['additional'] or []
 		)
 
 		# Get all the project names if there's any items

@@ -250,7 +250,7 @@ export default function Work(props) {
 			tasksSet(lTasks);
 
 			// Set the current selected task to this one
-			taskSet(data._id);
+			taskSet(data);
 
 			// Hide the create form
 			createSet(false);
