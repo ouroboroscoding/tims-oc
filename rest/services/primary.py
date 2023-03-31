@@ -1219,12 +1219,13 @@ class Primary(Services.Service):
 			req['data']['client']
 		)
 
-		# Get all the project names
-		dProjects = {
-			dProj['_id']:dProj['name'] for dProj in Project.get([
-				d['_id'] for d in dInvoice['items']
-			], raw=['_id', 'name'])
-		}
+		# Get all the project names if there's any items
+		if dInvoice['items']:
+			dProjects = {
+				dProj['_id']:dProj['name'] for dProj in Project.get([
+					d['_id'] for d in dInvoice['items']
+				], raw=['_id', 'name'])
+			}
 
 		# Add the identifier
 		dInvoice['identifier'] = StrHelper.random(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ123456789', False)

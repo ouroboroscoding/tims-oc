@@ -1,5 +1,5 @@
 boto3==1.17.62
 
-rest-oc==1.1.0
+rest-oc==1.1.1
 
-body-oc==1.0.0
+body-oc==1.0.1

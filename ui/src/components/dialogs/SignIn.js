@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
 // NPM modules
@@ -24,6 +24,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
+import { cookies } from '@ouroboros/browser';
 
 /**
  * Sign In
@@ -56,41 +57,41 @@ export default function Signin(props) {
 	function signin() {
 
 		// Call the server
-		rest.create('primary', 'signin', {
+		body.create('primary', 'signin', {
 			email: emailRef.current.value,
 			passwd: passRef.current.value
-		}, {session: false}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				switch(res.error.code) {
-					case 1001:
-						// Go through each message and mark the error
-						let errors = {};
-						for(let i in res.error.msg) {
-							errors[i] = res.error.msg[i];
-						}
-						errorsSet(errors);
-						break;
-					case 2100:
-						events.get('error').trigger('E-mail or password invalid');
-						break;
-					default:
-						events.get('error').trigger(rest.errorMessage(res.error));
-						break;
-				}
-			}
+		}).then(data => {
 
 			// If there's data
-			if(res.data) {
+			if(data) {
+
+				// Store the cookie
+				cookies.set('_session', data);
 
 				// Set the session
-				rest.session(res.data);
+				body.session(data);
 
 				// Fetch the user
-				rest.read('primary', 'user').done(res => {
-					events.get('signedIn').trigger(res.data);
+				body.read('primary', 'user').then(data => {
+					events.get('signedIn').trigger(data);
 				});
+			}
+		}, error => {
+			switch(error.code) {
+				case 1001:
+					// Go through each message and mark the error
+					let errors = {};
+					for(let i in error.msg) {
+						errors[i] = error.msg[i];
+					}
+					errorsSet(errors);
+					break;
+				case 2100:
+					events.get('error').trigger('E-mail or password invalid');
+					break;
+				default:
+					events.get('error').trigger(error);
+					break;
 			}
 		});
 	}

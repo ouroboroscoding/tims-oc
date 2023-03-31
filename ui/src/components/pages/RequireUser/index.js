@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
 // NPM modules
@@ -62,17 +62,14 @@ export default function RequireUser(props) {
 	function clientsFetch() {
 
 		// Make the request to the server
-		rest.read('primary', 'account/clients').done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
+		body.read('primary', 'account/clients').then(data => {
 
 			// If we got data
-			if(res.data) {
-				clientsSet(res.data);
+			if(data) {
+				clientsSet(data);
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 

@@ -11,7 +11,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
 /**
@@ -38,49 +38,43 @@ export function bridge(action, service, noun, data, success, errors) {
 	return new Promise((resolve, reject) => {
 
 		// Call the rest service
-		rest[action](service, noun, data).done(res => {
+		body[action](service, noun, data).then(data => {
 
-			// If we got data
-			if('data' in res) {
-				if(success !== undefined) {
-					success(res.data);
-				}
-				resolve(res.data ? true : false);
+			if(success !== undefined) {
+				success(data);
+			}
+			resolve(data ? true : false);
+		}, error => {
+
+			// If the error code is 1001
+			if(error.code === 1001) {
+				return reject(error.msg);
 			}
 
-			// If we got an error, and it's not handled
-			if(res.error && !res._handled) {
+			// If the code is in our list of errors
+			if(errors !== undefined && error.code in errors) {
 
-				// If the error code is 1001
-				if(res.error.code === 1001) {
-					return reject(res.error.msg);
-				}
+				// If it's a function
+				if(typeof errors[error.code] === 'function') {
 
-				// If the code is in our list of errors
-				if(errors !== undefined && res.error.code in errors) {
+					// Call it and store the result
+					const lErrors = errors[error.code]();
 
-					// If it's a function
-					if(typeof errors[res.error.code] === 'function') {
-
-						// Call it and store the result
-						const lErrors = errors[res.error.code]();
-
-						// If we got errors back
-						if(lErrors) {
-							reject(lErrors);
-						}
-					}
-
-					// Else, we should have received a list of errors
-					else {
-						reject(errors[res.error.code]);
+					// If we got errors back
+					if(lErrors) {
+						reject(lErrors);
 					}
 				}
 
-				// Else, display the error
+				// Else, we should have received a list of errors
 				else {
-					events.get('error').trigger(rest.errorMessage(res.error));
+					reject(errors[error.code]);
 				}
+			}
+
+			// Else, display the error
+			else {
+				events.get('error').trigger(error);
 			}
 		});
 	});

@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
 // NPM modules
@@ -30,6 +30,7 @@ import Menu from './Menu';
 
 // Local modules
 import { useWidth } from 'shared/hooks/mui';
+import { cookies } from '@ouroboros/browser';
 
 /**
  * Header
@@ -55,21 +56,16 @@ export default function Header(props) {
 	function signout(ev) {
 
 		// Call the signout
-		rest.create('primary', 'signout').done(res => {
-
-			// If there's an error or warning
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.errorMessage(res.error));
-			}
-			if(res.warning) {
-				events.get('warning').trigger(JSON.stringify(res.warning));
-			}
+		body.create('primary', 'signout').then(data => {
 
 			// If there's data
-			if(res.data) {
+			if(data) {
+
+				// Clear the cookie
+				cookies.set('_session', '', -1);
 
 				// Reset the session
-				rest.session(null);
+				body.session(null);
 
 				// Trigger the signedOut event
 				events.get('signedOut').trigger();

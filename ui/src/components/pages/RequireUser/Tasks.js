@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { timestamp } from '@ouroboros/dates';
 import { Tree } from '@ouroboros/define';
@@ -79,28 +79,27 @@ export default function Tasks(props) {
 			if(!projects[client]) {
 
 				// Make the request to the serve
-				rest.read('primary', 'projects', {
+				body.read('primary', 'projects', {
 					client: client
-				}).done(res => {
-
-					// If there's an error
-					if(res.error && !res._handled) {
-						events.get('error').trigger(rest.errorMessage(res.error));
-					}
+				}).then(data => {
 
 					// If there's data
-					if(res.data) {
+					if(data) {
 
 						// Make sure we have the latest projects and update it
 						projectsSet(val => {
-							val[client] = res.data;
+							val[client] = data;
 							return clone(val);
 						});
 
 						// Set the project based on available ones for the
 						//	client
-						projectSet(res.data[0] ? res.data[0]._id : false);
+						projectSet(data[0] ? data[0]._id : false);
+					} else {
+						projectSet(false);
 					}
+				}, error => {
+					events.get('error').trigger(error);
 				});
 			}
 
@@ -121,20 +120,19 @@ export default function Tasks(props) {
 		if(project) {
 
 			// Fetch the tasks
-			rest.read('primary', 'tasks', {
+			body.read('primary', 'tasks', {
 				project: project
-			}).done(res => {
-
-				// If we got an error
-				if(res.error && !res._handled) {
-					events.get('error').trigger(rest.errorMessage(res.error));
-				}
+			}).then(data => {
 
 				// If we got data
-				if(res.data) {
-					tasksSet(res.data);
+				if(data) {
+					tasksSet(data);
 				}
+			}, error => {
+				events.get('error').trigger(error);
 			});
+		} else {
+			tasksSet([]);
 		}
 
 	}, [project]);
@@ -173,17 +171,12 @@ export default function Tasks(props) {
 	function deleteClick(key) {
 
 		// Delete the task from the server
-		rest.delete('primary', 'task', {
+		body.delete('primary', 'task', {
 			_id: key
-		}).then(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				events.get('error').trigger(rest.error(res.error));
-			}
+		}).then(data => {
 
 			// If we were successful
-			if(res.data) {
+			if(data) {
 
 				// Success
 				events.get('success').trigger('Task deleted');
@@ -196,6 +189,8 @@ export default function Tasks(props) {
 					tasksSet(lTasks);
 				}
 			}
+		}, error => {
+			events.get('error').trigger(error);
 		});
 	}
 

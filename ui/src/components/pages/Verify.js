@@ -9,7 +9,7 @@
  */
 
 // Ouroboros modules
-import { rest } from '@ouroboros/body';
+import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
 // NPM modules
@@ -63,27 +63,12 @@ export default function Verify(props) {
 		});
 
 		// Send it to the service
-		rest.update('primary', 'account/verify', {
+		body.update('primary', 'account/verify', {
 			key: lLocation[2]
-		}, {session: false}).done(res => {
-
-			// If there's an error
-			if(res.error && !res._handled) {
-				if(res.error.code === 1100) {
-					msgSet({
-						type: 'error',
-						content: 'Can not verify, key is invalid. Please make sure you copied the URL correctly. Contact support if you continue to have issues.'
-					});
-				} else {
-					msgSet({
-						type: 'error',
-						content: JSON.stringify(res.error)
-					});
-				}
-			}
+		}).then(data => {
 
 			// On success, redirect to homepage
-			if(res.data) {
+			if(data) {
 				msgSet({
 					type: 'success',
 					content: 'Successfully verified your e-mail address. You will be redirected to the homepage shortly.'
@@ -92,6 +77,18 @@ export default function Verify(props) {
 				setTimeout(() => {
 					navigate('/')
 				}, 5000);
+			}
+		}, error => {
+			if(error.code === 1100) {
+				msgSet({
+					type: 'error',
+					content: 'Can not verify, key is invalid. Please make sure you copied the URL correctly. Contact support if you continue to have issues.'
+				});
+			} else {
+				msgSet({
+					type: 'error',
+					content: JSON.stringify(error)
+				});
 			}
 		});
 	// eslint-disable-next-line
