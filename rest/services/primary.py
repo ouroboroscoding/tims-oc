@@ -201,23 +201,26 @@ class Primary(Services.Service):
 		deTotal = Decimal(deSubTotal)
 		lTaxes = []
 
-		# Go through any taxes we have
-		for d in dCompany['taxes']:
+		# If we collect taxes for this client
+		if dClient['taxes']:
 
-			# Generate the percentage as a divisor
-			dePercentage = Decimal(d['percentage']) / Decimal('100')
+			# Go through any taxes we have for the company
+			for d in dCompany['taxes']:
 
-			# Generate from the subtotal
-			deAmount = (deSubTotal * dePercentage).quantize(Decimal('1.00'))
+				# Generate the percentage as a divisor
+				dePercentage = Decimal(d['percentage']) / Decimal('100')
 
-			# Add the tax to the list
-			lTaxes.append({
-				'name': d['name'],
-				'amount': deAmount
-			})
+				# Generate from the subtotal
+				deAmount = (deSubTotal * dePercentage).quantize(Decimal('1.00'))
 
-			# Update the total
-			deTotal += deAmount
+				# Add the tax to the list
+				lTaxes.append({
+					'name': d['name'],
+					'amount': deAmount
+				})
+
+				# Update the total
+				deTotal += deAmount
 
 		# Return the generated data
 		return {

@@ -4,7 +4,7 @@
 		"create": [
 			"_created", "_updated", "_archived", "name", "attention_of",
 			"address1", "address2", "city", "division", "country", "postal_code",
-			"due", "currency", "rate", "task_minimum", "task_overflow"
+			"due", "currency", "rate", "task_minimum", "task_overflow", "taxes"
 		],
 		"db": "tims-ouroboros",
 		"host": "primary",
@@ -15,13 +15,15 @@
 	},
 
 	"__ui__": {
-		"create": ["name", "attention_of", "address1", "address2", "city",
+		"create": [ "name", "attention_of", "address1", "address2", "city",
 					"division", "country", "postal_code", "due",
-					 "currency", "rate", "task_minimum", "task_overflow"],
-		"results": ["name", "attention_of", "currency", "rate", "_archived"],
-		"update": ["name", "attention_of", "address1", "address2", "city",
+					 "currency", "rate", "task_minimum", "task_overflow",
+					 "taxes" ],
+		"results": [ "name", "attention_of", "currency", "rate", "_archived" ],
+		"update": [ "name", "attention_of", "address1", "address2", "city",
 					"division", "country", "postal_code", "due",
-					"currency", "rate", "task_minimum", "task_overflow"]
+					"currency", "rate", "task_minimum", "task_overflow",
+					"taxes" ]
 	},
 
 	"__name__": "Client",
@@ -131,5 +133,12 @@
 		"__maximum__":59,
 		"__optional__":true,
 		"__ui__":{"title":"Task Overflow Minutes","default":0}
+	},
+
+	"taxes": {
+		"__type__": "bool",
+		"__optional__": true,
+		"__sql__":{"opts": "not null default 1"},
+		"__ui__":{"title":"Collect Taxes"}
 	}
 }
