@@ -188,8 +188,8 @@ export default function Projects(props) {
 						<Results
 							data={results}
 							orderBy="name"
-							onDelete={props.rights ? deleteClick : false}
-							onUpdate={props.rights ? updateSubmit : false}
+							onDelete={deleteClick}
+							onUpdate={updateSubmit}
 							tree={ProjectTree}
 						/>
 					}
