@@ -24,6 +24,9 @@ import React, { useEffect, useRef, useState } from 'react';
 // Material UI
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
@@ -56,15 +59,16 @@ const WorkTree = new Tree(WorkDef, {
 export default function Work(props) {
 
 	// State
-	let [remove, removeSet] = useState(false);
-	let [fields, fieldsSet] = useState([])
-	let [noun, nounSet] = useState(null);
-	let [range, rangeSet] = useState(null);
-	let [records, recordsSet] = useState(false);
+	const [client, clientSet] = useState('-1');
+	const [fields, fieldsSet] = useState([])
+	const [noun, nounSet] = useState(null);
+	const [range, rangeSet] = useState(null);
+	const [records, recordsSet] = useState(false);
+	const [remove, removeSet] = useState(false);
 
 	// Refs
-	let refStart = useRef();
-	let refEnd = useRef();
+	const refStart = useRef();
+	const refEnd = useRef();
 
 	// Load effect
 	useEffect(() => {
@@ -112,22 +116,37 @@ export default function Work(props) {
 
 	// Noun/Range effect
 	useEffect(() => {
+
 		// If we have a noun and a range
 		if(noun && range) {
-			body.read('primary', noun, {
-				start: range[0],
-				end: range[1]
-			}).then(data => {
-
-				// If we got data
-				if(data) {
-					recordsSet(data);
-				}
-			}, error => {
-				events.get('error').trigger(error);
-			});
+			fetch();
 		}
 	}, [noun, range]);
+
+	function fetch() {
+
+		// Init the data
+		const oData = {
+			start: range[0],
+			end: range[1]
+		}
+
+		// If we have a client
+		if(client !== '-1') {
+			oData.client = client;
+		}
+
+		// Make the request
+		body.read('primary', noun, oData).then(data => {
+
+			// If we got data
+			if(data) {
+				recordsSet(data);
+			}
+		}, error => {
+			events.get('error').trigger(error);
+		});
+	}
 
 	// Converts the start and end dates into timestamps
 	function rangeUpdate() {
@@ -231,6 +250,26 @@ export default function Work(props) {
 					variant="outlined"
 					InputLabelProps={{ shrink: true }}
 				/>
+				{props.clients.length > 1 &&
+					<React.Fragment>
+						&nbsp;&nbsp;
+						<FormControl size="small" variant="outlined">
+							<InputLabel id="work_client">Client</InputLabel>
+							<Select
+								label="Client"
+								labelId="work_client"
+								native
+								onChange={ev => clientSet(ev.target.value)}
+								value={client}
+							>
+								<option value="-1">All</option>
+								{props.clients.map(o =>
+									<option key={o._id} value={o._id}>{o.name}</option>
+								)}
+							</Select>
+						</FormControl>
+					</React.Fragment>
+				}
 				<Button
 					color="primary"
 					onClick={rangeUpdate}
@@ -264,6 +303,7 @@ export default function Work(props) {
 
 // Valid props
 Work.propTypes = {
+	clients: PropTypes.array.isRequired,
 	mobile: PropTypes.bool.isRequired,
 	user: PropTypes.object.isRequired
 }

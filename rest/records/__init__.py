@@ -896,7 +896,7 @@ class Work(Record_MySQL.Record):
 	"""Configuration"""
 
 	@classmethod
-	def by_user(cls, user, start, end, custom={}):
+	def by_user(cls, user, start, end, client=None, custom={}):
 		"""By User
 
 		Returns all work in a timeframe that are assigned to a specific user
@@ -905,6 +905,7 @@ class Work(Record_MySQL.Record):
 			user (str): The ID of the user
 			start (uint): The minimum time the task can end in
 			end (uint): The maximum time the task can end in
+			client (str): Optional, single client to fetch
 			custom (dict): Custom Host and DB info
 				'host' the name of the host to get/set data on
 				'append' optional postfix for dynamic DBs
@@ -915,9 +916,25 @@ class Work(Record_MySQL.Record):
 
 		# Fetch the record structure
 		dStruct = cls.struct(custom)
+		dClient = Client.struct(custom)
+
+		# Init where with user and range
+		lWhere = [
+			"`w`.`user` = '%s'" % user,
+			"`w`.`end` BETWEEN FROM_UNIXTIME(%d) AND FROM_UNIXTIME(%d)" % (
+				start, end
+			)
+		]
+
+		# If we have a client
+		if client is not None:
+			lWhere.append("`p`.`client` %s" % cls.process_value(
+				dClient, '_id', client
+			))
 
 		# Generate SQL
 		sSQL = "SELECT\n" \
+				"	`w`.`_id` as `_id`,\n" \
 				"	`p`.`client` as `client`,\n" \
 				"	`c`.`name` as `clientName`,\n" \
 				"	`w`.`project` as `project`,\n" \
@@ -931,14 +948,11 @@ class Work(Record_MySQL.Record):
 				"JOIN `%(db)s`.`task` as `t` ON `w`.`task` = `t`.`_id`\n" \
 				"JOIN `%(db)s`.`project` as `p` ON `w`.`project` = `p`.`_id`\n" \
 				"JOIN `%(db)s`.`client` as `c` ON `p`.`client` = `c`.`_id`\n" \
-				"WHERE `w`.`user` = '%(user)s'\n" \
-				"AND `w`.`end` BETWEEN FROM_UNIXTIME(%(start)d) AND FROM_UNIXTIME(%(end)d)\n" \
+				"WHERE %(where)s\n" \
 				"ORDER BY `start`" % {
 			"db": dStruct['db'],
 			"table": dStruct['table'],
-			"user": user,
-			"start": start,
-			"end": end
+			"where": '\nAND '.join(lWhere)
 		}
 
 		# Execute and return the select

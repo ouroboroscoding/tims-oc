@@ -40,12 +40,16 @@ export default function Owe(props) {
 	// User effect
 	useEffect(() => {
 
-		// Request from the server how much they owe
-		body.read('primary', 'client/owes').then(data => {
-			owesSet(data);
-		}, error => {
-			events.get('error').trigger(error);
-		});
+		// If we have a user
+		if(props.user) {
+
+			// Request from the server how much they owe
+			body.read('primary', 'client/owes').then(data => {
+				owesSet(data);
+			}, error => {
+				events.get('error').trigger(error);
+			});
+		}
 
 	}, [props.user]);
 

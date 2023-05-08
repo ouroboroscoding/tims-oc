@@ -123,7 +123,7 @@ export default function Work(props) {
 			// If we don't have the projects stored for the client
 			if(!projects[client]) {
 
-				// Make the request to the serve
+				// Make the request to the server
 				props.user && body.read('primary', 'projects', {
 					client: client
 				}).then(data => {

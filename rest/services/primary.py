@@ -694,7 +694,12 @@ class Primary(Services.Service):
 			return Services.Error(body.errors.DATA_FIELDS, lErrors)
 
 		# Fetch the tasks by the signed in user
-		lWorks = Work.by_user(req['session']['user_id'], req['data']['start'], req['data']['end'])
+		lWorks = Work.by_user(
+			req['session']['user_id'],
+			req['data']['start'],
+			req['data']['end'],
+			'client' in req['data'] and req['data']['client'] or None
+		)
 
 		# Go through each task and calculate the elpased seconds
 		for d in lWorks:
@@ -929,7 +934,7 @@ class Primary(Services.Service):
 			return Services.Error(body.errors.DB_NO_RECORD, [req['data']['user_id'], 'user'])
 
 		# Check type
-		if dUser['type'] not in ['admin', 'client', 'manager']:
+		if dUser['type'] not in ['accounting', 'admin', 'client']:
 			return Services.Error(body.errors.RIGHTS)
 
 		# If the user has full access
@@ -939,12 +944,31 @@ class Primary(Services.Service):
 			if dUser['type'] == 'client':
 				return Services.Response([])
 
-			# Else, they get full access
-			lClients = None
+			# If a client is passed
+			if 'client' in req['data']:
+				lClients = [req['data']['client']]
 
-		# Else, filter just those clients available to the user
+			# Else, they get full access
+			else:
+				lClients = None
+
+		# Else, filter just those clients available to the user, unless one is
+		#	passed, then use that
 		else:
-			lClients = dUser['access']
+
+			# If a client is passed
+			if 'client' in req['data']:
+
+				# If it's not in the list
+				if req['data']['client'] not in dUser['access']:
+					return Services.Error(body.errors.RIGHTS)
+
+				# Set just the one client
+				lClients = [req['data']['client']]
+
+			# Else, use the clients they have access to
+			else:
+				lClients = dUser['access']
 
 		# Get all records that end in the given timeframe
 		lWorks = Work.range_grouped(req['data']['start'], req['data']['end'], lClients)
@@ -2558,33 +2582,35 @@ class Primary(Services.Service):
 		if not dUser:
 			return Services.Error(body.errors.DB_NO_RECORD, [req['data']['user_id'], 'user'])
 
-		# If a specific work is passed
-		if 'client' in req['data']:
+		# Check type
+		if dUser['type'] not in ['admin', 'manager']:
+			return Services.Error(body.errors.RIGHTS)
 
-			# Check rights
-			Rights.verify_or_raise(dUser, ['client', 'manager'], req['data']['client'])
+		# If the user has full access
+		if dUser['access'] is None:
 
-			# Set the filter
-			lClients = req['data']['client']
+			# If a client is passed
+			if 'client' in req['data']:
+				lClients = [req['data']['client']]
 
-		# Else
-		else:
-
-			# Check type
-			if dUser['type'] not in ['admin', 'client', 'manager']:
-				return Services.Error(body.errors.RIGHTS)
-
-			# If the user has full access
-			if dUser['access'] is None:
-
-				# If they are a client they get nothing
-				if dUser['type'] == 'client':
-					return Services.Response([])
-
-				# Else, they get full access
+			# Else, they get full access
+			else:
 				lClients = None
 
-			# Else, filter just those clients available to the user
+		# Else, filter just those clients available to the user
+		else:
+
+			# If a client is passed
+			if 'client' in req['data']:
+
+				# If it's not in the list
+				if req['data']['client'] not in dUser['access']:
+					return Services.Error(body.errors.RIGHTS)
+
+				# Set just the one client
+				lClients = [req['data']['client']]
+
+			# Else, use the clients they have access to
 			else:
 				lClients = dUser['access']
 
