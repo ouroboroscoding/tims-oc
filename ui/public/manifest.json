@@ -1,6 +1,6 @@
 {
-  "short_name": "svp",
-  "name": "Service SVP",
+  "short_name": "TIMS",
+  "name": "Time and Invoice Managament System",
   "icons": [
     {
       "src": "favicon.ico",
