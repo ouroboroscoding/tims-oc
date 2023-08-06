@@ -1,8 +1,8 @@
 {
 	"__sql__": {
 		"auto_primary": "UUID()",
-		"create": [	"_created", "_updated", "project", "user", "start", "end",
-					"description"],
+		"create": [	"_created", "_updated", "project", "task", "user", "start",
+					"end", "description" ],
 		"db": "tims-ouroboros",
 		"host": "primary",
 		"indexes": {
