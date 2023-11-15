@@ -42,5 +42,5 @@ body.onNoSession(() => {
 	events.get('error').trigger('You have been signed out');
 	events.get('signedOut').trigger();
 	body.session(null);
-	cookies.set('_session', '', -1);
+	cookies.remove('_session');
 });

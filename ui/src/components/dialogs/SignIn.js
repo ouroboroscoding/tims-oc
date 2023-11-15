@@ -66,7 +66,7 @@ export default function Signin(props) {
 			if(data) {
 
 				// Store the cookie
-				cookies.set('_session', data);
+				cookies.set('_session', data, 2592000);
 
 				// Set the session
 				body.session(data);
