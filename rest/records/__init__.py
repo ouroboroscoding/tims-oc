@@ -30,7 +30,6 @@ def install():
 	Access.table_create()
 	Client.table_create()
 	Company.table_create()
-	CompanyTax.table_create()
 	Invoice.table_create()
 	InvoiceAdditional.table_create()
 	InvoiceItem.table_create()
@@ -125,36 +124,6 @@ class Company(Record_MySQL.Record):
 		if not cls._conf:
 			cls._conf = Record_MySQL.Record.generate_config(
 				Tree.fromFile('definitions/company.json'),
-				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
-			)
-
-		# Return the config
-		return cls._conf
-
-# Company Tax class
-class CompanyTax(Record_MySQL.Record):
-	"""Company
-
-	Represents taxes added by the company on invoices
-	"""
-
-	_conf = None
-	"""Configuration"""
-
-	@classmethod
-	def config(cls):
-		"""Config
-
-		Returns the configuration data associated with the record type
-
-		Returns:
-			dict
-		"""
-
-		# If we haven loaded the config yet
-		if not cls._conf:
-			cls._conf = Record_MySQL.Record.generate_config(
-				Tree.fromFile('definitions/company_tax.json'),
 				override={'db': Conf.get(('mysql', 'db'), 'tims-oc')}
 			)
 
