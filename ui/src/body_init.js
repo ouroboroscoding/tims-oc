@@ -13,7 +13,7 @@ import { cookies } from '@ouroboros/browser';
 import events from '@ouroboros/events';
 
 // Set the body domain
-body.domain = process.env.REACT_APP_REST_DOMAIN || `body.${window.location.domain}`;
+body.domain = process.env.REACT_APP_REST_DOMAIN || `rest.${window.location.domain}`;
 
 // Set callbacks for errors and no session
 body.onError((error, info) => {
