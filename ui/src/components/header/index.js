@@ -62,7 +62,7 @@ export default function Header(props) {
 			if(data) {
 
 				// Clear the cookie
-				cookies.set('_session', '', -1);
+				cookies.remove('_session');
 
 				// Reset the session
 				body.session(null);

@@ -26,7 +26,7 @@ if __name__ == "__main__":
 	Record_MySQL.add_host('primary', Conf.get(('mysql', 'hosts', 'primary')))
 
 	# Add the DB
-	Record_MySQL.db_create(Conf.get(('mysql', 'primary', 'db'), 'tims-oc'), 'primary')
+	Record_MySQL.db_create(Conf.get(('mysql', 'db'), 'tims-oc'), 'primary')
 
 	# Install
 	install()
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 	# Install admin user
 	oUser = User({
 		'email': 'admin@localhost',
-		'passwd': User.passwordHash('Admin123'),
+		'passwd': User.password_hash('Admin123'),
 		'name': 'Administrator',
 		'type': 'admin',
 		'locale': 'en-US',

@@ -13,7 +13,7 @@ import { cookies } from '@ouroboros/browser';
 import events from '@ouroboros/events';
 
 // Set the body domain
-body.domain = process.env.REACT_APP_REST_DOMAIN || `body.${window.location.domain}`;
+body.domain = process.env.REACT_APP_REST_DOMAIN || `rest.${window.location.domain}`;
 
 // Set callbacks for errors and no session
 body.onError((error, info) => {
@@ -42,5 +42,5 @@ body.onNoSession(() => {
 	events.get('error').trigger('You have been signed out');
 	events.get('signedOut').trigger();
 	body.session(null);
-	cookies.set('_session', '', -1);
+	cookies.remove('_session');
 });
