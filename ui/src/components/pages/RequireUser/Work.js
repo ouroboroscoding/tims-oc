@@ -161,7 +161,7 @@ export default function Work(props) {
 
 		// Delete it from the server
 		body.delete('primary', 'work', {
-			__id: key
+			_id: key
 		}).then(data => {
 
 			// If it was deleted
