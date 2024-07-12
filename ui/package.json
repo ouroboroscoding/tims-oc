@@ -1,6 +1,6 @@
 {
   "name": "tims-ui",
-  "version": "1.8.3",
+  "version": "1.8.4",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.8.2",
@@ -9,7 +9,7 @@
     "@ouroboros/body": "^1.0.2",
     "@ouroboros/browser": "^0.1.6",
     "@ouroboros/clone": "^1.0.1",
-    "@ouroboros/dates": "^1.0.0",
+    "@ouroboros/dates": "^1.0.3",
     "@ouroboros/define": "^1.0.2",
     "@ouroboros/define-mui": "^1.2.0",
     "@ouroboros/events": "^1.0.1",
