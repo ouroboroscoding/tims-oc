@@ -12,7 +12,7 @@
 import body from '@ouroboros/body';
 import { safeLocalStorage } from '@ouroboros/browser';
 import clone from '@ouroboros/clone';
-import { iso } from '@ouroboros/dates';
+import { dayOfWeek, elapsed, iso } from '@ouroboros/dates';
 import { Form } from '@ouroboros/define-mui';
 import events from '@ouroboros/events';
 import { afindi, afindo } from '@ouroboros/tools';
@@ -58,7 +58,7 @@ const TaskTree = new Tree(TaskDef);
 function storeLastUsed(which, value) {
 
 	// Get the existing values
-	let sLastUsed = safeLocalStorage.string('work_last_' + which, false);
+	const sLastUsed = safeLocalStorage.string('work_last_' + which, false);
 
 	// If the value changed
 	if(sLastUsed !== value) {
@@ -82,16 +82,19 @@ function storeLastUsed(which, value) {
 export default function Work(props) {
 
 	// State
-	let [client, clientSet] = useState(safeLocalStorage.string('work_last_client', props.clients[0] ? props.clients[0]._id : false));
-	let [create, createSet] = useState(false);
-	let [project, projectSet] = useState(safeLocalStorage.string('work_last_project', false));
-	let [projects, projectsSet] = useState({});
-	let [task, taskSet] = useState(safeLocalStorage.string('work_last_task', false));
-	let [tasks, tasksSet] = useState({});
-	let [work, workSet] = useState(null);
+	const [ client, clientSet ] = useState(safeLocalStorage.string('work_last_client', props.clients[0] ? props.clients[0]._id : false));
+	const [ create, createSet ] = useState(false);
+	const [ elapsedTime, elapsedTimeSet ] = useState(false);
+	const [ elapsedType, elapsedTypeSet ] = useState(safeLocalStorage.string('work_elapsed_type', 'day'));
+	const [ project, projectSet ] = useState(safeLocalStorage.string('work_last_project', false));
+	const [ projects, projectsSet ] = useState({ });
+	const [ task, taskSet ] = useState(safeLocalStorage.string('work_last_task', false));
+	const [ tasks, tasksSet ] = useState({ });
+	const [ work, workSet ] = useState(null);
 
 	// Refs
-	let descrRef = useRef();
+	const descrRef = useRef();
+	const elapsedRef = useRef();
 
 	// User effect
 	useEffect(() => {
@@ -109,7 +112,7 @@ export default function Work(props) {
 			workSet(null);
 		}
 
-	}, [props.user]);
+	}, [ props.user ]);
 
 	// Client effect
 	useEffect(() => {
@@ -163,7 +166,7 @@ export default function Work(props) {
 		}
 
 	// eslint-disable-next-line
-	}, [client, projects]);
+	}, [ client, projects ]);
 
 	// Project effect
 	useEffect(() => {
@@ -217,9 +220,9 @@ export default function Work(props) {
 		}
 
 	// eslint-disable-next-line
-	}, [project]);
+	}, [ project ]);
 
-	// Project effect
+	// Task effect
 	useEffect(() => {
 
 		// If we have a task selected
@@ -229,7 +232,59 @@ export default function Work(props) {
 			storeLastUsed('task', task);
 		}
 
-	}, [task]);
+	}, [ task ]);
+
+	// Elapsed Type effect
+	useEffect(() => {
+
+		// If we have a timer, stop it
+		if(elapsedRef.current) {
+			clearInterval(elapsedRef.current);
+		}
+
+		// Fetch the elapsed time
+		elapsedRequest();
+
+		// Set a new interval to refresh the elapsed every 5 minutes
+		elapsedRef.current = setInterval(elapsedRequest, 300000);
+
+	}, [ elapsedType ]);
+
+	// Called to get elapsed time
+	function elapsedRequest() {
+
+		// Init the start / end dates
+		let oStart, oEnd;
+
+		// Calculate the start and end based on the type
+		switch(elapsedType) {
+			case 'day':
+				oStart = new Date();
+				oEnd = new Date();
+				break;
+			case 'week':
+				oStart = dayOfWeek(0);
+				oEnd = dayOfWeek(6);
+				break;
+			case 'month':
+				oStart = new Date();
+				oStart = new Date(oStart.getFullYear(), oStart.getMonth(), 1);
+				oEnd = new Date(oStart.getFullYear(), oStart.getMonth() + 1, 0);
+				break;
+		}
+
+		// Make sure we clear the hours/minutes/seconds
+		oStart.setHours(0, 0, 0, 0);
+		oEnd.setHours(23, 59, 59, 0);
+
+		// Send the request to the server
+		body.read('primary', 'account/elapsed', {
+			'start': Math.floor(oStart.getTime() / 1000),
+			'end': Math.floor(oEnd.getTime() / 1000)
+		}).then(data => {
+			elapsedTimeSet(data);
+		});
+	}
 
 	// Called when the task form is submitted
 	function taskSubmit(task) {
@@ -329,7 +384,7 @@ export default function Work(props) {
 	}
 
 	// Render
-	return (
+	return (<React.Fragment>
 		<Paper id="work">
 			{work ?
 				<Box className="work_end">
@@ -467,7 +522,24 @@ export default function Work(props) {
 				</Box>
 			}
 		</Paper>
-	);
+		<Paper id="elapsed">
+			<Select
+				label="Type"
+				native
+				onChange={ev => {
+					localStorage.setItem('work_elapsed_type', ev.target.value);
+					elapsedTypeSet(ev.target.value);
+				}}
+				value={elapsedType}
+				variant="standard"
+			>
+				<option value="day">Today</option>
+				<option value="week">This Week</option>
+				<option value="month">This Month</option>
+			</Select>
+			{elapsed(elapsedTime, {show_zero_minutes: true})}
+		</Paper>
+	</React.Fragment>);
 }
 
 // Valid props
