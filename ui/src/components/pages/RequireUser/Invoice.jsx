@@ -22,7 +22,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 // Local components
-import InvoiceComposite from 'components/composites/Invoice';
+import InvoiceComposite from '@/components/composites/Invoice';
 
 /**
  * Invoice

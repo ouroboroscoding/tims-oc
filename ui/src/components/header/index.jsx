@@ -9,6 +9,7 @@
  */
 
 // Ouroboros modules
+import { cookies } from '@ouroboros/browser';
 import body from '@ouroboros/body';
 import events from '@ouroboros/events';
 
@@ -29,8 +30,7 @@ import Loader from './Loader';
 import Menu from './Menu';
 
 // Local modules
-import { useWidth } from 'shared/hooks/mui';
-import { cookies } from '@ouroboros/browser';
+import { useWidth } from '@/shared/hooks/mui';
 
 /**
  * Header
@@ -84,7 +84,7 @@ export default function Header(props) {
 				}
 				<Box className="flexStatic">
 					<Typography className="title">
-						<Link to="/" onClick={menuHide}>{props.mobile ? process.env.REACT_APP_SITENAME_SHORT : process.env.REACT_APP_SITENAME}</Link>
+						<Link to="/" onClick={menuHide}>{props.mobile ? import.meta.env.VITE_SITENAME_SHORT : import.meta.env.VITE_SITENAME}</Link>
 					</Typography>
 				</Box>
 				{process.env.NODE_ENV === 'development' &&
