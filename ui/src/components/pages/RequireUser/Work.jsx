@@ -31,10 +31,10 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 // Local modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Definitions
-import WorkDef from 'definitions/work';
+import WorkDef from '@/definitions/work';
 
 // Create the tree
 const WorkTree = new Tree(WorkDef, {

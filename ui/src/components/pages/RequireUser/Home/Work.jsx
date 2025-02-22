@@ -35,10 +35,10 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // Local modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Load the task and project definitions
-import TaskDef from 'definitions/task';
+import TaskDef from '@/definitions/task';
 
 // Create Trees using the definitions
 const TaskTree = new Tree(TaskDef);

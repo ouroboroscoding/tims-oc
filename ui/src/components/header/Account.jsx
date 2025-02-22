@@ -25,11 +25,11 @@ import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
 
 // Local modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Definitions
-import PassDef from 'definitions/password';
-import UserDef from 'definitions/user';
+import PassDef from '@/definitions/password';
+import UserDef from '@/definitions/user';
 
 // Generate the Trees
 const PassTree = new Tree(PassDef);

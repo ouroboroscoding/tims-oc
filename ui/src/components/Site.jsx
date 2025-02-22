@@ -8,6 +8,12 @@
  * @created 2021-04-02
  */
 
+// Body init
+import '../body_init';
+
+// CSS
+import '../sass/site.scss';
+
 // Ouroboros modules
 import body from '@ouroboros/body';
 import { cookies } from '@ouroboros/browser';
@@ -16,29 +22,23 @@ import events from '@ouroboros/events';
 
 // NPM modules
 import React, { useEffect, useState } from 'react';
-import { Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { SnackbarProvider } from 'notistack';
 
-// Material UI
-import { createTheme, ThemeProvider }  from '@mui/material/styles'
+// Material UI modules
+import { createTheme, StyledEngineProvider, ThemeProvider }  from '@mui/material/styles'
 
 // Shared hooks
-import { useResize } from 'shared/hooks/resize';
+import { useResize } from '@/shared/hooks/resize';
 
 // Site components
 import Alerts from './Alerts';
 import Header from './header';
 
 // Page component modules
-import RequireUser from 'components/pages/RequireUser';
-import Setup from 'components/pages/Setup';
-import Verify from 'components/pages/Verify';
-
-// Body init
-import 'body_init';
-
-// CSS
-import 'sass/site.scss';
+import RequireUser from '@/components/pages/RequireUser';
+import Setup from '@/components/pages/Setup';
+import Verify from '@/components/pages/Verify';
 
 // Create the theme
 const Theme = createTheme({
@@ -85,16 +85,13 @@ export default function Site(props) {
 	let [mobile, mobileSet] = useState(document.documentElement.clientWidth < 600 ? true : false);
 	let [user, userSet] = useState(null);
 
-	// Hooks
-	let navigate = useNavigate();
-
 	// load effect
 	useEffect(() => {
 
 		// Subscribe to signed in/out events
 		const oSignedIn = events.get('signedIn').subscribe(userSet);
 		const oSignedOut = events.get('signedOut').subscribe(() => {
-			navigate('/');
+			window.location = '/';
 			userSet(false)
 		});
 
@@ -115,39 +112,47 @@ export default function Site(props) {
 			oSignedIn.unsubscribe();
 			oSignedOut.unsubscribe();
 		}
-	}, [navigate]);
+	}, [ ]);
 
 	// Resize hooks
 	useResize(() => mobileSet(document.documentElement.clientWidth < 600 ? true : false));
 
 	// Render
 	return (
-		<SnackbarProvider maxSnack={3}>
-			<Alerts />
-			<ThemeProvider theme={Theme}>
-				<Header
-					mobile={mobile}
-					user={user || false}
-				/>
-				<div id="content" className="flexGrow">
-					<Routes>
-						<Route path="/setup/*" element={
-							<Setup mobile={mobile} />
-						} />
-						<Route path="/verify/*" element={
-							<Verify mobile={mobile} />
-						} />
-						{user !== null &&
-							<Route path="/*" element={
-								<RequireUser
-									mobile={mobile}
-									user={user}
-								/>
-							} />
-						}
-					</Routes>
-				</div>
-			</ThemeProvider>
-		</SnackbarProvider>
+		<StyledEngineProvider injectFirst>
+			<SnackbarProvider maxSnack={3}>
+				<BrowserRouter>
+					<Alerts />
+					<ThemeProvider theme={Theme}>
+						<Header
+							mobile={mobile}
+							user={user || false}
+						/>
+						<div id="content" className="flexGrow">
+							<Routes>
+								<Route path="/setup/*" element={
+									<Setup mobile={mobile} />
+								} />
+								<Route path="/verify/*" element={
+									<Verify mobile={mobile} />
+								} />
+								{user !== null ?
+									<Route path="/*" element={
+										<RequireUser
+											mobile={mobile}
+											user={user}
+										/>
+									} />
+								:
+									<Route path="/" element={
+										<div><p>Please sign in.</p></div>
+									} />
+								}
+							</Routes>
+						</div>
+					</ThemeProvider>
+				</BrowserRouter>
+			</SnackbarProvider>
+		</StyledEngineProvider>
 	);
 }
