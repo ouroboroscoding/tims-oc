@@ -13,7 +13,7 @@ import body from '@ouroboros/body';
 import clone from '@ouroboros/clone';
 import { Tree } from '@ouroboros/define';
 import { Results } from '@ouroboros/define-mui';
-import { increment, iso, elapsed } from '@ouroboros/dates';
+import { elapsed, increment, iso } from '@ouroboros/dates';
 import events from '@ouroboros/events';
 import { afindi, merge } from '@ouroboros/tools';
 

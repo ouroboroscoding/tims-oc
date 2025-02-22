@@ -359,6 +359,59 @@ class Primary(Services.Service):
 		# Return the cients
 		return Services.Response(lClients)
 
+	def account_elapsed_read(self, req):
+		"""Account Elapsed read
+
+		Returns the elapsed time for the day / week / month of a worker
+
+		Arguments:
+			req (dict): The request details, which can include 'data',
+						'environment', and 'session'
+
+		Returns:
+			Services.Response
+		"""
+
+		# Verify the minimum fields
+		try: DictHelper.eval(req['data'], ['start', 'end'])
+		except ValueError as e: return Services.Error(body.errors.DATA_FIELDS, [(f, 'missing') for f in e.args])
+
+		# Make sure they're ints, or can be converted
+		lErrors = []
+		for k in ['start', 'end']:
+			try: req['data'][k] = int(req['data'][k])
+			except ValueError: lErrors.append([k, 'not an unsigned integer'])
+		if lErrors:
+			return Services.Error(body.errors.DATA_FIELDS, lErrors)
+
+		# Fetch the tasks by the signed in user
+		lWorks = Work.by_user(
+			req['session']['user_id'],
+			req['data']['start'],
+			req['data']['end'],
+			None
+		)
+
+		# Init the total seconds
+		iElapsed = 0
+
+		# Go through each task and calculate the elpased seconds
+		for d in lWorks:
+			iElapsed += d['end'] - d['start']
+
+		# Check for an open task
+		dTask = Work.filter({
+			'user': req['session']['user_id'],
+			'end': None
+		}, raw = [ 'start' ], limit = 1)
+
+		# If we got anything
+		if dTask:
+			iElapsed += int(time()) - dTask['start']
+
+		# Return all the tasks
+		return Services.Response(iElapsed)
+
 	def account_forgot_create(self, req):
 		"""Account: Forgot create
 
