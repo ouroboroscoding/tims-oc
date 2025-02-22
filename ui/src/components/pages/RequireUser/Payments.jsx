@@ -31,10 +31,10 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // Local modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Load the payment definition
-import PaymentDef from 'definitions/payment';
+import PaymentDef from '@/definitions/payment';
 
 // Create the dynamic clients options
 const ClientOptions = new Options.Fetch(() => {

@@ -28,10 +28,10 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // Local modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Load the client and project definitions
-import ProjectDef from 'definitions/project';
+import ProjectDef from '@/definitions/project';
 
 // Create Trees using the definitions
 const ProjectTree = new Tree(ProjectDef);

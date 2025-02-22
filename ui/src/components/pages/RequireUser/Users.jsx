@@ -29,10 +29,10 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // Locale modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Load the user definition
-import UserDef from 'definitions/user';
+import UserDef from '@/definitions/user';
 
 // Create the Tree using the definition
 const UserTree = new Tree(UserDef, {

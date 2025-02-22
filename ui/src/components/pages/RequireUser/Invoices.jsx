@@ -37,11 +37,11 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // Locale components
-import Invoice from 'components/composites/Invoice';
+import Invoice from '@/components/composites/Invoice';
 
 // Load the invoice definition
-import InvoiceDef from 'definitions/invoice';
-import InvoiceAdditionalDef from 'definitions/invoice_additional';
+import InvoiceDef from '@/definitions/invoice';
+import InvoiceAdditionalDef from '@/definitions/invoice_additional';
 
 // Create the Tree using the definition
 const InvoiceTree = new Tree(InvoiceDef, {

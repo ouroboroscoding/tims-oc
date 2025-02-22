@@ -28,10 +28,10 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // Local modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Load the client and payment definitions
-import PaymentDef from 'definitions/payment';
+import PaymentDef from '@/definitions/payment';
 
 // Create the Tree using the definition
 const PaymentTree = new Tree(PaymentDef);

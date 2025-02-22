@@ -24,7 +24,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 // Load the client and invoice definitions
-import InvoiceDef from 'definitions/invoice';
+import InvoiceDef from '@/definitions/invoice';
 
 // Create the Tree using the definition
 const InvoiceTree = new Tree(InvoiceDef, {

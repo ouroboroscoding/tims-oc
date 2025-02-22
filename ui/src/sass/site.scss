@@ -1,15 +1,12 @@
 /* ui-shared */
-@import 'shared/sass/reset';
-@import 'shared/sass/format';
-
-/* variables */
-@import 'variables';
+@forward '../shared/sass/reset';
+@forward '../shared/sass/format';
 
 /* main */
-@import 'shared';
-@import 'format';
-@import 'layout';
+@forward 'shared';
+@forward 'format';
+@forward 'layout';
 
 /* page specific */
-@import 'pages/invoice';
-@import 'pages/work';
+@forward 'pages/invoice';
+@forward 'pages/work';

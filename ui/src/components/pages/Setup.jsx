@@ -26,7 +26,7 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 
 // Get the user definition
-import UserDef from 'definitions/user';
+import UserDef from '@/definitions/user';
 
 // Create the name and password nodes
 const ConfirmNode = new Node(UserDef['passwd'], {

@@ -22,7 +22,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 // Dialog components
-import SignIn from 'components/dialogs/SignIn';
+import SignIn from '@/components/dialogs/SignIn';
 
 // Local components
 import Clients from './Clients';

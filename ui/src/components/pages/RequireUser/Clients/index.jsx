@@ -33,14 +33,14 @@ import Payments from './Payments';
 import Projects from './Projects';
 
 // Local modules
-import { bridge } from 'rest_to_define.js';
+import { bridge } from '@/rest_to_define.js';
 
 // Load the country and division data
-import Countries from 'data/countries';
-import Divisions from 'data/divisions';
+import Countries from '@/data/countries';
+import Divisions from '@/data/divisions';
 
 // Load the client and project definitions
-import ClientDef from 'definitions/client';
+import ClientDef from '@/definitions/client';
 
 // Create Trees using the definitions
 const ClientTree = new Tree(ClientDef, {
