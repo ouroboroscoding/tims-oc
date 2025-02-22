@@ -79,6 +79,7 @@ if __name__ == '__main__':
 
 		# User Access
 		'/account/clients': {'methods': REST.READ},
+		'/account/elapsed': {'methods': REST.READ},
 		'/account/forgot': {'methods': REST.CREATE | REST.UPDATE},
 		'/account/setup': {'methods': REST.READ | REST.UPDATE},
 		'/account/verify': {'methods': REST.UPDATE},
