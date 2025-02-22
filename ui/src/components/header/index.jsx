@@ -84,7 +84,7 @@ export default function Header(props) {
 				}
 				<Box className="flexStatic">
 					<Typography className="title">
-						<Link to="/" onClick={menuHide}>{props.mobile ? import.meta.envVITE_SITENAME_SHORT : import.meta.envVITE_SITENAME}</Link>
+						<Link to="/" onClick={menuHide}>{props.mobile ? import.meta.env.VITE_SITENAME_SHORT : import.meta.env.VITE_SITENAME}</Link>
 					</Typography>
 				</Box>
 				{process.env.NODE_ENV === 'development' &&
