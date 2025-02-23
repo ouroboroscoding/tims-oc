@@ -12,9 +12,9 @@
 	},
 
 	"__ui__": {
-		"create": ["email", "name", "type", "locale"],
-		"results": ["_archived", "email", "name", "type", "verified"],
-		"update": ["email", "name", "type", "locale", "verified"]
+		"__create__": ["email", "name", "type", "locale"],
+		"__results__": ["_archived", "email", "name", "type", "verified"],
+		"__update__": ["email", "name", "type", "locale", "verified"]
 	},
 
 	"__name__": "User",
@@ -39,13 +39,13 @@
 	"_archived": {
 		"__type__":"bool",
 		"__optional__":true,
-		"__ui__":{"title":"Archived"},
+		"__ui__":{"__title__":"Archived"},
 		"__sql__":{"opts": "not null default 0"}
 	},
 
 	"email": {
 		"__type__":"string", "__maximum__":127,
-		"__ui__":{"title":"E-mail Address"}
+		"__ui__":{"__title__":"E-mail Address"}
 	},
 
 	"passwd": {
@@ -53,9 +53,9 @@
 		"__regex__":"^[0-9a-fA-F]{72}$",
 		"__sql__":{"type":"char(72)"},
 		"__ui__": {
-			"regex": "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})",
-			"title": "Password (8 characters, must include 1 upper, 1 lower, and 1 number)",
-			"type": "password"
+			"__regex__": "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})",
+			"__title__": "Password (8 characters, must include 1 upper, 1 lower, and 1 number)",
+			"__type__": "password"
 		}
 	},
 
@@ -67,13 +67,13 @@
 	"name": {
 		"__type__":"string",
 		"__maximum__": 63,
-		"__ui__": {"title": "Full Name"}
+		"__ui__": {"__title__": "Full Name"}
 	},
 
 	"locale": {
 		"__type__": "string",
 		"__regex__":"^[a-z]{2}-[A-Z]{2}$",
-		"__ui__":{"type":"select","options":[["en-US", "U.S. English"]]},
+		"__ui__":{"__type__":"select","__options__":[["en-US", "U.S. English"]]},
 		"__sql__":{"type":"char(5)"}
 	},
 
