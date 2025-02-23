@@ -11,9 +11,9 @@
 	},
 
 	"__ui__": {
-		"create": ["name", "description"],
-		"results": ["name", "description", "_archived"],
-		"update": ["name", "description", "_archived"]
+		"__create__": ["name", "description"],
+		"__results__": ["name", "description", "_archived"],
+		"__update__": ["name", "description", "_archived"]
 	},
 
 	"__name__": "Project",
@@ -39,7 +39,7 @@
 		"__type__":"bool",
 		"__optional__":true,
 		"__sql__":{"opts": "not null default 0"},
-		"__ui__":{"title":"Archived"}
+		"__ui__":{"__title__":"Archived"}
 	},
 
 	"client": {
