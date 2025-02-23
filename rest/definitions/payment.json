@@ -12,8 +12,8 @@
 	},
 
 	"__ui__": {
-		"create": ["transaction", "amount"],
-		"results": ["_created", "transaction", "amount"]
+		"__create__": ["transaction", "amount"],
+		"__results__": ["_created", "transaction", "amount"]
 	},
 
 	"__name__": "Payment",
@@ -26,7 +26,7 @@
 	"_created": {
 		"__type__":"timestamp",
 		"__optional__":true,
-		"__ui__":{"title":"Created"},
+		"__ui__":{"__title__":"Created"},
 		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
 	},
 
@@ -37,7 +37,7 @@
 	"transaction": {
 		"__type__":"string",
 		"__maximum__": 127,
-		"__ui__":{"title":"Transaction ID"}
+		"__ui__":{"__title__":"Transaction ID"}
 	},
 
 	"amount": {

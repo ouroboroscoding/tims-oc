@@ -22,7 +22,7 @@
 	"_created": {
 		"__type__":"timestamp",
 		"__optional__":true,
-		"__ui__":{"title":"Created"},
+		"__ui__":{"__title__":"Created"},
 		"__sql__":{"opts":"default CURRENT_TIMESTAMP"}
 	},
 
@@ -38,7 +38,7 @@
 
 	"identifier": {
 		"__type__":"string",
-		"__ui__":{"title":"Invoice #"},
+		"__ui__":{"__title__":"Invoice #"},
 		"__sql__": {
 			"type": "char(6)"
 		}
@@ -46,12 +46,12 @@
 
 	"start": {
 		"__type__":"timestamp",
-		"__ui__":{"title":"From"}
+		"__ui__":{"__title__":"From"}
 	},
 
 	"end": {
 		"__type__":"timestamp",
-		"__ui__":{"title":"To"}
+		"__ui__":{"__title__":"To"}
 	},
 
 	"subtotal": {
