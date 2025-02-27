@@ -38,12 +38,12 @@ import WorkDef from '@/definitions/work';
 
 // Create the tree
 const WorkTree = new Tree(WorkDef, {
-	__ui__: { update: ['start', 'end', 'description'] },
-	clientName: {__type__: 'string', __ui__: { title: 'Client' } },
-	projectName: {__type__: 'string', __ui__: { title: 'Project' } },
-	taskName: {__type__: 'string', __ui__: { title: 'Task' } },
-	userName: {__type__: 'string', __ui__: { title: 'Employee' } },
-	elapsed: {__type__: 'uint', __ui__: { type: 'time_elapsed' } }
+	__ui__: { __update__: ['start', 'end', 'description'] },
+	clientName: {__type__: 'string', __ui__: { __title__: 'Client' } },
+	projectName: {__type__: 'string', __ui__: { __title__: 'Project' } },
+	taskName: {__type__: 'string', __ui__: { __title__: 'Task' } },
+	userName: {__type__: 'string', __ui__: { __title__: 'Employee' } },
+	elapsed: {__type__: 'uint', __ui__: { __type__: 'time_elapsed' } }
 });
 
 /**

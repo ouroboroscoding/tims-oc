@@ -34,8 +34,8 @@ import UserDef from '@/definitions/user';
 // Generate the Trees
 const PassTree = new Tree(PassDef);
 const UserTree = new Tree(UserDef, {
-	__ui__: { update: ['email', 'name'] },
-	name: { __ui__: { title: 'Your Name' } }
+	__ui__: { __update__: ['email', 'name'] },
+	name: { __ui__: { __title__: 'Your Name' } }
 });
 
 /**
