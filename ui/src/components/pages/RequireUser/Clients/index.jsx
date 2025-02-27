@@ -45,10 +45,10 @@ import ClientDef from '@/definitions/client';
 // Create Trees using the definitions
 const ClientTree = new Tree(ClientDef, {
 	country: {
-		__ui__: { options: omap(Countries, (s,k) => [k,s]) }
+		__ui__: { __options__: omap(Countries, (s,k) => [k,s]) }
 	},
 	division: {
-		__ui__: { options: omap(Divisions, (s,k) => [k,s]) }
+		__ui__: { __options__: omap(Divisions, (s,k) => [k,s]) }
 	}
 });
 

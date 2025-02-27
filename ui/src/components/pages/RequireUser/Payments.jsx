@@ -50,16 +50,16 @@ const ClientOptions = new Options.Fetch(() => {
 // Create the Tree using the definition
 const PaymentTree = new Tree(PaymentDef, {
 	__ui__: {
-		create: ['client', 'transaction', 'amount'],
-		results: ['_created', 'clientName', 'transaction', 'amount']
+		__create__: ['client', 'transaction', 'amount'],
+		__results__: ['_created', 'clientName', 'transaction', 'amount']
 	},
 	client: {
 		__ui__: {
-			options: ClientOptions,
-			type: 'select'
+			__options__: ClientOptions,
+			__type__: 'select'
 		}
 	},
-	clientName: { __type__: 'string', __ui__: { title: 'Client' } }
+	clientName: { __type__: 'string', __ui__: { __title__: 'Client' } }
 });
 
 /**

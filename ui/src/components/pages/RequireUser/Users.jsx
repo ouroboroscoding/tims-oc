@@ -36,7 +36,7 @@ import UserDef from '@/definitions/user';
 
 // Create the Tree using the definition
 const UserTree = new Tree(UserDef, {
-	name: { __ui__: { title: 'Full Name' } }
+	name: { __ui__: { __title__: 'Full Name' } }
 });
 
 // Constants

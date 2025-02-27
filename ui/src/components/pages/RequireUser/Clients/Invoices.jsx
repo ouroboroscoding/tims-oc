@@ -29,7 +29,7 @@ import InvoiceDef from '@/definitions/invoice';
 // Create the Tree using the definition
 const InvoiceTree = new Tree(InvoiceDef, {
 	__ui__: {
-		results: ['_created', 'identifier', 'start', 'end', 'total']
+		__results__: ['_created', 'identifier', 'start', 'end', 'total']
 	}
 });
 
