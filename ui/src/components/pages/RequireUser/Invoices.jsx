@@ -46,9 +46,11 @@ import InvoiceAdditionalDef from '@/definitions/invoice_additional';
 // Create the Tree using the definition
 const InvoiceTree = new Tree(InvoiceDef, {
 	__ui__: {
-		results: ['_created', 'clientName', 'identifier', 'start', 'end', 'total']
+		__results__: [
+			'_created', 'clientName', 'identifier', 'start', 'end', 'total'
+		]
 	},
-	clientName: { __type__: 'string', __ui__: { title: 'Client' }}
+	clientName: { __type__: 'string', __ui__: { __title__: 'Client' }}
 });
 const AdditionalAmount = new Node(InvoiceAdditionalDef.amount);
 
