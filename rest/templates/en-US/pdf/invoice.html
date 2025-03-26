@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="utf-8">
 		<meta name="pdfkit-page-size" content="Letter"/>
 		<meta name="pdfkit-orientation" content="Portrait"/>
 		<style>
@@ -75,7 +76,7 @@
 					<tr>
 						<td class="project">{{ line['text'] }}</td>
 						<td class="hours">&nbsp;</td>
-						<td class="amount">${% if line['type'] == 'discount' %}-{% endif %}{{ line['amount'] }}</td>
+						<td class="amount">{{ currency }}{% if line['type'] == 'discount' %}-{% endif %}{{ line['amount'] }}</td>
 					</tr>
 				{% endfor %}
 			</tbody>
@@ -90,14 +91,14 @@
 						<tr class="tax">
 							<td class="name">{{ tax['name'] }}</td>
 							<td class="hours">&nbsp;</td>
-							<td class="amount">${{ tax['amount'] }}</td>
+							<td class="amount">{{ currency }}{{ tax['amount'] }}</td>
 						</tr>
 					{% endfor %}
 				{% endif %}
 				<tr class="total">
 					<td class="name">Total</td>
 					<td class="hours">&nbsp;</td>
-					<td class="amount">${{ invoice['total'] }}</td>
+					<td class="amount">{{ currency }}{{ invoice['total'] }}</td>
 				</tr>
 			</tfoot>
 		</table>
