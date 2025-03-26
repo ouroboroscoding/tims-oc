@@ -93,9 +93,9 @@
 
 	"division": {
 		"__type__":"string",
-		"__maximum__":2,
+		"__maximum__":3,
 		"__ui__":{
-			"__title__": "Province / State",
+			"__title__": "Division",
 			"__type__": "select",
 			"__options__": [ ]
 		}
@@ -127,11 +127,12 @@
 
 	"currency": {
 		"__type__": "string",
-		"__options__": ["CAD", "USD"],
+		"__options__": [ "CAD", "GBP", "USD" ],
 		"__ui__": {
 			"__type__": "select",
 			"__options__": [
 				[ "CAD", "Canadian Dollars" ],
+				[ "GBP", "Great Britain Pound"],
 				[ "USD", "U.S. Dollars" ]
 			]
 		}

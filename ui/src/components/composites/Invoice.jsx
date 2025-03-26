@@ -39,6 +39,9 @@ import Typography from '@mui/material/Typography';
  */
 export default function Invoice(props) {
 
+	// Currency
+	const currency = props.value.details.client.currency === 'GBP' ? '£' : '$';
+
 	// Render
 	return (
 		<Box id="invoice" className="singlePage">
@@ -97,14 +100,14 @@ export default function Invoice(props) {
 						<TableRow key={o.projectName} className={i%2 === 0 ? 'even' : 'odd'}>
 							<TableCell className="project">{o.projectName}</TableCell>
 							<TableCell className="hours">{elapsed(o.minutes*60, {show_seconds: false, show_zero_hours: true})}</TableCell>
-							<TableCell className="amount">${o.amount}</TableCell>
+							<TableCell className="amount">{currency}{o.amount}</TableCell>
 						</TableRow>
 					)}
 					{props.value.additional && props.value.additional.map((o,i) =>
 						<TableRow key={o._id} className={(i+props.value.items.length)%2 === 0 ? 'even' : 'odd'}>
 							<TableCell className="project">{o.text}</TableCell>
 							<TableCell className="hours">&nbsp;</TableCell>
-							<TableCell className="amount">${o.type === 'discount' && '-'}{o.amount}</TableCell>
+							<TableCell className="amount">{currency}{o.type === 'discount' && '-'}{o.amount}</TableCell>
 						</TableRow>
 					)}
 				</TableBody>
@@ -114,13 +117,13 @@ export default function Invoice(props) {
 							<TableRow className="subtotal">
 								<TableCell className="name">Sub-Total</TableCell>
 								<TableCell className="hours">{elapsed(props.value.minutes*60, {show_seconds: false, show_zero_hours: true})}</TableCell>
-								<TableCell className="amount">${props.value.subtotal}</TableCell>
+								<TableCell className="amount">{currency}{props.value.subtotal}</TableCell>
 							</TableRow>
 							{props.value.taxes.map(o =>
 								<TableRow key={o.name} className="tax">
 									<TableCell className="name">{o.name}</TableCell>
 									<TableCell className="hours">&nbsp;</TableCell>
-									<TableCell className="amount">${o.amount}</TableCell>
+									<TableCell className="amount">{currency}{o.amount}</TableCell>
 								</TableRow>
 							)}
 						</React.Fragment>
@@ -128,7 +131,7 @@ export default function Invoice(props) {
 					<TableRow className="total">
 						<TableCell className="name">Total</TableCell>
 						<TableCell className="hours">&nbsp;</TableCell>
-						<TableCell className="amount">${props.value.total}</TableCell>
+						<TableCell className="amount">{currency}{props.value.total}</TableCell>
 					</TableRow>
 				</TableFooter>
 			</Table>
