@@ -251,8 +251,8 @@ class Primary(Services.Service):
 
 		# Generate the template data
 		dTpl = {
-			'company': Company.get(raw=True, limit=1),
-			'client': Client.get(dInvoice['client'], raw=True),
+			'company': Company.get(raw = True, limit = 1),
+			'client': Client.get(dInvoice['client'], raw = True),
 			'invoice': dInvoice,
 			'additional': InvoiceAdditional.filter({
 				'invoice': _id
@@ -271,6 +271,10 @@ class Primary(Services.Service):
 			dTpl['invoice']['minutes'] += d['minutes']
 			d['elapsedTime'] = DateTimeHelper.time_elapsed(d['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
 		dTpl['invoice']['elapsedTime'] = DateTimeHelper.time_elapsed(dTpl['invoice']['minutes']*60, {"show_seconds": False, "show_zero_hours": True})
+		if dTpl['client']['currency'] == 'GBP':
+			dTpl['currency'] = '£'
+		else:
+			dTpl['currency'] = '$'
 
 		# Generate the PDF
 		sPDF = Templates.generate('pdf/invoice.html', dTpl, 'en-US', pdf=True)
