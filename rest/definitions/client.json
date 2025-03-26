@@ -112,7 +112,7 @@
 
 	"postal_code": {
 		"__type__":"string",
-		"__regex__":"^([a-zA-Z]\\d[a-zA-Z] ?\\d[a-zA-Z]\\d|\\d{5}(-\\d{4})?)$",
+		"__regex__":"^[a-zA-Z0-9- ]+$",
 		"__optional__":true,
 		"__sql__":{ "type":"varchar(10)" },
 		"__ui__":{ "__title__": "Postal/Zip Code" }
