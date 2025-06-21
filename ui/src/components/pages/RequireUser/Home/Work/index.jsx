@@ -13,7 +13,7 @@ import body from '@ouroboros/body';
 import { safeLocalStorage } from '@ouroboros/browser';
 import { dayOfWeek, elapsed, iso } from '@ouroboros/dates';
 import events from '@ouroboros/events';
-import { afindi, afindo } from '@ouroboros/tools';
+import { afindi } from '@ouroboros/tools';
 
 // NPM modules
 import PropTypes from 'prop-types';
@@ -28,6 +28,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 // Local components
+import Previous from './Previous';
 import Start from './Start';
 
 /**
@@ -115,13 +116,7 @@ export default function Work(props) {
 
 		// If we have a user
 		if(props.user) {
-
-			// Request from the server if there's any existing open work
-			body.read('primary', 'account/work').then(data => {
-				workSet(data);
-			}, error => {
-				events.get('error').trigger(error);
-			});
+			workFetch();
 		} else {
 			workSet(null);
 		}
@@ -378,17 +373,28 @@ export default function Work(props) {
 		});
 	}
 
+	// Fetches information about the current work
+	function workFetch() {
+
+		// Request from the server if there's any existing open work
+		body.read('primary', 'account/work').then(data => {
+			workSet(data);
+		}, error => {
+			events.get('error').trigger(error);
+		});
+	}
+
 	// Start the work
-	function workStart(c, p, t, d) {
+	function workStart(item) {
 
 		// Add the project to the data
 		let oData = {
-			project: p,
-			task: t
+			project: item.project,
+			task: item.task
 		}
 
 		// If there's a description, add it
-		let sDescription = d.trim();
+		let sDescription = item.description.trim();
 		if(sDescription !== '') {
 			oData.description = sDescription;
 		}
@@ -398,23 +404,7 @@ export default function Work(props) {
 
 			// If we got data
 			if(data) {
-
-				// Find the client, project, and task
-				let oClient = afindo(props.clients, '_id', c);
-				let oProject = afindo(projects[c], '_id', p);
-				let oTask = afindo(tasks[p], '_id', t);
-
-				// Add them to the work
-				data.client = c;
-				data.clientName = oClient.name;
-				data.project = p;
-				data.projectName = oProject.name;
-				data.task = t;
-				data.taskName = oTask.name;
-				data.description = sDescription;
-
-				// Store the work
-				workSet(data);
+				workFetch();
 			}
 		}, error => {
 			events.get('error').trigger(error);
@@ -422,37 +412,54 @@ export default function Work(props) {
 	}
 
 	// End some sort and start some other work
-	function workSwap() {
+	function workSwap(item) {
 
 		// Store all the current values
-		const c = work.client;
-		const d = descr;
-		const p = work.project;
-		const t = work.task;
+		const cur = {
+			client: work.client,
+			description: descr,
+			project: work.project,
+			task: work.task
+		}
+
+		// Init the new task
+		let tostart;
+
+		// If we have an item
+		if(item) {
+			tostart = item;
+		} else {
+			tostart = {
+				client: pclient,
+				project: pproject,
+				task: ptask,
+				description: pdescr
+			}
+		}
 
 		// End the current work
 		workEnd(() => {
 
 			// Set the new work values to the swap values
-			clientSet(pclient);
-			descrSet(pdescr);
-			projectSet(pproject);
-			taskSet(ptask);
+			clientSet(tostart.client);
+			descrSet(tostart.description);
+			projectSet(tostart.project);
+			taskSet(tostart.task);
 
 			// Set the prev values to the work ones
-			pclientSet(c);
-			pdescrSet(d);
-			pprojectSet(p);
-			ptaskSet(t);
+			pclientSet(cur.client);
+			pdescrSet(cur.description);
+			pprojectSet(cur.project);
+			ptaskSet(cur.task);
 
 			// Start the new work
-			workStart(pclient, pproject, ptask, pdescr);
+			workStart(tostart);
 		});
 	}
 
 	// If we are still checking for an existing work
 	if(work === false) {
-		return <Box id="work"><Typography>Loading</Typography></Box>
+		return <Box id="work"><Typography>Loading...</Typography></Box>
 	}
 
 	// Render
@@ -484,6 +491,11 @@ export default function Work(props) {
 					<Box className="sectionHeader">
 						<Typography>Swap to other Work?</Typography>
 					</Box>
+					<Previous
+						start={workStart}
+						swap={workSwap}
+						work={work}
+					/>
 					<Start
 						client={pclient}
 						clients={props.clients}
@@ -546,6 +558,10 @@ export default function Work(props) {
 							>Start</Button>
 						</Box>
 					</Start>
+					<Previous
+						start={workStart}
+						swap={workSwap}
+					/>
 				</Paper>
 			)}
 		</Box>
