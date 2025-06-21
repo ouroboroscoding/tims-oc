@@ -16,7 +16,7 @@
     "@ouroboros/body": "^1.1.2",
     "@ouroboros/browser": "^0.5.2",
     "@ouroboros/clone": "^1.1.0",
-    "@ouroboros/dates": "^1.1.1",
+    "@ouroboros/dates": "^1.1.2",
     "@ouroboros/define-mui": "^1.5.5",
     "@ouroboros/events": "^1.1.0",
     "@ouroboros/subscribe": "^1.3.2",
@@ -40,7 +40,7 @@
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
-    "vite": "^5.4.1"
+    "vite": "^6.3.5"
   },
   "eslintConfig": {
     "extends": "react-app",
