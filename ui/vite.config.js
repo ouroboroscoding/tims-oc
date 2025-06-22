@@ -13,7 +13,8 @@ export default defineConfig(({command, mode}) => {
 			},
 		},
 		define: {
-			'__APP_VERSION__': JSON.stringify(process.env.npm_package_version)
+			'__APP_VERSION__': JSON.stringify(process.env.npm_package_version),
+			'REST_DOMAIN': '"rest.tims.local.ouroboroscoding.com"'
 		},
 		plugins: [
 			react()
@@ -25,10 +26,20 @@ export default defineConfig(({command, mode}) => {
 		}
 	}
 
+	// For staging
+	if(mode === 'staging') {
+		baseConf.define.REST_DOMAIN = '"rest.tims.staging.ouroboroscoding.com"'
+	}
+
+	// For production
+	else if(mode === 'production') {
+		baseConf.define.REST_DOMAIN = '"rest-tims.ouroboroscoding.com"'
+	}
+
 	// If we are serving a local dev version
 	if(command === 'serve') {
 		baseConf.server = {
-			host: 'tims.local',
+			host: 'tims.local.ouroboroscoding.com',
 			port: 3101,
 			strictPort: true
 		}

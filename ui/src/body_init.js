@@ -13,7 +13,7 @@ import { cookies } from '@ouroboros/browser';
 import events from '@ouroboros/events';
 
 // Set the body domain
-body.domain(import.meta.env.VITE_REST_DOMAIN);
+body.domain(REST_DOMAIN);
 
 // Set callbacks for errors and no session
 body.onError((error, info) => {
