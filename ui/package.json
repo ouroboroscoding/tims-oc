@@ -1,9 +1,9 @@
 {
   "name": "tims-ui",
-  "version": "1.9.7",
+  "version": "1.9.8",
   "private": true,
   "scripts": {
-    "dev": "vite",
+    "dev_prod": "vite --mode production",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
