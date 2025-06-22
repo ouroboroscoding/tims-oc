@@ -394,9 +394,11 @@ export default function Work(props) {
 		}
 
 		// If there's a description, add it
-		let sDescription = item.description.trim();
-		if(sDescription !== '') {
-			oData.description = sDescription;
+		if(item.description) {
+			const sDescription = item.description.trim();
+			if(sDescription !== '') {
+				oData.description = sDescription;
+			}
 		}
 
 		// Tell the server to start a work
@@ -552,7 +554,12 @@ export default function Work(props) {
 							<Button
 								color="primary"
 								onClick={() => {
-									workStart(client, project, task, descr);
+									workStart({
+										client,
+										description: descr,
+										project,
+										task
+									});
 								}}
 								variant="contained"
 							>Start</Button>
