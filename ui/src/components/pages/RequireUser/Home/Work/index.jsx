@@ -520,7 +520,7 @@ export default function Work(props) {
 							/>
 						</Box>
 						<Box className="actions">
-							<Button color="primary" onClick={workSwap} variant="contained">Swap</Button>
+							<Button color="primary" onClick={() => workSwap()} variant="contained">Swap</Button>
 						</Box>
 					</Start>
 				</Paper>
