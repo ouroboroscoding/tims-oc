@@ -387,6 +387,20 @@ export default function Work(props) {
 	// Start the work
 	function workStart(item) {
 
+		// If we have no item
+		if(!item) {
+			item = {
+				client,
+				description: descr,
+				project,
+				task
+			}
+		} else {
+			clientSet(item.client);
+			projectSet(item.project);
+			taskSet(item.task);
+		}
+
 		// Add the project to the data
 		let oData = {
 			project: item.project,
@@ -554,12 +568,7 @@ export default function Work(props) {
 							<Button
 								color="primary"
 								onClick={() => {
-									workStart({
-										client,
-										description: descr,
-										project,
-										task
-									});
+									workStart();
 								}}
 								variant="contained"
 							>Start</Button>

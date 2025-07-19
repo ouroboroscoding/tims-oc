@@ -120,7 +120,7 @@ export default function Previous({
 				</Select>
 			</Typography>
 			{results && results.map(o =>
-				<Typography className="flexColumns">
+				<Typography key={o._id} className="flexColumns">
 					<span className="flexGrow">
 						{o.clientName} - {o.projectName} - {o.taskName}
 					</span>

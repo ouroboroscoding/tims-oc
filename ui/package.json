@@ -1,6 +1,6 @@
 {
   "name": "tims-ui",
-  "version": "1.9.9",
+  "version": "1.9.10",
   "private": true,
   "scripts": {
     "dev_prod": "vite --mode production",
